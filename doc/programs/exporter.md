@@ -33,8 +33,10 @@ File names start with the time of the export and the first 8 characters of the `
 
 ### CSV
 Two files, semicolon separated, UTF-8 with header row, decimal point `.`:
-- `<prefix>_sessions.csv`: one row per session: `session_id;session_uuid;saved_at;shooter;device;device_category;caliber;target_type;distance_m;single_handed;supported;shot_count;duration_s;score;grouping_score;grouping_shift_x_mm;grouping_shift_y_mm`
-- `<prefix>_shots.csv`: one row per shot: `session_id;shot_no;angle_turns;radius_mm;x_mm;y_mm;score`
+- `<prefix>_sessions.csv`: one row per session: `session_id;session_uuid;saved_at;shooter;device;device_category;caliber;target_type;distance_m;single_handed;supported;shot_count;paper_count;duration_s;score;grouping_score;grouping_shift_x_mm;grouping_shift_y_mm;notes`
+- `<prefix>_shots.csv`: one row per shot: `session_id;shot_no;paper_no;angle_turns;radius_mm;x_mm;y_mm;score`
+
+Text fields (e.g. `notes`) are quoted as CSV requires, so semicolons and line breaks in notes are kept.
 
 `saved_at` is written as ISO 8601 in local time (`2026-11-11T14:30:00+01:00`).
 
@@ -48,7 +50,7 @@ One file `<prefix>.json`, complete and self-contained. It can be imported again 
   "shooters":     [ { ...Shooter without id } ],
   "target_types": [ { ...TargetType without id, rings, locked } ],
   "devices":      [ { ...Device without id, image_path, locked } ],
-  "sessions":     [ { ...Session without id, shooter_id, device_id, target_type_id, image_path,
+  "sessions":     [ { ...Session without id, shooter_id, device_id, target_type_id, images,
                       "shooter_uuid": "…" or null, "device_uuid": "…", "target_type_uuid": "…",
                       "shot_scores": [10, 9, ...] } ]
 }
@@ -61,7 +63,7 @@ One file `<prefix>.json`, complete and self-contained. It can be imported again 
 ### PNG target plot
 One file per session: `<prefix>_session_<id>.png`, the target paper to scale (long side 1600 px) plus a header area:
 - paper outline, black area and the generated rings of the target type, ring scores labeled,
-- every shot as a circle with the bullet diameter, numbered in order,
+- every shot as a circle with the bullet diameter, labelled with its number (`<paper_no>.<n>` for sessions with several papers),
 - mean point of impact as a cross, and the grouping shift as an arrow from the target center,
 - header text: saved_at, shooter, device, distance, target type, score, grouping score, shot count.
 
@@ -69,16 +71,16 @@ One file per session: `<prefix>_session_<id>.png`, the target paper to scale (lo
 With `include_images` (only `csv` and `json`), the export is one file `<prefix>_csv.zip` or `<prefix>_json.zip`:
 ```
 <prefix>_json.zip                          <prefix>_csv.zip
-├── export.json                            ├── sessions.csv
-└── images/                                ├── shots.csv
-    ├── sessions/<session uuid>.<ext>      └── images/
-    └── devices/<device uuid>.<ext>            ├── sessions/<session uuid>.<ext>
-                                               └── devices/<device uuid>.<ext>
+├── export.json                                  ├── sessions.csv
+└── images/                                      ├── shots.csv
+    ├── sessions/<session uuid>_<paper_no>.<ext> └── images/
+    └── devices/<device uuid>.<ext>                  ├── sessions/<session uuid>_<paper_no>.<ext>
+                                                     └── devices/<device uuid>.<ext>
 ```
 - Images are named by the uuid of their record, so they stay unique across installations.
 - The data files reference the images by their path inside the ZIP:
-  - JSON: optional `image_entry` on sessions and devices (e.g. `images/sessions/7c9e….jpg`), defined in the export schema,
-  - CSV: two extra columns in `sessions.csv`: `image_entry` (session target image) and `device_image_entry`; empty if there is none.
+  - JSON: `images: [ { "paper_no", "image_entry" } ]` on sessions (e.g. `images/sessions/7c9e…_1.jpg`) and an optional `image_entry` on devices, defined in the export schema,
+  - CSV: two extra columns in `sessions.csv`: `image_entries` (the session's target images, separated by `|`, in paper order) and `device_image_entry`; empty if there is none.
 - Only images of the exported sessions and their devices are included. A missing image file (e.g. deleted by hand) is skipped and logged; the data still references nothing for it.
 - A `<prefix>_json.zip` can be imported by [importer](importer.md), which restores the images. A `<prefix>_csv.zip` is for other software (spreadsheets) and can't be imported.
 

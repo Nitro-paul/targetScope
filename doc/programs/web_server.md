@@ -19,10 +19,35 @@ Program `web_server` (Rust): serves the web UI in the local network. It translat
 | Image scaling | `fast_image_resize` |
 | Redis, frames, settings | `targetscope_common` |
 
-Frontend: plain HTML, CSS and JavaScript (ES modules), no build step, no framework. Targets are drawn as SVG.
+Frontend: plain HTML, CSS and JavaScript (ES modules), no build step, no framework. Targets are drawn as SVG. All texts are in English.
 
 ## Access
-Listens on the setting `web_bind_address` (default `0.0.0.0:8080`), so phones and tablets in the local network can be used at the range. There is no login: everyone in the network can use and change everything. The UI shows the URL to open on other devices (`http://<PC IP>:8080`).
+Listens on the setting `web_bind_address` (default `0.0.0.0:8080`), so phones and tablets in the local network can be used at the range. The UI shows the URL to open on other devices (`http://<PC IP>:8080`).
+
+Without an admin password, everyone in the network can use and change everything. Destructive actions can optionally be protected (see [Admin password](#admin-password)).
+
+### Admin password
+Optional. While the setting `admin_password_hash` is inactive (default), everything is open. When the user sets a password (settings view), these actions need it:
+- deleting sessions, shooters, devices, device images, target types and exports,
+- changing settings, restoring defaults, changing the image folder, camera source and resolution,
+- lens calibration (start, finish, delete),
+- restarting programs.
+
+Recording sessions, viewing, statistics, exports and imports stay open.
+
+| Method and path | Purpose |
+|---|---|
+| `GET /api/admin` | `{ "protected": bool, "logged_in": bool }` |
+| `POST /api/admin/login` | body `{ "password" }`; sets the admin cookie |
+| `POST /api/admin/logout` | ends the admin session |
+| `PUT /api/admin/password` | body `{ "current_password" or null, "new_password" or null }`; sets, changes or (`new_password = null`) removes the password; needs the current password if one is set |
+
+- The password is stored as an Argon2id hash (`argon2` crate) in the setting `admin_password_hash`; the web server never sends it to the browser and filters it from `GET /api/settings`.
+- Login creates a random 256-bit token, kept in the web server's memory, sent as cookie (`HttpOnly`, `SameSite=Strict`). It expires after 30 minutes without use and when the web server restarts.
+- A protected endpoint without a valid cookie answers 401 with `{ "code": "auth_required" }`; the UI asks for the password and repeats the action.
+- At most 5 wrong passwords per minute per client address; then 429.
+- Forgotten password: `targetscope --reset-admin-password` on the PC (see [launcher](launcher.md#usage)) removes it.
+- The connection is plain HTTP in the local network, so the password protects against accidental or casual changes, not against someone who records the network traffic.
 
 ## REST API
 All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` header (UUID); it's used as `request_id`, so the browser can safely resend a request after a network error. Without it, a new `request_id` is created.
@@ -33,6 +58,8 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | `GET /api/session` | `session_get` |
 | `POST /api/session/setup` | `session_setup` |
 | `PATCH /api/session/setup` | `session_update_setup` |
+| `PUT /api/session/notes` | `session_set_notes` |
+| `POST /api/session/new-paper` | `session_new_paper` |
 | `POST /api/session/calibrate` | `session_calibrate` (body: Corners, in raw frame pixels) |
 | `POST /api/session/start` · `/pause` · `/resume` · `/stop` · `/save` · `/cancel` | `session_start` … `session_cancel` |
 | `POST /api/session/shots` | `session_add_shot` |
@@ -59,6 +86,9 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | `GET /api/camera/devices` | `camera_list_devices` |
 | `GET /api/camera/controls` | `camera_list_controls` |
 | `PUT /api/camera/controls/{id}` | `camera_set_control` |
+| `GET /api/camera/lens` | `lens_calibration_status` |
+| `POST /api/camera/lens/start` · `/capture` · `/finish` · `/cancel` | `lens_calibration_start` … `lens_calibration_cancel` |
+| `DELETE /api/camera/lens` | `lens_calibration_delete` |
 | `GET /api/calibration` | `live_calibration_status` |
 | **Settings** | |
 | `GET /api/settings` · `PUT /api/settings/{name}` | `read_settings` / `save_setting` |
@@ -97,6 +127,7 @@ File paths are checked: plain file names only, no `..`.
 | `invalid_message`, `validation_failed` | 400 |
 | `not_found` | 404 |
 | `in_use`, `invalid_state`, `setting_not_set` | 409 |
+| (web only) `auth_required` | 401 |
 | `unavailable` | 503 |
 | `processing_failed` | 422 |
 | `timeout` | 504 |
@@ -126,9 +157,9 @@ programs/web_server/static/
     └── views/
         ├── session.js  # current session: setup, live view, live score, shots, review, recovery dialog
         ├── history.js  # saved sessions: list, filter, detail with target plot and target image, delete
-        ├── shooters.js # shooters: create, rename, delete
-        ├── devices.js  # devices with description and image upload
-        ├── targets.js  # target types: list, target type editor, copy of locked types
+        ├── shooters.js # shooters: create, rename, retire, delete
+        ├── devices.js  # devices with description, image upload, retire
+        ├── targets.js  # target types: list, target type editor, copy of locked types, retire
         ├── camera.js   # camera settings menu
         ├── statistics.js # statistics over many sessions (own page, see below)
         ├── data.js     # export (format, "include images" for CSV/JSON, list, download, delete) and import (.json/.zip)
@@ -140,9 +171,9 @@ programs/web_server/static/
 | State | View |
 |---|---|
 | idle | "New session" with the choice of input mode: camera, manual, photo |
-| setup | Form (shooter from a list, with "new shooter" inline; device, distance, target type, single-handed, supported). Camera: live view as soon as device and target type are chosen, with calibration status; if the paper isn't found: "Calibrate manually" (click the 4 paper corners on the raw image). Photo: upload field; if the paper isn't found, the corner editor opens on the photo. |
-| running / paused | Camera: live view (transformed paper; old holes gray, session shots highlighted and numbered). Manual: SVG target, a click adds a shot. Always: shot list, **live score and grouping score** (marked "updating…" while `analysis_outdated`), running time, pause/resume/stop |
-| review | SVG target with all shots (drag to move, click to add, delete); input mode `photo`: on top of the transformed photo. Shot scores, score, grouping score and shift, all updated live. Shots with confidence < 0.5 are highlighted. Save / Cancel. Note: "After saving, the session can't be changed." |
+| setup | Form (shooter from a list, with "new shooter" inline; device, distance, target type, single-handed, supported; retired entries aren't offered). Camera: live view as soon as device and target type are chosen, with calibration status; if the paper isn't found: "Calibrate manually" (click the 4 paper corners on the raw image). Photo: upload field; if the paper isn't found, the corner editor opens on the photo. |
+| running / paused | Camera: live view (transformed paper; old holes gray, session shots highlighted and numbered per paper). Manual: SVG target, a click adds a shot. Button "New paper" (camera, manual). Notes field. Always: shot list, **live score and grouping score** (marked "updating…" while `analysis_outdated`), running time, pause/resume/stop |
+| review | SVG target with all shots (drag to move, click to add, delete), labelled per paper; input mode `photo`: on top of the transformed photo of the selected paper, and "Add photo" for another paper. Notes field. Shot scores, score, grouping score and shift, all updated live. Shots with confidence < 0.5 are highlighted. Save / Cancel. Note: "After saving, the session can't be changed." |
 | recovered | Dialog: "Unsaved session from … with n shots: Save / Discard" |
 
 ### Target type editor
@@ -180,6 +211,7 @@ Own page `#/statistics` in the navigation, separate from the session history.
 - Resolution and frame rate: choices from the formats of the selected camera.
 - Controls: built from `camera_list_controls`. Integer controls as sliders with min/max/step and a "default" button, booleans as switches, menus as drop-downs; inactive controls are greyed out. Every change is sent immediately (`camera_set_control`, rate-limited to 5 per second while dragging) and the raw image next to the controls shows the effect. Network cameras show "No controls available".
 - Changes of source, resolution and frame rate are saved as settings; the camera reopens.
+- **Lens calibration** (USB cameras): shows the status (calibrated, RMS error, applies to the current resolution). "Calibrate lens" offers the checkerboard to print (`/static/calibration/checkerboard_9x6.pdf`), then shows the raw feed with a "Capture view" button and the number of views found (at least 10; hint to cover the image corners and use different angles). "Finish" shows the RMS error with a rating. "Delete calibration" removes it. Not possible while a camera session is in setup or running.
 
 ### Coordinate conversion in the UI
 - SVG target: `viewBox` in paper millimeters (`0 0 paper_width_mm paper_height_mm`), so a click converts directly to paper mm, then to ring-center coordinates (`x = px - center_x_mm`, `y = center_y_mm - py`) and to polar with the formulas in [interfaces.md](../interfaces.md#shot).

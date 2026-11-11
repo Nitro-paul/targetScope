@@ -13,18 +13,19 @@ All interfaces are language-neutral: messages are JSON defined by JSON Schema fi
 - **Recording shooting sessions**
   - live with a camera: the camera image is transformed to show only the target paper; all holes are detected; holes that were already there are shown but not counted; new shots are highlighted live,
   - manually by clicking on the target in the web UI,
-  - from an uploaded photo of the shot target.
+  - from uploaded photos of the shot target.
+  - The target paper can be changed during a session (e.g. one card per shot); every paper's image is stored.
 - **Live scoring:** score and grouping score are shown while shooting.
-- **Storing shooting sessions as records:** once saved, a session can't be changed (it can be deleted). A session needs at least one shot. A transformed image of the target paper is stored with it.
+- **Storing shooting sessions as records:** once saved, a session can't be changed (it can be deleted). A session needs at least one shot and can carry notes. A transformed image of the target paper is stored with it.
 - **Analyzing shooting sessions:** ring score per shot (edge rule with the bullet diameter), session score, grouping score.
 - **Statistics over many sessions** on their own page of the web UI: summaries, comparisons (by shooter, device, distance, …), trends over time and shot distribution, with many filters.
-- **Shooters** managed in their own list, so names are consistent across all sessions.
+- **Shooters** managed in their own list, so names are consistent across all sessions. Shooters, devices and target types that are no longer used can be retired (hidden in the setup, kept in the history).
 - **Matching a weapon (device) to a session,** including a description, a device photo and a lifetime shot count that never decreases.
 - **Target types**, always created in the web UI from a photo of the target: paper size, ring center and rings are proposed by image recognition and adjusted with an overlay.
-- **Camera settings** in their own web UI menu, with all controls the camera offers.
+- **Camera settings** in their own web UI menu, with all controls the camera offers and an optional lens calibration with a printed checkerboard.
 - **Settings** with defaults that can be restored; optional settings (e.g. the export folder) are asked for when they're first needed.
 - **Exporting** sessions as CSV, JSON or PNG target plot; CSV and JSON optionally as a ZIP together with the session and device images. **Importing** JSON exports, including the images from a ZIP.
-- Locally hosted **web UI** for managing, viewing, analyzing, recording and the live feed, usable from phones and tablets in the local network.
+- Locally hosted **web UI** (English) for managing, viewing, analyzing, recording and the live feed, usable from phones and tablets in the local network. Destructive actions can optionally be protected with an admin password.
 
 ## Technology
 | Area | Choice |

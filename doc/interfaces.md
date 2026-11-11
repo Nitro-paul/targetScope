@@ -54,7 +54,7 @@ Streams are capped with `XADD ... MAXLEN ~ <n>`: 10 000 entries for requests and
 | Event stream | Listeners | How |
 |---|---|---|
 | `database_handler:events` | every program with a settings cache (see [shared_libraries.md](shared_libraries.md#settings-cache)), `session_manager`, `web_server` | plain read |
-| `camera_reader:events` | `web_server` | plain read |
+| `camera_reader:events` | `image_processor` (camera identity for the lens calibration), `web_server` | plain read |
 | `image_processor:events` | `session_manager` | consumer group |
 | | `web_server` | plain read |
 | `session_manager:events` | `web_server` | plain read |
@@ -90,7 +90,7 @@ Optional fields may be missing or `null`; both mean "not set".
 }
 ```
 - `type`: name of the request, e.g. `create_session`
-- `version`: interface version, increased when the payload of that request changes incompatibly
+- `version`: interface version, increased when the payload of that request changes incompatibly. All programs are always built and released together from one repository, so mixed versions don't occur in a running system; `version` protects against leftover messages in Redis after an update (they're answered with `invalid_message`)
 - `request_id`: UUID v4 chosen by the sender; copied into the response so the sender can match them. It is also the idempotency key (see below)
 - `reply_to`: stream for the response; optional, no response is sent if it is missing
 - `payload`: request-specific content (below)
@@ -132,8 +132,8 @@ The sender waits for a response for at most the time below. If no response arriv
 | Requests | Timeout |
 |---|---|
 | all not listed below | 5 s |
-| `session_update_setup`, `session_calibrate`, `session_start`, `session_pause`, `session_resume`, `session_stop`, `session_delete_shot`, `session_save`, `session_cancel` | 30 s |
-| `detect_shots_in_photo`, `find_paper`, `prepare_target_photo` | 60 s |
+| `session_update_setup`, `session_calibrate`, `session_start`, `session_new_paper`, `session_pause`, `session_resume`, `session_stop`, `session_delete_shot`, `session_save`, `session_cancel` | 30 s |
+| `detect_shots_in_photo`, `find_paper`, `prepare_target_photo`, `lens_calibration_finish` | 60 s |
 | `session_upload_photo`, `compute_statistics` | 90 s |
 | `export_sessions`, `import_file`, `change_image_dir`, `reset_settings` | 300 s |
 
@@ -179,7 +179,7 @@ Files that pass between programs (uploads, captured and transformed images, extr
 |---|---|---|
 | `upload_<uuid>.<jpg\|png\|json\|zip>` | `web_server` | Uploaded file |
 | `raw_<uuid>.jpg` | `image_processor` (`capture_raw_image`) | Unchanged camera frame |
-| `target_<uuid>.jpg` | `image_processor` (`capture_target_image`) | Transformed paper from the camera, to be stored with a session |
+| `target_<uuid>.jpg` | `image_processor` (`capture_target_image`, `live_new_paper`, `paper_replaced`) | Transformed paper from the camera, to be stored with a session |
 | `photo_<uuid>.jpg` | `image_processor` (`detect_shots_in_photo`) | Transformed paper from a photo, to be stored with a session |
 | `paper_<uuid>.jpg` | `image_processor` (`prepare_target_photo`) | Transformed paper for the target type editor |
 | `import_<uuid>.<jpg\|png>` | `importer` | Image extracted from an import ZIP |
@@ -206,23 +206,35 @@ A saved session is a **record**: once saved, it is never changed. It can only be
 | `supported` | bool | |
 | `shot_count` | integer | Number of shots, at least 1; must equal the length of `shots` |
 | `duration_s` | integer or null | Running time without pauses; `null` for photo sessions |
-| `image_path` | string or null | Target image (transformed paper), e.g. `sessions/<uuid>.jpg`; set by the database handler |
-| `shots` | list of Shot | In shot order |
+| `notes` | string or null | Free text, at most 10 000 characters |
+| `paper_count` | integer | Number of target papers used, at least 1 |
+| `images` | list of `{ "paper_no": integer, "image_path": string }` | Target image (transformed paper) per paper, e.g. `sessions/<uuid>_2.jpg`; papers without image are missing; set by the database handler |
+| `shots` | list of SessionShot | In shot order |
 
 ### Shot
+A position on the target, in polar coordinates around the ring center.
 | Field | Type | Notes |
 |---|---|---|
 | `angle_turns` | float | Angle in turns, `0 <= angle_turns < 1`, 0 at the top, clockwise (0.25 = right) |
 | `radius_mm` | float | Distance from the ring center in millimeters, `>= 0` |
 
-Positions are converted to Cartesian coordinates (millimeters, origin at the ring center, x to the right, y up) with `x = radius_mm · sin(2π · angle_turns)` and `y = radius_mm · cos(2π · angle_turns)`. The order of the shots in a list is the shot order; the database stores it as `shots.shot_no` (1, 2, …).
+Positions are converted to Cartesian coordinates (millimeters, origin at the ring center, x to the right, y up) with `x = radius_mm · sin(2π · angle_turns)` and `y = radius_mm · cos(2π · angle_turns)`.
+
+### SessionShot
+A shot of a saved session: all Shot fields plus
+| Field | Type | Notes |
+|---|---|---|
+| `paper_no` | integer | Target paper the shot is on, `1 ..= paper_count` |
+
+The order of the shots in a list is the shot order; the database stores it as `shots.shot_no` (1, 2, …). Shots of all papers share the same ring-center coordinates, so scores and grouping are calculated over all shots of the session.
 
 ### Shooter
 | Field | Type | Notes |
 |---|---|---|
 | `id` | integer | Set by the database handler |
 | `uuid` | string (UUID) | Permanent identity; set by the database handler |
-| `name` | string | Unique, required; leading and trailing spaces are removed |
+| `name` | string | Unique (ignoring upper/lower case), required; leading and trailing spaces are removed |
+| `retired` | bool | Hidden in the session setup; still shown in history, statistics and exports |
 
 A shooter can be renamed at any time (e.g. to fix a typo); saved sessions reference the shooter by id, so they show the new name.
 
@@ -239,6 +251,7 @@ A shooter can be renamed at any time (e.g. to fix a typo); saved sessions refere
 | `image_path` | string or null | Device image, e.g. `devices/3_1794393600.jpg`; set by the database handler, read-only |
 | `shot_count` | integer | Lifetime total, maintained by the database handler, read-only, never decreases |
 | `locked` | bool | Read-only: `true` if a saved session uses the device (then `bullet_diameter_mm` can't change) |
+| `retired` | bool | Hidden in the session setup; still shown in history, statistics and exports |
 
 ### TargetType
 A target type describes the paper target and its scoring rings. All positions are in millimeters on the paper; the paper origin is its top-left corner, x to the right, y down.
@@ -258,7 +271,8 @@ A target type describes the paper target and its scoring rings. All positions ar
 | `outer_radius_mm` | float | Radius of the outermost ring |
 | `outer_score` | integer | Score of the outermost ring, typically 1 |
 | `rings` | list of Ring | Read-only, generated from the anchors (see below) |
-| `locked` | bool | Read-only: `true` if a saved session uses the type; then only `name` can change |
+| `locked` | bool | Read-only: `true` if a saved session uses the type; then only `name` and `retired` can change |
+| `retired` | bool | Hidden in the session setup; still shown in history, statistics and exports |
 
 Validation: `inner_white_score > black_score > outer_score >= 1`; `0 < inner_white_radius_mm < black_radius_mm < outer_radius_mm`; the outermost ring lies completely on the paper.
 
@@ -332,11 +346,13 @@ Snapshot of the session in `session_manager` that is being recorded and not yet 
 | `recovered_from` | string or null | In state `recovered`: the state before the restart |
 | `setup` | SessionSetup | |
 | `shots` | list of CurrentShot | In shot order |
+| `paper_no` | integer | Current target paper, starting at 1 |
+| `paper_images` | list of `{ "paper_no": integer, "staged_file": string }` | Transformed images of papers already finished (camera: taken at the paper change; photo: one per uploaded photo) |
+| `notes` | string or null | |
 | `analysis` | AnalysisResult or null | Updated live after every shot change |
 | `analysis_outdated` | bool | `true` while `analysis` doesn't match the current shots (analysis running, or the analyzer didn't answer) |
 | `started_at` | integer or null | Unix timestamp in seconds of the first start |
 | `duration_s` | integer | Running time without pauses |
-| `photo_staged_file` | string or null | Transformed photo in the staging folder (input mode `photo`) |
 | `calibration` | CalibrationStatus or null | Input mode `camera`: current calibration |
 
 ### SessionSetup
@@ -358,6 +374,9 @@ Snapshot of the session in `session_manager` that is being recorded and not yet 
 | `origin` | string | How this shot was entered: `camera`, `manual` or `photo` (a shot added by hand in review has origin `manual` in every input mode) |
 | `confidence` | float or null | Detection confidence (0–1) for `camera` and `photo` shots |
 | `hole_id` | integer or null | Origin `camera`: id of the hole in `image_processor` |
+| `paper_no` | integer | Target paper the shot is on |
+
+In the UI, shots are labelled per paper (`<paper_no>.<n>`, e.g. `2.3` = third shot on paper 2) as soon as a session has more than one paper; the live view numbers the shots of the current paper the same way.
 
 ### CalibrationStatus
 | Field | Type | Notes |
@@ -399,12 +418,12 @@ There is no request to change a saved session.
 #### create_session
 Saves a new session record together with its shots and, optionally, its target image.
 
-Payload: all Session fields except `id`, `uuid`, `saved_at` and `image_path`, plus:
-- `staged_file`: optional, the transformed target image
+Payload: all Session fields except `id`, `uuid`, `saved_at` and `images`, plus:
+- `images`: list of `{ "paper_no": integer, "staged_file": string }`, the transformed target image per paper (may be empty)
 
-Validation: at least one shot; `shot_count` must equal the length of `shots`; `device_id`, `target_type_id` and (if given) `shooter_id` must reference existing records; every Shot must be within its ranges; `distance_m` and `duration_s` are `>= 0` if given.
+Validation: at least one shot; `shot_count` must equal the length of `shots`; every `paper_no` (of shots and images) is within `1 ..= paper_count`, at most one image per paper; `notes` at most 10 000 characters; `device_id`, `target_type_id` and (if given) `shooter_id` must reference existing records; every Shot must be within its ranges; `distance_m` and `duration_s` are `>= 0` if given.
 
-Response `create_session_response`: `{ "id": <new session id>, "uuid": <uuid>, "image_path": <string or null> }`
+Response `create_session_response`: `{ "id": <new session id>, "uuid": <uuid>, "images": [ { "paper_no", "image_path" }, ... ] }`
 
 #### read_sessions
 Returns all sessions that match a filter, each with its shots.
@@ -416,7 +435,7 @@ Payload:
 Response `read_sessions_response`: `{ "sessions": [Session, ...] }`, in the order given by `order_by`, otherwise by `id`.
 
 #### delete_session
-Deletes a session record completely: the session, its shots and its target image. `devices.shot_count` is not reduced.
+Deletes a session record completely: the session, its shots and its target images. `devices.shot_count` is not reduced.
 
 Payload: `{ "id": <session id> }`
 
@@ -514,7 +533,7 @@ Payload: Device with `uuid` and `shot_count`; optional `staged_file` (device ima
 A created device takes `shot_count` from the file and gets the image, if given.
 
 #### import_session
-Payload: Session with `uuid` and `saved_at` from the file, `shooter_id`, `device_id` and `target_type_id` already mapped to local ids; optional `staged_file` (target image).
+Payload: Session with `uuid` and `saved_at` from the file, `shooter_id`, `device_id` and `target_type_id` already mapped to local ids; `images` as in `create_session`.
 
 Importing a session never changes `devices.shot_count`.
 
@@ -572,9 +591,9 @@ Payload: `{}`
 
 Response `camera_status_response`:
 ```json
-{ "state": "connected", "camera_source": "v4l2", "device": "/dev/video0", "width_px": 1920, "height_px": 1080, "fps": 30.0, "frames_published": 123456 }
+{ "state": "connected", "camera_source": "v4l2", "device": "/dev/video0", "camera_key": "usb-0000:00:14.0-2", "width_px": 1920, "height_px": 1080, "fps": 30.0, "frames_published": 123456 }
 ```
-`state` is `connected`, `disconnected` (configured but not reachable; retrying) or `disabled` (setting `camera_source` is `none`).
+`state` is `connected`, `disconnected` (configured but not reachable; retrying) or `disabled` (setting `camera_source` is `none`). `camera_key` identifies the camera for stored per-camera data (control values, lens calibration): the V4L2 `bus_info` for USB cameras (stable when the device number changes), the RTSP URL for network cameras.
 
 #### camera_list_devices
 Lists the USB cameras and the formats they support, for the camera settings menu.
@@ -604,7 +623,7 @@ Response `camera_set_control_response`: `{ "controls": [CameraControl, ...] }`. 
 ### Events (`camera_reader:events`)
 
 #### camera_state_changed
-Payload: `{ "state": "connected" | "disconnected" | "disabled", "message": <string> }`
+Payload: `{ "state": "connected" | "disconnected" | "disabled", "message": <string>, "camera_key": <string or null>, "width_px": <integer or null>, "height_px": <integer or null> }`
 
 ## image_processor
 Stream `image_processor:requests`. Implemented in C++. Design: [programs/image_processor.md](programs/image_processor.md).
@@ -643,6 +662,13 @@ Payload: `{ "hole_id": integer }`
 
 Response `live_uncount_hole_response`: `{}`. Unknown ids are ignored.
 
+#### live_new_paper
+The user has put up a new target paper. Saves the newest good frame of the old paper as transformed image, forgets all holes, and searches the paper again; holes already on the new paper are shown but not counted. Shot numbering in the live view starts again at 1.
+
+Payload: `{}`
+
+Response `live_new_paper_response`: `{ "previous_paper_staged_file": "target_<uuid>.jpg" or null }` (`null` if the old paper was never calibrated).
+
 #### live_stop
 Ends live mode.
 
@@ -655,6 +681,18 @@ Payload: `{}`
 
 Response `live_calibration_status_response`: CalibrationStatus (`not_calibrated` with message `live mode not active` outside live mode)
 
+### Lens calibration
+Corrects the lens distortion of a camera (straight lines that look bent). Optional; stored per camera in the setting `lens_calibrations` and applied to all camera frames of that camera at the same resolution. Only allowed while live mode isn't active (`invalid_state`). Details: [programs/image_processor.md](programs/image_processor.md#lens-calibration).
+
+| Request | Payload | Response |
+|---|---|---|
+| `lens_calibration_start` | `{}` | `{ "views": 0 }`; starts collecting views of the printed checkerboard (9 × 6 inner corners) |
+| `lens_calibration_capture` | `{}` | `{ "found": bool, "views": integer }`; looks for the checkerboard in the newest frame and keeps the view if found |
+| `lens_calibration_finish` | `{}` | `{ "rms_px": float, "views": integer }`; computes and stores the calibration. `validation_failed` with fewer than 10 views |
+| `lens_calibration_cancel` | `{}` | `{}`; discards the collected views |
+| `lens_calibration_delete` | `{}` | `{}`; removes the stored calibration of the current camera |
+| `lens_calibration_status` | `{}` | `{ "camera_key": string or null, "calibrated": bool, "applied": bool, "rms_px": float or null, "width_px": integer or null, "height_px": integer or null, "collecting_views": integer or null }`; `applied` is `false` if the camera now runs at another resolution than the calibration |
+
 ### Capture mode
 
 #### capture_target_image
@@ -665,11 +703,11 @@ Payload: `{}`
 Response `capture_target_image_response`: `{ "staged_file": "target_<uuid>.jpg" }`. Error `unavailable` if live mode isn't calibrated.
 
 #### capture_raw_image
-Saves the newest camera frame unchanged (used to take a picture for a new target type). Works with and without live mode.
+Saves the newest camera frame, not transformed (used to take a picture for a new target type). Works with and without live mode. If the camera has an applied lens calibration, the frame is corrected.
 
 Payload: `{}`
 
-Response `capture_raw_image_response`: `{ "staged_file": "raw_<uuid>.jpg" }`. Error `unavailable` if there are no frames.
+Response `capture_raw_image_response`: `{ "staged_file": "raw_<uuid>.jpg", "lens_corrected": bool }`. Error `unavailable` if there are no frames.
 
 #### find_paper
 Finds the corners of the target paper in a photo.
@@ -703,6 +741,11 @@ Response `detect_shots_in_photo_response`: `{ "shots": [ { "angle_turns", "radiu
 #### calibration_changed
 Payload: CalibrationStatus
 
+#### paper_replaced
+Sent in live mode when the paper was taken away and a paper without the counted holes was put up (detected automatically after the calibration was `lost` and is found again). Does the same as `live_new_paper`.
+
+Payload: `{ "previous_paper_staged_file": "target_<uuid>.jpg" or null }`
+
 #### shot_detected
 Sent while counting is on, once per new hole.
 
@@ -722,17 +765,19 @@ Every successful response has the payload `{ "session": CurrentSession }`, the s
 | `session_update_setup` | SessionSetup fields except `input_mode`, all optional | setup | setup updated; input mode `camera`: live mode (re)started |
 | `session_calibrate` | `{ "corners": Corners }` | setup, paused (input mode `camera`) | live mode calibrated from clicked corners |
 | `session_start` | `{}` | setup (input mode `camera` or `manual`) | → running |
-| `session_upload_photo` | `{ "staged_file": <file name>, "corners": Corners (optional) }` | setup (input mode `photo`) | photo transformed, shots detected, → review |
+| `session_upload_photo` | `{ "staged_file": <file name>, "corners": Corners (optional) }` | setup, review (input mode `photo`) | photo transformed, shots detected and added as a new paper; from setup → review |
 | `session_pause` | `{}` | running | → paused |
 | `session_resume` | `{}` | paused | → running |
 | `session_add_shot` | Shot | running (input mode `manual`), review | shot added |
 | `session_update_shot` | `{ "index": integer, "angle_turns": float, "radius_mm": float }` | running (input mode `manual`), review | shot changed |
 | `session_delete_shot` | `{ "index": integer }` | running, paused, review | shot removed |
+| `session_new_paper` | `{}` | running, paused (input mode `camera` or `manual`) | next paper; camera: `live_new_paper` |
+| `session_set_notes` | `{ "notes": string or null }` | setup, running, paused, review, recovered | notes changed |
 | `session_stop` | `{}` | running, paused | → review |
 | `session_save` | `{}` | review, recovered; at least one shot | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
 | `session_cancel` | `{}` | setup, running, paused, review, recovered | discarded, → idle |
 
-`index` counts from 0 in the `shots` list. Shot changes are only possible before saving. A saved session can't be changed.
+`index` counts from 0 in the `shots` list. `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
 
 ### Events (`session_manager:events`)
 

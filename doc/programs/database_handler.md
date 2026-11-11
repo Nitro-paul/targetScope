@@ -123,22 +123,22 @@ impl Database {
 // a Transaction derefs to it), so the DbWorker controls the transaction.
 
 pub mod sessions {
-    /// Inserts session (uuid created by the caller, saved_at = now, image_path already known)
-    /// and shots, adds shot_count to the device. The row is never updated afterwards.
-    pub fn create(c: &Connection, uuid: Uuid, s: &NewSession, image_path: Option<&str>) -> Result<i64, HandlerError>;
+    /// Inserts session (uuid created by the caller, saved_at = now), shots and session_images
+    /// (image paths already known), adds shot_count to the device. Rows are never updated afterwards.
+    pub fn create(c: &Connection, uuid: Uuid, s: &NewSession, images: &[(u32, String)]) -> Result<i64, HandlerError>;
     /// Inserts an imported session with its uuid and saved_at; does not touch devices.shot_count.
     /// Returns (id, created); created = false if the uuid exists.
-    pub fn import(c: &Connection, s: &Session, image_path: Option<&str>) -> Result<(i64, bool), HandlerError>;
+    pub fn import(c: &Connection, s: &Session, images: &[(u32, String)]) -> Result<(i64, bool), HandlerError>;
     pub fn exists(c: &Connection, uuid: Uuid) -> Result<Option<i64>, HandlerError>;
     pub fn find(c: &Connection, f: &Filter, include_shots: bool) -> Result<Vec<Session>, HandlerError>;
-    /// Returns the deleted session's image_path, so the file can be removed after commit.
-    pub fn delete(c: &Connection, id: i64) -> Result<Option<String>, HandlerError>;
+    /// Returns the deleted session's image paths, so the files can be removed after commit.
+    pub fn delete(c: &Connection, id: i64) -> Result<Vec<String>, HandlerError>;
 }
 
 pub mod shooters {
-    /// Insert (new uuid) or rename; the name is trimmed and must be unique.
+    /// Insert (new uuid) or update (name, retired); the name is trimmed and must be unique ignoring case.
     pub fn save(c: &Connection, s: &Shooter) -> Result<i64, HandlerError>;
-    /// Uses an existing shooter with the same uuid or, failing that, the same name; returns (id, created).
+    /// Uses an existing shooter with the same uuid or, failing that, the same name (ignoring case); returns (id, created).
     pub fn import(c: &Connection, s: &Shooter) -> Result<(i64, bool), HandlerError>;
     pub fn find(c: &Connection, f: &Filter) -> Result<Vec<Shooter>, HandlerError>;
     /// Fails with InUse if a session references the shooter.
@@ -259,8 +259,8 @@ For each request:
 ### Image handling per request
 | Request | Image file action |
 |---|---|
-| `create_session` / `import_session` with `staged_file` | Moves it to `sessions/<uuid>.<ext>`. The uuid is known before the insert, so `image_path` is part of the insert and the record is never updated. `import_session` for an existing uuid leaves the file in the staging folder for the importer to delete |
-| `delete_session` | Deletes `sessions/<uuid>.<ext>` after commit |
+| `create_session` / `import_session` with `images` | Moves each to `sessions/<uuid>_<paper_no>.<ext>`. The uuid is known before the insert, so the image paths are part of the insert and the record is never updated. `import_session` for an existing uuid leaves the files in the staging folder for the importer to delete |
+| `delete_session` | Deletes all `sessions/<uuid>_<paper_no>.<ext>` of the session after commit |
 | `import_device` with `staged_file` | Only if the device is created: moves it to `devices/<id>_<unix seconds>.<ext>` and sets `image_path`; otherwise the file is left in the staging folder for the importer to delete |
 | `set_device_image` | Moves it to `devices/<id>_<unix seconds>.<ext>`; sets `image_path`; deletes the previous image after commit |
 | `delete_device_image` | Sets `image_path = NULL`; deletes the file after commit |
@@ -268,12 +268,12 @@ For each request:
 | `change_image_dir` / `reset_settings` with `move_images` | Moves all images to the new folder before the setting is saved (`ImageStore::move_all`). Other requests wait meanwhile, because the DbWorker handles one command at a time |
 
 ### Validation rules
-- `create_session`: at least one shot; `shot_count == shots.len()`; `device_id`, `target_type_id` and (if given) `shooter_id` exist; for every shot `0 <= angle_turns < 1` and `radius_mm >= 0`; `distance_m` and `duration_s` are `>= 0` if given; `staged_file` passes `check_staged`.
+- `create_session`: at least one shot; `shot_count == shots.len()`; `paper_count >= 1`; every `paper_no` of shots and images in `1 ..= paper_count`, at most one image per paper; `notes` at most 10 000 characters; every image passes `check_staged`; `device_id`, `target_type_id` and (if given) `shooter_id` exist; for every shot `0 <= angle_turns < 1` and `radius_mm >= 0`; `distance_m` and `duration_s` are `>= 0` if given.
 - `save_device`: `name` not empty; `bullet_diameter_mm > 0`; unchanged `bullet_diameter_mm` if the device is locked.
 - `import_*`: valid uuid; same rules as the corresponding save or create request; `import_session` additionally needs `saved_at`; `staged_file`, if given, passes `check_staged`.
 - `set_device_image`: device exists; `staged_file` passes `check_staged`.
 - `save_target_type`: `name` not empty and unique; all TargetType rules in [interfaces.md](../interfaces.md#targettype) (paper size, center and outermost ring on the paper, radii increasing, scores decreasing); only `name` changed if the type is locked.
-- `save_shooter`: name not empty after trimming, unique.
+- `save_shooter`: name not empty after trimming, unique ignoring case.
 - `save_setting`: `name` and `display_name` not empty; `active = false` only for optional settings; not `image_dir` (use `change_image_dir`); for `staging_dir`, `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir` (same `st_dev`).
 - `change_image_dir`: the new folder exists or can be created, is writable, and is on the same file system as `staging_dir`.
 - `reset_settings`: every name is a known setting.
@@ -299,6 +299,7 @@ The schema version is stored in `PRAGMA user_version`. `schema.rs` holds an orde
 - Query and filter tests against an in-memory database (`Connection::open_in_memory`) with all migrations applied.
 - Validation tests without a database.
 - Duplicate tests: sending each write request twice with the same `request_id` stores it once and returns the same response both times.
+- Paper tests: images and shots with `paper_no` outside `1 ..= paper_count` are rejected; all images of a session are moved and deleted together.
 - Record tests: every way of changing a saved session, a used target type's geometry or a used device's bullet diameter is rejected (by the handler with `in_use`, and directly in SQL by the triggers); `shot_count` stays after `delete_session`.
 - Import tests: same uuid twice creates one record; name conflicts get the suffix.
 - Image tests in a temporary folder: move in, move back on failed transaction, delete; rejection of `../` and non-image files.

@@ -26,7 +26,9 @@ TargetScope is always started by hand, by starting the launcher; there is no aut
 ```
 targetscope                       # = launcher with ~/.config/targetscope/launcher.toml
 targetscope --config <file>
+targetscope --reset-admin-password
 ```
+`--reset-admin-password` doesn't start anything: it connects to the Redis of the running TargetScope, sends `reset_settings` for `admin_password_hash` to `database_handler` (the web UI is open again), and exits. If TargetScope isn't running, it says so and exits.
 The launcher doesn't care which language a program is written in: every program is a binary that reads the bootstrap environment variables and answers `ping`.
 If the configuration file doesn't exist, the launcher writes the default one and uses it.
 

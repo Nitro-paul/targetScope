@@ -64,9 +64,12 @@ class RtspSource : public FrameSource {
 };
 ```
 
+## Camera identity
+Every camera has a `camera_key` under which per-camera data is stored (`camera_controls` here, `lens_calibrations` in image_processor): the V4L2 `bus_info` for USB cameras (stays the same when the device number `/dev/videoN` changes, as long as the camera is plugged into the same port), the RTSP URL for network cameras. It's part of `camera_status` and of every `camera_state_changed` event, together with the actual resolution.
+
 ## Camera controls
 - **List** (`camera_list_controls`): enumerate with `VIDIOC_QUERY_EXT_CTRL` and the flag `V4L2_CTRL_FLAG_NEXT_CTRL`; skip control classes and disabled controls; for menus, read the entries with `VIDIOC_QUERYMENU`; read current values with `VIDIOC_G_EXT_CTRLS`. `inactive` comes from `V4L2_CTRL_FLAG_INACTIVE`.
-- **Set** (`camera_set_control`): check range and step, `VIDIOC_S_EXT_CTRLS`, read all controls again (one control can change others), then store the value in the setting `camera_controls` under the camera's `bus_info` (`save_setting` through `database_handler`). Storing by `bus_info` keeps different cameras apart.
+- **Set** (`camera_set_control`): check range and step, `VIDIOC_S_EXT_CTRLS`, read all controls again (one control can change others), then store the value in the setting `camera_controls` under the camera's `camera_key` (`save_setting` through `database_handler`).
 - **Apply after open:** all stored values of this camera are set in the order auto modes first (e.g. auto exposure), then the rest, so dependent controls aren't rejected as inactive.
 - **Reset:** when `camera_controls` is reset (`data_changed` with the value `{}`), every control of the current camera is set to its `default` (auto modes first).
 - **Devices** (`camera_list_devices`): `/dev/video*` with `VIDIOC_QUERYCAP` (only devices with `V4L2_CAP_VIDEO_CAPTURE`), formats with `VIDIOC_ENUM_FMT`, `VIDIOC_ENUM_FRAMESIZES` and `VIDIOC_ENUM_FRAMEINTERVALS`.

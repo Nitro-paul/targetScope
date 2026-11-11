@@ -4,7 +4,8 @@ Program `session_manager` (Rust): the state machine of the current shooting sess
 
 ## Responsibilities
 - Holds the one current session and its state; rejects requests that aren't allowed in the current state (`invalid_state`).
-- Controls `image_processor`: live mode, counting on/off, manual calibration, uncounting holes, photo detection, target image capture.
+- Controls `image_processor`: live mode, counting on/off, manual calibration, uncounting holes, paper changes, photo detection, target image capture.
+- Keeps track of the target papers of the session and their images.
 - Adds shots from `shot_detected` events while running.
 - Has the shots scored by `analyzer` after every shot change, so score and grouping score are shown live.
 - Saves the finished session through `database_handler`. After saving, the session is a record and can't be changed.
@@ -19,11 +20,19 @@ Program `session_manager` (Rust): the state machine of the current shooting sess
 
 | Input mode | Shots come from | Target image stored with the session |
 |---|---|---|
-| `camera` | `shot_detected` events of the live mode | `capture_target_image` at saving |
+| `camera` | `shot_detected` events of the live mode | one per paper: taken at each paper change, and `capture_target_image` for the last paper at saving |
 | `manual` | clicks on the SVG target (`session_add_shot`) | none |
-| `photo` | `detect_shots_in_photo` on an uploaded photo | the transformed photo |
+| `photo` | `detect_shots_in_photo` on uploaded photos (each photo is one paper) | the transformed photos |
 
 In every input mode, shots can be added, moved and deleted by hand in review.
+
+## Target papers
+A session can use several target papers (e.g. air rifle: one shot per card; air pistol: 5 shots per card). `paper_no` starts at 1; every shot gets the current `paper_no`.
+- **camera:** `session_new_paper` (button "new paper") calls `live_new_paper`; a `paper_replaced` event (paper swap detected by `image_processor`) does the same. Both return the image of the finished paper, which is added to `paper_images`; then `paper_no` increases.
+- **manual:** `session_new_paper` only increases `paper_no`.
+- **photo:** every `session_upload_photo` adds the photo's shots as a new paper, with the transformed photo as its image.
+
+A paper without shots is allowed (e.g. a sighting card).
 
 ## State machine
 ```
@@ -48,21 +57,23 @@ In every input mode, shots can be added, moved and deleted by hand in review.
 |---|---|---|
 | `idle` | No session | `session_get`, `session_setup` |
 | `setup` | Choosing shooter, device, distance, target type; camera: live view and calibration | `session_update_setup`, `session_calibrate`, `session_start`, `session_upload_photo`, `session_cancel` |
-| `running` | Shots are collected and scored live; running time counts | `session_pause`, `session_stop`, `session_add_shot`/`session_update_shot` (manual), `session_delete_shot`, `session_cancel` |
-| `paused` | New holes aren't counted; running time stops | `session_resume`, `session_stop`, `session_delete_shot`, `session_calibrate`, `session_cancel` |
-| `review` | Shots can be corrected before saving | `session_add_shot`, `session_update_shot`, `session_delete_shot`, `session_save`, `session_cancel` |
+| `running` | Shots are collected and scored live; running time counts | `session_pause`, `session_stop`, `session_new_paper`, `session_add_shot`/`session_update_shot` (manual), `session_delete_shot`, `session_cancel` |
+| `paused` | New holes aren't counted; running time stops | `session_resume`, `session_stop`, `session_new_paper`, `session_delete_shot`, `session_calibrate`, `session_cancel` |
+| `review` | Shots can be corrected before saving | `session_add_shot`, `session_update_shot`, `session_delete_shot`, `session_upload_photo` (photo), `session_save`, `session_cancel` |
 | `recovered` | A session that wasn't saved before a restart | `session_save`, `session_cancel` |
 
-`session_get` is allowed in every state.
+`session_get` is allowed in every state, `session_set_notes` in every state except `idle`.
 
 ### Transitions and actions
 | Request | Guard | Actions |
 |---|---|---|
 | `session_setup` | | create empty session with the given input mode |
-| `session_update_setup` | values valid; `input_mode` not in the payload | update setup; read device and target type when they change; input mode `camera`: if device and target type are set and one of them changed, `live_start` with the target type and bullet diameter (the live view appears, the paper is searched automatically) |
+| `session_update_setup` | values valid; `input_mode` not in the payload; no retired shooter, device or target type | update setup; read device and target type when they change; input mode `camera`: if device and target type are set and one of them changed, `live_start` with the target type and bullet diameter (the live view appears, the paper is searched automatically) |
 | `session_calibrate` | input mode `camera`, live mode started | `live_calibrate` with the corners |
 | `session_start` | input mode `camera` or `manual`; device and target type set; camera: calibrated | `started_at = now`; camera: `live_set_counting(true)` |
-| `session_upload_photo` | input mode `photo`; device and target type set | `detect_shots_in_photo`; shots get origin `photo`; the transformed image becomes `photo_staged_file`; → review |
+| `session_upload_photo` | input mode `photo`; device and target type set | `detect_shots_in_photo`; the shots get origin `photo` and the next `paper_no`; the transformed image is added to `paper_images`; from setup → review |
+| `session_new_paper` | input mode `camera` or `manual` | camera: `live_new_paper`, add the returned image to `paper_images`; `paper_no + 1` |
+| `session_set_notes` | at most 10 000 characters | set `notes` |
 | `session_pause` | | add running time; camera: `live_set_counting(false)` (holes made during the pause are shown gray and not counted) |
 | `session_resume` | camera: calibrated | camera: `live_set_counting(true)` |
 | `session_stop` | | add running time; camera: `live_set_counting(false)`; → review |
@@ -76,7 +87,7 @@ After every change of the shots (detected, added, changed, deleted, or from a ph
 Device and target type are read from `database_handler` (`read_devices`, `read_target_types`) when they are set, and kept in the state, so the bullet diameter and anchors are at hand without further requests.
 
 ### shot_detected events
-Read from `image_processor:events` with consumer group `session_manager`.
+Read from `image_processor:events` with consumer group `session_manager` (as are `paper_replaced` events, handled like `session_new_paper` in states running and paused, ignored otherwise).
 - In state `running` with input mode `camera`: the shot is appended with origin `camera`, its confidence and its `hole_id`.
 - Otherwise (e.g. the event arrives just after a pause): the event is ignored, and `live_uncount_hole` is sent, so the live view doesn't highlight a hole that isn't a session shot.
 
@@ -103,11 +114,11 @@ Score and grouping score are shown while shooting:
 2. Read device and target type again (see [data_changed events](#data_changed-events)).
 3. Make sure `analysis` matches the current shots (analyze again if needed). If the analyzer doesn't answer: the request fails with `unavailable`; nothing is saved without a score.
 4. Target image (always the transformed paper, never the raw image):
-   - input mode `camera`: `capture_target_image` (if it fails, save without image and log a warning),
-   - input mode `photo`: the transformed `photo_staged_file`,
+   - all `paper_images` (earlier papers; for photo sessions all papers),
+   - input mode `camera`: additionally `capture_target_image` for the current paper (if it fails, the paper is saved without image and a warning is added).
    - input mode `manual`: none.
-5. Send `create_session` with `request_id = save_request_id`: setup values, shots, `shot_count`, `score` and `grouping_score` from the analysis, `duration_s` (running time; `null` for input mode `photo`), `staged_file`.
-6. If `create_session` fails with `not_found` because the staged image is gone (e.g. a recovered session older than `staging_max_age_hours`): send it again without image and add a warning to the response. The same `save_request_id` can be used, because `database_handler` only records successful requests.
+5. Send `create_session` with `request_id = save_request_id`: setup values, shots, `shot_count`, `score` and `grouping_score` from the analysis, `duration_s` (running time; `null` for input mode `photo`), `notes`, `paper_count` (= current `paper_no`), every shot's `paper_no`, `images`.
+6. If `create_session` fails with `not_found` because a staged image is gone (e.g. a recovered session older than `staging_max_age_hours`): send it again without the missing images and add a warning to the response. The same `save_request_id` can be used, because `database_handler` only records successful requests.
 7. On success: camera: `live_stop`; delete the state; send `session_saved` and `session_changed` (idle); respond with `session_id`. From now on the session is a record.
 8. On any other failure: stay in the current state and return the error. The user can retry or cancel.
 
@@ -166,4 +177,5 @@ impl SessionActor {
 - Recovery test: persist a running session, restart the actor, expect `recovered` with the same shots.
 - Duplicate tests: same request id twice, same `shot_detected` event twice.
 - Save retry test: crash after `create_session` was sent; restart; save again; expect one stored session.
-- Expired staged image: save succeeds without image, with a warning.
+- Expired staged image: save succeeds without that image, with a warning.
+- Paper changes: `session_new_paper` and `paper_replaced` both add the old paper's image and increase `paper_no`; the same `paper_replaced` event twice changes the paper once.

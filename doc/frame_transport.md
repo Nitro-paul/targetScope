@@ -60,7 +60,7 @@ typedef struct {
 ### Live frames
 In live mode, `image_processor` publishes the target paper, transformed so it is seen straight on and cropped exactly to the paper (`paper_width_mm` × `paper_height_mm` of the target type). The long side has `live_long_side_px` pixels (default 1200); `px_per_mm` is in the header. Drawn on it:
 - holes that were there before the session, or made while counting was off: thin gray circle,
-- counted holes (the session's shots): colored circle with the bullet diameter and its number, the position among the counted holes (holes uncounted with `live_uncount_hole` turn gray and the others are renumbered, so the numbers match the session's shot list); the newest shot is emphasized,
+- counted holes (the session's shots): colored circle with the bullet diameter and its number, the position among the counted holes of the current paper (holes uncounted with `live_uncount_hole` turn gray and the others are renumbered, so the numbers match the session's shot list, which labels shots per paper); the newest shot is emphasized,
 - candidates not yet confirmed: dashed circle,
 - the rings of the target type, thin, to check the calibration.
 

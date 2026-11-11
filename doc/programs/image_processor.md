@@ -9,6 +9,8 @@ C++ was chosen because OpenCV is a C++ library: its full API, documentation and 
 - **Capture mode:** transforms single images to the target paper without any drawing: target image of a session (`capture_target_image`), photos of shot targets (`detect_shots_in_photo`), and photos for new target types (`prepare_target_photo`).
 - Finds the paper automatically (`find_paper`, auto calibration), or uses the four corners the user clicked (`live_calibrate`).
 - Keeps the live view in line with the session: holes that `session_manager` doesn't count (`live_uncount_hole`) are drawn gray.
+- Handles target paper changes during a session (`live_new_paper`, or detected automatically: `paper_replaced`).
+- Lens calibration per camera with a printed checkerboard, and lens correction of all camera frames.
 - Proposes the parameters of a new target type from a photo.
 
 It doesn't score shots (analyzer) and doesn't decide which shots belong to a session (session_manager).
@@ -50,8 +52,11 @@ The processing thread always subscribes to `targetscope/frames/raw` and keeps th
 
 ```cpp
 struct ProcessorState {
-    cv::Mat newest_raw;                 // for capture_target_image / capture_raw_image
+    cv::Mat newest_raw;                 // newest camera frame (lens-corrected if a calibration applies)
     std::optional<LiveState> live;      // set between live_start and live_stop
+    CameraInfo camera;                  // camera_key and resolution, from camera_reader events / camera_status
+    std::optional<LensCalibration> lens;            // applied calibration of the current camera
+    std::optional<LensCalibrationSession> collecting; // between lens_calibration_start and _finish/_cancel
 };
 
 struct LiveState {
@@ -63,6 +68,8 @@ struct LiveState {
     std::vector<Candidate> candidates;  // not yet confirmed
     bool counting = false;
     int next_hole_id = 1;
+    cv::Mat last_good_raw;              // newest frame with the current paper fully visible, and
+    cv::Mat last_good_homography;       //   its homography: used for the image of a paper that is replaced
 };
 
 struct Calibration {
@@ -78,7 +85,7 @@ struct Hole {
     cv::Point2d paper_mm;
     bool counted;                       // true: session shot (highlighted), false: old/uncounted (gray)
     float confidence;
-};                                      // shot number in the live view = position among counted holes
+};                                      // shot number in the live view = position among counted holes of the current paper
 ```
 
 ## Finding the paper
@@ -114,6 +121,15 @@ For each new frame:
    The region of the hole is copied from the current frame into the reference, so it isn't detected again.
 6. Candidates not seen for 3 frames are dropped.
 
+**Last good frame:** whenever a frame is calibrated and the occlusion check passes, it's kept (with its homography) as `last_good_raw`. It's only warped when needed, for the image of a replaced paper.
+
+### Paper change
+A new paper starts in one of two ways:
+- **By request** (`live_new_paper`, the user pressed "new paper"): the last good frame of the old paper is warped at `capture_long_side_px` and saved as `target_<uuid>.jpg`.
+- **Automatically:** after the calibration was `lost` (the paper was taken away) and the paper is found again, the counted holes of the old paper are looked for at their paper positions. If none of them is visible, it's a new paper: the same image is saved and `paper_replaced` is sent. If they are visible, it's the same paper again and nothing changes.
+
+Then all holes are forgotten, the initial hole scan runs on the new paper (holes found are shown gray, not counted), and the live view numbering starts again at 1. Counting keeps its state.
+
 **Uncounting:** `live_uncount_hole` sets `counted = false` for the hole; it's drawn gray, and the remaining counted holes are numbered again.
 
 **Overlapping holes:** if a confirmed blob grows to more than 1.6× the area of a single hole, it's treated as two holes; the second center is placed at the far end of the blob from the first. Such holes get a confidence below 0.5, so the UI highlights them for checking in Review.
@@ -127,7 +143,7 @@ After each processed frame, the transformed color image is drawn as described in
 Transforms `newest_raw` with the live homography, at a resolution where the long side has `capture_long_side_px` pixels (default 2400). Nothing is drawn. Written as JPEG (quality 92) to the staging folder as `target_<uuid>.jpg`. This is the image stored with the session.
 
 ### capture_raw_image
-Writes `newest_raw` unchanged as JPEG to the staging folder (`raw_<uuid>.jpg`). Used to take a picture for a new target type.
+Writes `newest_raw` (not transformed, but lens-corrected if a calibration applies) as JPEG to the staging folder (`raw_<uuid>.jpg`). Used to take a picture for a new target type.
 
 ### Holes in a single image
 Used for photos and the initial hole scan; there is no reference image:
@@ -150,6 +166,20 @@ Used for photos and the initial hole scan; there is no reference image:
    Values that can't be found are `null`.
 3. The web UI shows the proposal as an overlay on the transformed photo; the user adjusts it (see [target type editor](web_server.md#target-type-editor)).
 
+## Lens calibration
+Cheap webcams bend straight lines (barrel distortion). The homography from the paper corners can't remove that, and near the paper edges the error can exceed the 1 mm goal. An optional lens calibration per camera corrects it.
+
+**Collecting** (camera settings menu of the web UI, live mode not active):
+1. `lens_calibration_start`. The user holds a printed checkerboard (9 × 6 inner corners; PDF in the web UI; the square size doesn't matter for the distortion) in front of the camera.
+2. For each view, `lens_calibration_capture`: `findChessboardCornersSB` on the newest raw frame (not corrected); if found, the corners are kept. The UI asks for at least 10 views, at different positions, distances and angles, covering the image corners too.
+3. `lens_calibration_finish`: `calibrateCamera` with all views → camera matrix and distortion coefficients (k1, k2, p1, p2, k3) and the RMS reprojection error. Stored in the setting `lens_calibrations` under the camera's `camera_key`, together with the resolution (`save_setting` through `database_handler`). The UI shows the RMS error; below 0.5 px is good, above 1 px suggests repeating.
+
+**Applying:** the current camera's `camera_key` and resolution come from `camera_status` at startup and from `camera_state_changed` events. If a calibration for that `camera_key` and resolution exists, `initUndistortRectifyMap` builds a correction map once:
+- every raw frame is corrected before anything else (`remap`), so finding the paper, hole detection, captures and the live view all work on corrected frames,
+- in live mode, the correction and the homography are combined into one remap table, so each frame is warped only once.
+
+A calibration for another resolution isn't applied (`lens_calibration_status.applied = false`); the UI suggests calibrating again. Photos (from other cameras, e.g. a phone) are never lens-corrected.
+
 ## Error handling
 | Situation | Behavior |
 |---|---|
@@ -159,7 +189,8 @@ Used for photos and the initial hole scan; there is no reference image:
 | Paper not found in a photo | `find_paper`: `corners = null`; `detect_shots_in_photo`: `processing_failed` |
 
 ## Testing
-- Unit tests: homography and coordinate conversions, corner ordering, ring generation.
+- Unit tests: homography and coordinate conversions, corner ordering, ring generation, combined lens + homography map against applying both one after the other.
+- Paper change: video with a paper swap → `paper_replaced` once, holes of the new paper not counted; taking the same paper off and back on → no paper change.
 - **Test set** of photos and short videos with known hole positions (marked by hand once). Goal: hit rate > 98 %, position error < 1 mm. It is built up in this order:
   1. target types: 10 m air pistol, 10 m air rifle, 25/50 m pistol, own targets;
   2. conditions: indoor range with artificial light; camera at an angle to the target (up to about 45°).

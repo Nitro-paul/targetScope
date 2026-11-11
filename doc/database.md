@@ -1,7 +1,7 @@
 # Database
 
 ## Concept
-All persistent values are stored in a single SQLite database file. It contains the tables `settings`, `sessions`, `shots`, `shooters`, `devices`, `target_types` and `processed_requests`, which are filled during setup or at runtime. Only the database handler ([programs/database_handler.md](programs/database_handler.md)) accesses the database directly; all other programs go through it using the messages in [interfaces.md](interfaces.md).
+All persistent values are stored in a single SQLite database file. It contains the tables `settings`, `sessions`, `shots`, `session_images`, `shooters`, `devices`, `target_types` and `processed_requests`, which are filled during setup or at runtime. Only the database handler ([programs/database_handler.md](programs/database_handler.md)) accesses the database directly; all other programs go through it using the messages in [interfaces.md](interfaces.md).
 
 Images (device photos and session target images) are stored as files in the image folder (setting `image_dir`); the database only holds their path relative to that folder (`image_path`). Only the database handler writes to the image folder; `web_server` (to serve images) and `exporter` (to put images into ZIP exports) only read it.
 
@@ -10,7 +10,7 @@ image_dir/
 ├── devices/
 │   └── <device id>_<unix seconds>.<jpg|png>    # timestamp changes on replace, so browsers don't show a cached old image
 └── sessions/
-    └── <session uuid>.<jpg|png>                 # transformed target paper at the time of saving
+    └── <session uuid>_<paper_no>.<jpg|png>      # transformed target paper, one per paper of the session
 ```
 
 SQLite specifics:
@@ -20,7 +20,7 @@ SQLite specifics:
 
 ## Records
 Saved sessions and their shots are **records**: they are never changed after saving. The database enforces this with triggers (see [schema](#schema-sql)):
-- `UPDATE` on `sessions` and `shots` is rejected. A session can only be deleted as a whole (with its shots).
+- `UPDATE` on `sessions`, `shots` and `session_images` is rejected. A session can only be deleted as a whole (with its shots and images).
 - Values that the scoring of a saved session depends on are locked as soon as a session uses them:
   - the geometry and scores of a target type (only its name stays editable),
   - the `bullet_diameter_mm` of a device.
@@ -35,6 +35,7 @@ Every session, shooter, device and target type has a `uuid`, its permanent ident
 - `sessions.device_id` → `devices.id`. A device that is used by a session cannot be deleted.
 - `sessions.target_type_id` → `target_types.id`. A target type that is used by a session cannot be deleted.
 - `shots.session_id` → `sessions.id`, `ON DELETE CASCADE`: deleting a session also deletes its shots.
+- `session_images.session_id` → `sessions.id`, `ON DELETE CASCADE`: deleting a session also deletes its image rows (the database handler deletes the files).
 
 ## Tables
 
@@ -67,7 +68,8 @@ Holds one record per shooting session. `device_id` links the session to the devi
 - `shooter_id`: the shooter, optional
 - `shot_count`: number of shots in the session, at least 1
 - `duration_s`: running time in seconds, without pauses; `NULL` for photo sessions
-- `image_path`: target image (transformed paper) taken when the session was saved, e.g. `sessions/<uuid>.jpg`; `NULL` if there is none
+- `notes`: free text, at most 10 000 characters
+- `paper_count`: number of target papers used in the session (a paper can be changed during a session), at least 1
 ```
 +-------------------------------+
 |           sessions            |
@@ -85,7 +87,8 @@ Holds one record per shooting session. `device_id` links the session to the devi
 |   supported: BOOLEAN          |
 |   shot_count: INTEGER         |
 |   duration_s: INTEGER         |
-|   image_path: TEXT            |
+|   notes: TEXT                 |
+|   paper_count: INTEGER        |
 +-------------------------------+
 ```
 
@@ -94,6 +97,7 @@ Stores every shot of every session, linked to its session by `session_id`. A sho
 - `angle_turns`: angle in turns (1 turn = full circle), starting at 0 at the top and increasing clockwise (0.25 = right); range `0 <= angle_turns < 1`
 - `radius_mm`: distance from the ring center in millimeters
 - `shot_no`: order of the shot in the session, starting at 1
+- `paper_no`: target paper the shot is on, `1 ..= sessions.paper_count`
 ```
 +-------------------------------+
 |             shots             |
@@ -101,15 +105,31 @@ Stores every shot of every session, linked to its session by `session_id`. A sho
 |   id: INTEGER (primary key)   |
 |   session_id: INTEGER (FK)    |
 |   shot_no: INTEGER            |
+|   paper_no: INTEGER           |
 |   angle_turns: REAL           |
 |   radius_mm: REAL             |
 +-------------------------------+
 ```
 
+### session_images
+Stores the target image of each paper of a session: the transformed paper (straight view, cropped to the paper, without drawing) at the time of the paper change or of saving. A paper can have no image (e.g. input mode `manual`).
+- `image_path`: e.g. `sessions/<uuid>_2.jpg`
+```
++-------------------------------+
+|        session_images         |
++-------------------------------+
+|   session_id: INTEGER (FK)    |
+|   paper_no: INTEGER           |
+|   image_path: TEXT            |
++-------------------------------+
+   primary key (session_id, paper_no)
+```
+
 ### shooters
 Stores the people who shoot. Sessions reference them by id, so renaming a shooter (e.g. to fix a typo) shows the new name in all sessions without changing any record.
 - `uuid`: permanent identity
-- `name`: unique; leading and trailing spaces are removed before saving
+- `name`: unique, ignoring upper/lower case (`Alex` and `alex` can't both exist); leading and trailing spaces are removed before saving
+- `retired`: hidden in the session setup, still shown in history, statistics and exports
 ```
 +-------------------------------+
 |           shooters            |
@@ -117,6 +137,7 @@ Stores the people who shoot. Sessions reference them by id, so renaming a shoote
 |   id: INTEGER (primary key)   |
 |   uuid: TEXT (unique)         |
 |   name: TEXT (unique)         |
+|   retired: BOOLEAN            |
 +-------------------------------+
 ```
 
@@ -129,6 +150,7 @@ Stores all devices (weapons) in use.
 - `image_path`: device image, e.g. `devices/3_1794393600.jpg`; `NULL` if there is none
 - `bullet_diameter_mm`: bullet diameter in millimeters, used for scoring (a shot scores a ring if its edge touches the ring) and hole detection; locked once a session uses the device
 - `shot_count`: lifetime total of shots fired with the device; the database handler adds the session's shots each time a session is saved; never decreases
+- `retired`: hidden in the session setup (e.g. a sold device), still shown in history, statistics and exports
 ```
 +-------------------------------+
 |            devices            |
@@ -142,6 +164,7 @@ Stores all devices (weapons) in use.
 |   image_path: TEXT            |
 |   bullet_diameter_mm: REAL    |
 |   shot_count: INTEGER         |
+|   retired: BOOLEAN            |
 +-------------------------------+
 ```
 
@@ -156,7 +179,7 @@ All positions are in millimeters on the paper, measured from its top-left corner
   - `black_radius_mm`, `black_score`: edge of the black aiming area and the score of the ring ending there
   - `outer_radius_mm`, `outer_score`: outermost ring (typically score 1)
 
-The scoring rings are not stored. They are generated from the anchors: one ring per score, spaced equally between two anchors (formula in [interfaces.md](interfaces.md#targettype)). Once a session uses a target type, all columns except `name` are locked.
+The scoring rings are not stored. They are generated from the anchors: one ring per score, spaced equally between two anchors (formula in [interfaces.md](interfaces.md#targettype)). Once a session uses a target type, all columns except `name` and `retired` are locked. `retired` hides the type in the session setup.
 ```
 +---------------------------------+
 |          target_types           |
@@ -174,6 +197,7 @@ The scoring rings are not stored. They are generated from the anchors: one ring 
 |   black_score: INTEGER          |
 |   outer_radius_mm: REAL         |
 |   outer_score: INTEGER          |
+|   retired: BOOLEAN              |
 +---------------------------------+
 ```
 
@@ -209,7 +233,8 @@ CREATE TABLE settings (
 CREATE TABLE shooters (
     id    INTEGER PRIMARY KEY,
     uuid  TEXT NOT NULL UNIQUE,
-    name  TEXT NOT NULL UNIQUE CHECK (name <> '' AND name = trim(name))
+    name     TEXT    NOT NULL UNIQUE COLLATE NOCASE CHECK (name <> '' AND name = trim(name)),
+    retired  INTEGER NOT NULL DEFAULT 0 CHECK (retired IN (0, 1))
 );
 
 CREATE TABLE devices (
@@ -221,7 +246,8 @@ CREATE TABLE devices (
     caliber             TEXT,
     image_path          TEXT,
     bullet_diameter_mm  REAL    NOT NULL CHECK (bullet_diameter_mm > 0),
-    shot_count          INTEGER NOT NULL DEFAULT 0 CHECK (shot_count >= 0)
+    shot_count          INTEGER NOT NULL DEFAULT 0 CHECK (shot_count >= 0),
+    retired             INTEGER NOT NULL DEFAULT 0 CHECK (retired IN (0, 1))
 );
 
 CREATE TABLE target_types (
@@ -238,6 +264,7 @@ CREATE TABLE target_types (
     black_score            INTEGER NOT NULL,
     outer_radius_mm        REAL    NOT NULL,
     outer_score            INTEGER NOT NULL CHECK (outer_score >= 1),
+    retired                INTEGER NOT NULL DEFAULT 0 CHECK (retired IN (0, 1)),
     CHECK (inner_white_radius_mm < black_radius_mm AND black_radius_mm < outer_radius_mm),
     CHECK (inner_white_score > black_score AND black_score > outer_score),
     CHECK (center_x_mm - outer_radius_mm >= 0 AND center_x_mm + outer_radius_mm <= paper_width_mm),
@@ -258,16 +285,25 @@ CREATE TABLE sessions (
     supported       INTEGER NOT NULL DEFAULT 0 CHECK (supported IN (0, 1)),
     shot_count      INTEGER NOT NULL CHECK (shot_count >= 1),
     duration_s      INTEGER CHECK (duration_s >= 0),
-    image_path      TEXT
+    notes           TEXT    CHECK (length(notes) <= 10000),
+    paper_count     INTEGER NOT NULL CHECK (paper_count >= 1)
 );
 
 CREATE TABLE shots (
     id          INTEGER PRIMARY KEY,
     session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
     shot_no     INTEGER NOT NULL CHECK (shot_no >= 1),
+    paper_no    INTEGER NOT NULL CHECK (paper_no >= 1),
     angle_turns REAL    NOT NULL CHECK (angle_turns >= 0 AND angle_turns < 1),
     radius_mm   REAL    NOT NULL CHECK (radius_mm >= 0),
     UNIQUE (session_id, shot_no)
+);
+
+CREATE TABLE session_images (
+    session_id  INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    paper_no    INTEGER NOT NULL CHECK (paper_no >= 1),
+    image_path  TEXT    NOT NULL,
+    PRIMARY KEY (session_id, paper_no)
 );
 
 CREATE TABLE processed_requests (
@@ -291,6 +327,9 @@ BEGIN SELECT RAISE(ABORT, 'record: sessions cannot be changed'); END;
 CREATE TRIGGER shots_are_records BEFORE UPDATE ON shots
 BEGIN SELECT RAISE(ABORT, 'record: shots cannot be changed'); END;
 
+CREATE TRIGGER session_images_are_records BEFORE UPDATE ON session_images
+BEGIN SELECT RAISE(ABORT, 'record: session images cannot be changed'); END;
+
 -- Values the scoring of saved sessions depends on are locked once used.
 CREATE TRIGGER target_types_locked_when_used
 BEFORE UPDATE OF paper_width_mm, paper_height_mm, center_x_mm, center_y_mm,
@@ -309,9 +348,11 @@ BEFORE UPDATE OF shot_count ON devices
 WHEN NEW.shot_count < OLD.shot_count
 BEGIN SELECT RAISE(ABORT, 'record: shot_count cannot decrease'); END;
 ```
+`paper_no` of shots and images not exceeding `paper_count` is checked by the database handler (SQLite `CHECK` can't refer to another table).
+
 The database handler checks these rules itself before writing and returns `in_use`; the triggers are the last line of defense against programming errors. Because `UPDATE OF` triggers fire whenever a column is in the `SET` list (even with an unchanged value), the handler only includes locked columns in an `UPDATE` when their value actually changes.
 
-A future migration that has to restructure `sessions` or `shots` (SQLite needs a table copy for many changes) drops the record triggers, copies the data unchanged, and creates the triggers again, all in one transaction.
+A future migration that has to restructure `sessions`, `shots` or `session_images` (SQLite needs a table copy for many changes) drops the record triggers, copies the data unchanged, and creates the triggers again, all in one transaction.
 
 ## Known settings
 The database handler inserts these settings with their default value and default `active` state on first start (`INSERT ... ON CONFLICT(name) DO NOTHING`), so user changes are kept. Known settings can be changed and reset (`reset_settings`), but not deleted. Paths may start with `~`, which is replaced by the user's home folder; `<data_dir>` is the data folder from the launcher configuration (`TARGETSCOPE_DATA_DIR`).
@@ -329,13 +370,15 @@ The database handler inserts these settings with their default value and default
 | `camera_width_px` | `1920` | no | camera_reader | Requested frame width |
 | `camera_height_px` | `1080` | no | camera_reader | Requested frame height |
 | `camera_fps` | `30` | no | camera_reader | Requested frame rate |
-| `camera_controls` | `{}` | no | camera_reader | Stored control values per camera, JSON: `{ "<bus_info>": { "<control id>": value } }`; written by camera_reader itself; after a reset to `{}`, camera_reader sets every control to the camera's own default |
+| `camera_controls` | `{}` | no | camera_reader | Stored control values per camera, JSON: `{ "<camera_key>": { "<control id>": value } }`; written by camera_reader itself; after a reset to `{}`, camera_reader sets every control to the camera's own default |
+| `lens_calibrations` | `{}` | no | image_processor | Lens calibration per camera, JSON: `{ "<camera_key>": { "width_px", "height_px", "camera_matrix": [9 floats], "dist_coeffs": [5 floats], "rms_px" } }`; written by image_processor itself |
 | `live_long_side_px` | `1200` | no | image_processor | Long side of the transformed live image |
 | `capture_long_side_px` | `2400` | no | image_processor | Long side of stored target images |
 | `detection_confirm_frames` | `5` | no | image_processor | Frames a new hole must be visible before it counts as a hole |
 | `live_feed_fps` | `15` | no | web_server | Maximum frame rate of the MJPEG feeds |
 | `live_feed_quality` | `80` | no | web_server | JPEG quality of the MJPEG feeds (1–100) |
 | `web_bind_address` | `0.0.0.0:8080` | no | web_server | Address and port of the web UI; `0.0.0.0` makes it reachable in the LAN. Takes effect when `web_server` restarts |
+| `admin_password_hash` | empty | yes (`false`) | web_server | Argon2id hash of the admin password. Active: destructive actions in the web UI need the password ([web_server](programs/web_server.md#admin-password)). Inactive: everything is open. Never sent to the browser; only changed through the web server's password endpoints |
 
 All other settings take effect immediately: the programs listen to `data_changed` for the settings table.
 
