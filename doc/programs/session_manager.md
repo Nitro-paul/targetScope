@@ -91,7 +91,7 @@ Device and target type are read from `database_handler` (`read_devices`, `read_t
 ### shot_detected events
 Read from `image_processor:events` with consumer group `session_manager` (as are `paper_replaced` events: in states running and paused, if the event's `live_paper` is newer than the last known one, its image is added to `paper_images` and `paper_no` set accordingly; ignored otherwise).
 - In state `running` with input mode `camera`: the shot is appended with origin `camera`, its confidence, its `hole_id` and `paper_no = live_paper + live_paper_offset`.
-- Otherwise (e.g. the event arrives just after a pause): the event is ignored, and `live_uncount_hole` is sent, so the live view doesn't highlight a hole that isn't a session shot.
+- Otherwise (e.g. the event arrives just after a pause): the event is ignored, and while live mode is still active `live_uncount_hole` is sent, so the live view doesn't highlight a hole that isn't a session shot.
 
 Each `event_id` is recorded with the state change, so an event that is delivered twice adds the shot only once.
 

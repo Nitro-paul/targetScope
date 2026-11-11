@@ -19,7 +19,7 @@ SQLite specifics:
 - Foreign keys are only enforced with `PRAGMA foreign_keys = ON`, which the database handler sets on every connection.
 
 ## Records
-Saved sessions and their shots are **records**: they are never changed after saving. The database enforces this with triggers (see [schema](#schema-sql)):
+Saved sessions with their shots and images are **records**: they are never changed after saving. The database enforces this with triggers (see [schema](#schema-sql)):
 - `UPDATE` on `sessions`, `shots` and `session_images` is rejected. A session can only be deleted as a whole (with its shots and images).
 - Values that the scoring of a saved session depends on are locked as soon as a session uses them:
   - the geometry and scores of a target type (only `name` and `retired` stay editable),
@@ -112,7 +112,7 @@ Stores every shot of every session, linked to its session by `session_id`. A sho
 ```
 
 ### session_images
-Stores the target image of each paper of a session: the transformed paper (straight view, cropped to the paper, without drawing) at the time of the paper change or of saving. A paper can have no image (e.g. input mode `manual`).
+Stores the target image of each paper of a session: the transformed paper (straight view, cropped to the paper, without drawing). Input mode `camera`: taken at the paper change, or at `session_stop` for the last paper; input mode `photo`: the transformed photo. A paper can have no image (e.g. input mode `manual`).
 - `image_path`: e.g. `sessions/<uuid>_2.jpg`
 ```
 +-------------------------------+

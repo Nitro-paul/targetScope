@@ -3,7 +3,7 @@
 Program `exporter` (Rust): exports sessions as CSV, JSON or PNG target plot into the export folder; CSV and JSON optionally together with the images as one ZIP file. Requests: [interfaces.md](../interfaces.md#exporter).
 
 ## Responsibilities
-- Reads the selected sessions with their shots, devices and target types from `database_handler`.
+- Reads the selected sessions with their shots, shooters, devices and target types from `database_handler`.
 - Gets the score of each shot from `analyzer`.
 - Writes the export files into the export folder (setting `export_dir`); with `include_images`, packs the data files and the images into one ZIP.
 - Lists and deletes export files.
@@ -21,7 +21,7 @@ Program `exporter` (Rust): exports sessions as CSV, JSON or PNG target plot into
 | ZIP | `zip` (deflate for data files, stored without compression for JPEG/PNG) |
 
 ## Export flow (`export_sessions`)
-1. `read_sessions` with the request's filter (`include_shots = true`). No match: `not_found`.
+1. `read_sessions` with the request's SessionFilter (`include_shots = true`), in pages of 500 ordered by `id`. No match: `not_found`.
 2. `read_shooters`, `read_devices` and `read_target_types` for the ids used by the sessions.
 3. For each session: `analyze_shots` to get the score of each shot (CSV, JSON, PNG) and the grouping shift (CSV, PNG). Because target type geometry and bullet diameter are locked once used, the result always matches the stored scores.
 4. Write the files to a temporary name (`.<name>.part`) in the export folder, then rename (leftover `.part` files are deleted at startup), so the download never sees half-written files. With `include_images`, the data files and images are written directly into one ZIP (see below).
@@ -65,7 +65,7 @@ One file per session: `<prefix>_session_<id>.png`, the target paper to scale (lo
 - paper outline, black area and the generated rings of the target type, ring scores labeled,
 - every shot as a circle with the bullet diameter, labelled with its number (`<paper_no>.<n>` for sessions with several papers),
 - mean point of impact as a cross, and the grouping shift as an arrow from the target center,
-- header text: saved_at, shooter, device, distance, target type, score, grouping score, shot count.
+- header text: saved_at, shooter, device, distance, target type, score, grouping score, shot count, paper count.
 
 ### ZIP with images
 With `include_images` (only `csv` and `json`), the export is one file `<prefix>_csv.zip` or `<prefix>_json.zip`:

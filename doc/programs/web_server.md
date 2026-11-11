@@ -8,7 +8,7 @@ Program `web_server` (Rust): serves the web UI in the local network. It translat
 - WebSocket: forwards the events of all programs to the browsers.
 - Live feeds: MJPEG of the transformed live view and of the raw camera image ([frame_transport.md](../frame_transport.md#live-feed-to-the-browser-mjpeg)).
 - Uploads (photos of shot targets, photos for target types, device images, import files): writes them into the staging folder.
-- Serves files from the image folder and the export folder (read-only), and photos in the staging folder that the target type editor shows.
+- Serves files from the image folder and the export folder (read-only), and images in the staging folder that the editors and the review of photo sessions show.
 
 ## Technology
 | Purpose | Crate |
@@ -33,7 +33,7 @@ Optional. While the setting `admin_password_hash` is inactive (default), everyth
 - lens calibration (start, finish, delete),
 - restarting programs.
 
-Recording sessions, viewing, statistics, exports and imports stay open.
+Recording sessions, creating and editing shooters, devices and target types, camera controls, viewing, statistics, creating exports and imports stay open.
 
 | Method and path | Purpose |
 |---|---|
@@ -95,7 +95,7 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | `POST /api/settings/reset` (body: names or `null`, `move_images`) | `reset_settings` |
 | `PUT /api/settings/image_dir` (body: path, `move_images`) | `change_image_dir` (instead of `save_setting`) |
 | **Statistics** | |
-| `POST /api/statistics` (body: filter, `group_by`, `period`) | `compute_statistics` |
+| `POST /api/statistics` (body: SessionFilter, `group_by`, `period`) | `compute_statistics` |
 | **Analysis** | |
 | `POST /api/analyze` | `analyze_shots` (used by the history view to show shot scores) |
 | **Export and import** | |
@@ -128,6 +128,7 @@ File paths are checked: plain file names only, no `..`.
 | `not_found` | 404 |
 | `in_use`, `invalid_state`, `setting_not_set` | 409 |
 | (web only) `auth_required` | 401 |
+| (web only) `too_many_attempts` | 429 |
 | `unavailable` | 503 |
 | `processing_failed` | 422 |
 | `timeout` | 504 |
@@ -138,10 +139,10 @@ The response body is always the error object `{ "code": "...", "message": "...",
 ## Uploads
 1. Accept `multipart/form-data` with one file: images (JPEG or PNG, checked by magic bytes) up to 20 MB, import files up to 100 MB (JSON) or 2 GB (ZIP, checked by magic bytes). Uploads are streamed to disk, never held in memory.
 2. Write it to the staging folder as `upload_<uuid>.<ext>` (temporary name first, then rename).
-3. Send the Redis request with that file name. If the request fails, delete the file (except for the target type editor, which keeps working with it).
+3. Send the Redis request with that file name. If the request fails, delete the file, except when the UI may try again with the same file: the target type editor, and a photo upload that failed with `processing_failed` (the user then places the corners and the photo is sent again). Files left over are removed by the staging cleanup.
 
 ## WebSocket events
-`/ws` sends every event from `session_manager:events`, `image_processor:events`, `camera_reader:events`, `launcher:events` and `database_handler:events` as JSON text messages, unchanged (event envelope). One background task per event stream reads with `XREAD BLOCK ... $` and writes into a `tokio::sync::broadcast` channel; each WebSocket connection subscribes to it. A client that falls behind by more than 256 events is sent `{"type": "resync"}` and reloads the state through the REST API. The browser reconnects automatically with backoff and also reloads the state after reconnecting.
+`/ws` sends every event from `session_manager:events`, `image_processor:events`, `camera_reader:events`, `launcher:events` and `database_handler:events` as JSON text messages, unchanged (event envelope). One background task per event stream reads it as a plain reader (see [interfaces.md](../interfaces.md#who-listens-to-which-events)) and writes into a `tokio::sync::broadcast` channel; each WebSocket connection subscribes to it. A client that falls behind by more than 256 events is sent `{"type": "resync"}` and reloads the state through the REST API. The browser reconnects automatically with backoff and also reloads the state after reconnecting.
 
 ## Frontend
 ```
@@ -193,7 +194,7 @@ The picture is only used to fill in the parameters; it isn't stored. A **locked*
 
 ### Statistics page
 Own page `#/statistics` in the navigation, separate from the session history.
-- **Filter panel** (the shared one, also used by history and export): multi-select for shooters, devices, device categories, calibers and target types; ranges for distance, time (with shortcuts: last 7 days, 30 days, year) and shot count; three-way switches (any / yes / no) for single-handed and supported. The filter is kept in the page URL, so a view can be bookmarked and reopened.
+- **Filter panel** (the shared one, also used by history and export): multi-select for shooters, devices, device categories, calibers and target types; ranges for distance, time (with shortcuts: last 7 days, 30 days, year) and shot count; three-way switches (any / yes / no) for single-handed and supported; "include retired" (shooters, devices and target types that are retired). The filter is kept in the page URL, so a view can be bookmarked and reopened.
 - **Group by:** none, shooter, device, device category, distance, single-handed, supported. **Period:** session, day, week, month.
 - **Per target type** (results are never mixed across target types):
   - summary table per group (sessions, shots, score avg/min/max, score per shot, grouping score per shot, extreme spread, mean radius, mean point offset),
@@ -208,11 +209,11 @@ Own page `#/statistics` in the navigation, separate from the session history.
 - **Unset settings:** when a request answers `setting_not_set` (e.g. the first export without `export_dir`), the UI opens a dialog to set that setting (prefilled with the suggestion), saves it as active and repeats the request.
 
 ### Camera settings menu
-- Source: USB camera (list from `camera_list_devices`), network camera (RTSP URL), or none.
+- Source: USB camera (list from `camera_list_devices`; stored by its `bus_info` in `camera_device`, so it's found again after a reboot), network camera (RTSP URL), or none.
 - Resolution and frame rate: choices from the formats of the selected camera.
 - Controls: built from `camera_list_controls`. Integer controls as sliders with min/max/step and a "default" button, booleans as switches, menus as drop-downs; inactive controls are greyed out. Every change is sent immediately (`camera_set_control`, rate-limited to 5 per second while dragging) and the raw image next to the controls shows the effect. Network cameras show "No controls available".
 - Changes of source, resolution and frame rate are saved as settings; the camera reopens.
-- **Lens calibration** (USB cameras): shows the status (calibrated, RMS error, applies to the current resolution). "Calibrate lens" offers the checkerboard to print (`/static/calibration/checkerboard_9x6.pdf`), then shows the raw feed with a "Capture view" button and the number of views found (at least 10; hint to cover the image corners and use different angles). "Finish" shows the RMS error with a rating. "Delete calibration" removes it. Not possible while a camera session is in setup or running.
+- **Lens calibration** (USB cameras): shows the status (calibrated, RMS error, applies to the current resolution). "Calibrate lens" offers the checkerboard to print (`/static/calibration/checkerboard_9x6.pdf`), then shows the raw feed with a "Capture view" button and the number of views found (at least 10; hint to cover the image corners and use different angles). "Finish" shows the RMS error with a rating. "Delete calibration" removes it. Not possible while live mode is active (a camera session in setup, running or paused).
 
 ### Coordinate conversion in the UI
 - SVG target: `viewBox` in paper millimeters (`0 0 paper_width_mm paper_height_mm`), so a click converts directly to paper mm, then to ring-center coordinates (`x = px - center_x_mm`, `y = center_y_mm - py`) and to polar with the formulas in [interfaces.md](../interfaces.md#shot).

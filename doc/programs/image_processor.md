@@ -39,20 +39,21 @@ The transformation from raw image to paper is a homography computed from the fou
  Redis thread                     processing thread                       photo worker
  (Bus::serve, requests)           (live mode)                             (capture-mode jobs)
  +-----------------------+        +------------------------------------+  +--------------------+
- | live_*                | -cmd-> | wait for raw frame, keep newest     |  | find_paper          |
+ | live_*, lens_*        | -cmd-> | wait for raw frame, keep newest     |  | find_paper          |
  | capture_target_image  | <-res- | live mode only:                     |  | prepare_target_photo|
  | capture_raw_image     |        |   find paper (until found / 30th)   |  | detect_shots_in_    |
- |                       |        |   transform -> hole detection       |  |   photo             |
- | find_paper, prepare_, | -job-> |   draw -> publish live frame        |  +--------------------+
+ |                       |        |   lens correction + transform       |  |   photo             |
+ |                       |        |   hole detection, paper changes     |  +--------------------+
+ | find_paper, prepare_, | -job-> |   draw -> publish live frame        |
  |   detect_shots_in_    |        +------------------------------------+
- | publish events        | <- events (shot_detected, calibration_changed)
+ | publish events        | <- events (shot_detected, paper_replaced, calibration_changed)
  +-----------------------+
 ```
 The processing thread always subscribes to `targetscope/frames/raw` and keeps the newest frame (needed by `capture_raw_image` also outside live mode); the live pipeline only runs in live mode. Commands reach the processing thread through a thread-safe queue and are answered with `std::promise`. Photo jobs run on a small worker pool (2 threads), because they don't need the live state.
 
 ```cpp
 struct ProcessorState {
-    cv::Mat newest_raw;                 // newest camera frame (lens-corrected if a calibration applies)
+    cv::Mat newest_raw;                 // newest camera frame as received (not lens-corrected)
     std::optional<LiveState> live;      // set between live_start and live_stop
     CameraInfo camera;                  // camera_key and resolution, from camera_reader events / camera_status
     std::optional<LensCalibration> lens;            // applied calibration of the current camera
@@ -70,12 +71,12 @@ struct LiveState {
     int next_hole_id = 1;
     int live_paper = 1;                 // +1 at every paper change; sent with shot_detected
     cv::Mat last_good_raw;              // newest frame with the current paper fully visible, and
-    cv::Mat last_good_homography;       //   its homography: used for the image of a paper that is replaced
+    cv::Mat last_good_homography;       //   its homography: for capture_target_image and the image of a replaced paper
 };
 
 struct Calibration {
     Method method;                      // Auto | Manual
-    Corners corners;                    // paper corners in the raw image
+    Corners corners;                    // paper corners in raw camera pixels (as clicked / reported)
     cv::Mat homography;                 // raw -> transformed live image
     double px_per_mm;
     CalState state;                     // Calibrated | Lost
@@ -122,7 +123,7 @@ For each new frame:
    The region of the hole is copied from the current frame into the reference, so it isn't detected again.
 6. Candidates not seen for 3 frames are dropped.
 
-**Last good frame:** whenever a frame is calibrated and the occlusion check passes, it's kept (with its homography) as `last_good_raw`. It's only warped when needed, for the image of a replaced paper.
+**Last good frame:** whenever a frame is calibrated and the occlusion check passes, it's kept (with its homography) as `last_good_raw`. It's only warped when needed: for `capture_target_image` and for the image of a replaced paper.
 
 ### Paper change
 A new paper starts in one of two ways:
@@ -144,7 +145,7 @@ After each processed frame, the transformed color image is drawn as described in
 Transforms `last_good_raw` (the newest frame in which the paper was calibrated and nothing was in front of it) with its homography, at a resolution where the long side has `capture_long_side_px` pixels (default 2400). Nothing is drawn. Written as JPEG (quality 92) to the staging folder as `target_<uuid>.jpg`. This is the image stored with the session.
 
 ### capture_raw_image
-Writes `newest_raw` (not transformed, but lens-corrected if a calibration applies) as JPEG to the staging folder (`raw_<uuid>.jpg`). Used to take a picture for a new target type.
+Writes `newest_raw` (not transformed; lens-corrected first if a calibration applies) as JPEG to the staging folder (`raw_<uuid>.jpg`). Used to take a picture for a new target type.
 
 ### Holes in a single image
 Used for photos and the initial hole scan; there is no reference image:
@@ -178,7 +179,7 @@ Cheap webcams bend straight lines (barrel distortion). The homography from the p
 **Camera changes:** if the camera or its resolution changes while views are being collected, the views are discarded (`lens_calibration_status.collecting_views` drops to 0) and the UI asks to start again.
 
 **Applying:** the current camera's `camera_key` and resolution come from `camera_status` at startup and from `camera_state_changed` events. If a calibration for that `camera_key` and resolution exists, `initUndistortRectifyMap` builds a correction map once:
-- every raw frame is corrected before anything else (`remap`), so finding the paper, hole detection, captures and the live view all work on corrected frames,
+- frames are corrected (`remap`) wherever they're used: finding the paper, hole detection, captures and the live view all work on corrected frames; `newest_raw` itself stays as received, because the lens calibration needs uncorrected frames,
 - in live mode, the correction and the homography are combined into one remap table, so each frame is warped only once.
 
 A calibration for another resolution isn't applied (`lens_calibration_status.applied = false`); the UI suggests calibrating again. Photos (from other cameras, e.g. a phone) are never lens-corrected.
@@ -186,7 +187,7 @@ A calibration for another resolution isn't applied (`lens_calibration_status.app
 ## Error handling
 | Situation | Behavior |
 |---|---|
-| No raw frames for 2 s | Calibration state `not_calibrated` with message `no camera frames`; `capture_*` and `live_set_counting(true)` return `unavailable`; live frames stop; the web server shows its fallback |
+| No raw frames for 2 s | Calibration state `not_calibrated` with message `no camera frames`; `capture_raw_image` and `live_set_counting(true)` return `unavailable` (`capture_target_image` still works from the last good frame); live frames stop; the web server shows its fallback |
 | Paper lost during live mode | `calibration_changed` (`lost`); detection pauses until it's found again; then the reference is renewed and holes made in the meantime are added as not counted |
 | Photo not readable | `io_error` |
 | Paper not found in a photo | `find_paper`: `corners = null`; `detect_shots_in_photo`: `processing_failed` |

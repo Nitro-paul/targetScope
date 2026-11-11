@@ -16,7 +16,7 @@ All interfaces are language-neutral: messages are JSON defined by JSON Schema fi
   - from uploaded photos of the shot target.
   - The target paper can be changed during a session (e.g. one card per shot); every paper's image is stored.
 - **Live scoring:** score and grouping score are shown while shooting.
-- **Storing shooting sessions as records:** once saved, a session can't be changed (it can be deleted). A session needs at least one shot and can carry notes. A transformed image of the target paper is stored with it.
+- **Storing shooting sessions as records:** once saved, a session can't be changed (it can be deleted). A session needs at least one shot and can carry notes. A transformed image of every target paper is stored with it.
 - **Analyzing shooting sessions:** ring score per shot (edge rule with the bullet diameter), session score, grouping score.
 - **Statistics over many sessions** on their own page of the web UI: summaries, comparisons (by shooter, device, distance, …), trends over time and shot distribution, with many filters.
 - **Shooters** managed in their own list, so names are consistent across all sessions. Shooters, devices and target types that are no longer used can be retired (hidden in the setup, kept in the history).
@@ -43,6 +43,7 @@ All interfaces are language-neutral: messages are JSON defined by JSON Schema fi
 ## Architecture
 Each program has exactly one responsibility. Programs don't share memory or access each other's data, except:
 - the iceoryx2 video frames,
+- files handed over through the [staging folder](interfaces.md#staging-folder) (uploads, captured images, import files), always referenced by name in a Redis message,
 - read-only access to the image, export and staging folders by `web_server`, so it can serve those files,
 - read-only access to the image folder by `exporter`, so it can put images into ZIP exports.
 
@@ -85,8 +86,9 @@ Shared code is in one library per language: `targetscope_common` (Rust) and `tar
 2. With device and target type chosen, `session_manager` starts live mode in `image_processor`. It finds the target paper and shows the transformed paper view; holes already in the target are shown gray. If the paper isn't found, the user clicks its four corners.
 3. The user starts the session; counting is switched on.
 4. For every new hole, `image_processor` highlights it in the live view and sends `shot_detected`. `session_manager` adds the shot, has it scored by `analyzer`, and the UI shows the shot, the score and the grouping score live.
-5. The user stops the session and can correct the shots in Review.
-6. The user saves. `image_processor` captures the transformed paper image, and `session_manager` sends `create_session` with it to `database_handler`. From now on the session is a record.
+5. When the user puts up a new paper (or the camera notices the swap), the old paper's image is kept and the shots continue on the new paper.
+6. The user stops the session: the image of the last paper is taken and live mode ends. In Review, the user can correct the shots.
+7. The user saves. `session_manager` sends `create_session` with all shots and paper images to `database_handler`. From now on the session is a record.
 
 ## Code organization
 ```

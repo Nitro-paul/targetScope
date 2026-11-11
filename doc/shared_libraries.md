@@ -14,7 +14,7 @@ Both are tested against the same schemas and examples (contract tests), so a Rus
 Library crate shared by all Rust programs. A change of a message or frame type is a compile error in every Rust program that uses it, and a contract test failure if it no longer matches the schema.
 
 ## Responsibilities
-- Model types: `Session`, `NewSession`, `Shot`, `SessionShot`, `PaperImage`, `Shooter`, `Device`, `TargetType`, `Ring`, `Setting`, `Filter`, `Corners`, `AnalysisResult`, `CurrentSession`, `SessionSetup`, `CurrentShot`, `CalibrationStatus`, `CameraControl`, `SessionFilter`, `StatisticsGroup`, `StatisticsValues`
+- Model types: `Session`, `NewSession`, `Shot`, `SessionShot`, `PaperImage`, `Shooter`, `Device`, `TargetType`, `Ring`, `Setting`, `Filter`, `SessionFilter`, `Corners`, `AnalysisResult`, `CurrentSession`, `SessionSetup`, `CurrentShot`, `CalibrationStatus`, `CameraControl`, `StatisticsGroup`, `StatisticsValues`
 - Ring generation from the three anchors of a target type
 - Message types: request, response and event envelopes, and one request enum per receiving program
 - Redis bus: connecting, consumer groups, sending requests and waiting for responses, serving requests, publishing and reading events
@@ -66,7 +66,8 @@ pub enum AnalyzerRequest {
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum ImageProcessorEvent {
     CalibrationChanged(CalibrationStatus),
-    ShotDetected { hole_id: u32, angle_turns: f64, radius_mm: f64, confidence: f32, frame_seq: u64 },
+    PaperReplaced { live_paper: u32, previous_paper_staged_file: Option<String> },
+    ShotDetected { hole_id: u32, live_paper: u32, angle_turns: f64, radius_mm: f64, confidence: f32, frame_seq: u64 },
 }
 
 pub struct RequestEnvelope<R> {
@@ -81,7 +82,7 @@ pub struct ResponseEnvelope {
     pub version: u32,
     pub request_id: Uuid,
     pub status: Status,            // Ok | Error
-    pub error: Option<ErrorBody>,  // { code: ErrorCode, message: String }
+    pub error: Option<ErrorBody>,  // { code: ErrorCode, message: String, details: Option<Value> }
     pub payload: Option<serde_json::Value>,
 }
 
@@ -93,7 +94,7 @@ pub struct EventEnvelope<E> {
     pub event: E,                  // flattened: "type" + "payload"
 }
 ```
-Each response payload has its own struct (e.g. `CreateSessionResponse { id, uuid, image_path }`). The trait `Request` links a request to its response type, so `Bus::request` returns the right type:
+Each response payload has its own struct (e.g. `CreateSessionResponse { id, uuid, images }`). The trait `Request` links a request to its response type, so `Bus::request` returns the right type:
 ```rust
 pub trait Request: Serialize {
     type Response: DeserializeOwned;
@@ -171,11 +172,11 @@ pub fn cleanup_dead_nodes() -> Result<(), FrameError>;
 
 ## Geometry
 ```rust
-pub struct Polar { pub a: f64, pub d: f64 }     // a in [0, 1), clockwise from top; d in mm
+pub struct Polar { pub angle_turns: f64, pub radius_mm: f64 }  // same fields as Shot
 pub struct Point { pub x: f64, pub y: f64 }     // mm, origin at ring center, x right, y up
 
-impl From<Polar> for Point;   // x = d·sin(2πa), y = d·cos(2πa)
-impl From<Point> for Polar;   // d = √(x²+y²), a = atan2(x, y) / 2π, normalized to [0, 1); d = 0 → a = 0
+impl From<Polar> for Point;   // x = radius_mm·sin(2π·angle_turns), y = radius_mm·cos(2π·angle_turns)
+impl From<Point> for Polar;   // radius_mm = √(x²+y²), angle_turns = atan2(x, y) / 2π, normalized to [0, 1); radius 0 → angle 0
 ```
 
 ## Target types
@@ -211,6 +212,7 @@ pub struct BootstrapConfig {
 pub struct SettingsCache { .. }
 impl SettingsCache {
     pub async fn load(bus: &Bus) -> Result<Self, BusError>;
+    /// None if the setting is unset (active = false) or unknown.
     pub fn get(&self, name: &str) -> Option<String>;
     pub fn get_parsed<T: FromStr>(&self, name: &str) -> Option<T>;
     pub fn get_path(&self, name: &str) -> Option<PathBuf>;   // expands "~"

@@ -9,11 +9,11 @@ Program `database_handler` (Rust): the only program that accesses the SQLite dat
 - Validates every request before touching the database.
 - Makes sure no request is handled twice (duplicate protection by `request_id`).
 - Executes create, read and delete operations on sessions, shooters, devices, target types and settings, and the import requests of `importer`.
-- Treats saved sessions as records: there is no update of sessions or shots; values a saved session depends on (target type geometry, device bullet diameter) are locked (see [database.md](../database.md#records)).
+- Treats saved sessions as records: there is no update of sessions, shots or session images; values a saved session depends on (target type geometry, device bullet diameter) are locked (see [database.md](../database.md#records)).
 - Creates `uuid`s and sets `sessions.saved_at` when a session is saved; keeps both from the file on import.
 - Maintains `devices.shot_count` by adding the session's `shot_count` when a session is saved; never decreases it.
-- Adds the generated `rings` and the `locked` flag to target types and devices it returns.
-- Translates Filters into safe, parameterized SQL.
+- Adds the generated `rings` and the `locked` flag to target types and devices it returns, and `optional`, `default_value`, `default_active` and `value_rule` to settings.
+- Translates Filters and SessionFilters into safe, parameterized SQL.
 - Sends a response to the request's `reply_to` stream and acknowledges the request.
 - Sends a `data_changed` event after every successful write.
 - Defines the known settings (default value, default `active`, optional, value rule); checks every saved value against its rule; protects the known settings from deletion; resets settings to their defaults (`reset_settings`).
@@ -57,14 +57,14 @@ programs/database_handler/
 └── src/
     ├── main.rs            # load config, init logging, open DB, start workers and maintenance
     ├── error.rs           # HandlerError
-    ├── filter_sql.rs      # Filter -> SQL builder
+    ├── filter_sql.rs      # Filter and SessionFilter -> SQL builder
     ├── validation.rs      # validation rules per request
     ├── stream_worker.rs   # request handling on top of targetscope_common::bus
     ├── db_worker.rs       # DbCommand, DbWorker thread
-    ├── images.rs          # ImageStore: staging -> image folder, delete, move to a new image folder
+    ├── images.rs          # ImageStore: staging -> image folder, delete
     ├── known_settings.rs  # list of known settings: name, display name, default value, default active, optional, value rule
     ├── image_dir_change.rs  # change_image_dir: background copy, switch, cleanup
-    ├── maintenance.rs     # daily purge of processed_requests and staging folder
+    ├── maintenance.rs     # hourly purge of processed_requests and staging folder
     └── db/
         ├── mod.rs         # Database: open connection, pragmas
         ├── schema.rs      # migrations, default settings
@@ -75,7 +75,7 @@ programs/database_handler/
         ├── settings.rs    # setting queries
         └── processed_requests.rs  # processed_requests queries
 ```
-Model types (`Session`, `Shot`, `Device`, `TargetType`, `Ring`, `Setting`), `Filter`, the message enums and envelopes come from `targetscope_common`.
+Model types (`Session`, `Shot`, `Shooter`, `Device`, `TargetType`, `Ring`, `Setting`), `Filter`, `SessionFilter`, the message enums and envelopes come from `targetscope_common`.
 
 ## Core types
 
@@ -106,6 +106,7 @@ pub enum HandlerError {
     #[error("validation failed: {0}")]   ValidationFailed(String),
     #[error("not found: {0}")]           NotFound(String),
     #[error("in use: {0}")]              InUse(String),
+    #[error("invalid state: {0}")]       InvalidState(String),   // e.g. an image folder change is already running
     #[error("io error: {0}")]            Io(#[from] std::io::Error),
     #[error("database error: {0}")]      Database(#[from] rusqlite::Error),
 }
@@ -167,7 +168,7 @@ pub mod devices {
 }
 
 pub mod target_types {
-    /// Insert (new uuid) or update; returns InUse if anything but the name changes on a locked type.
+    /// Insert (new uuid) or update; returns InUse if anything but name and retired changes on a locked type.
     pub fn save(c: &Connection, t: &TargetType) -> Result<i64, HandlerError>;
     /// Creates the type with its uuid unless the uuid exists; renames on name conflict; returns (id, created).
     pub fn import(c: &Connection, t: &TargetType) -> Result<(i64, bool), HandlerError>;
@@ -287,13 +288,13 @@ For each request:
 - `save_device`: `name` not empty; `bullet_diameter_mm > 0`; unchanged `bullet_diameter_mm` if the device is locked.
 - `import_*`: valid uuid; same rules as the corresponding save or create request; `import_session` additionally needs `saved_at`; `staged_file`, if given, passes `check_staged`.
 - `set_device_image`: device exists; `staged_file` passes `check_staged`.
-- `save_target_type`: `name` not empty and unique; all TargetType rules in [interfaces.md](../interfaces.md#targettype) (paper size, center and outermost ring on the paper, radii increasing, scores decreasing); only `name` changed if the type is locked.
+- `save_target_type`: `name` not empty and unique ignoring case; all TargetType rules in [interfaces.md](../interfaces.md#targettype) (paper size, center and outermost ring on the paper, radii increasing, scores decreasing); only `name` and `retired` changed if the type is locked.
 - `save_shooter`: name not empty after trimming, unique ignoring case.
 - `save_setting`: `name` and `display_name` not empty; the value matches the setting's value rule (see [known settings](../database.md#known-settings)); `active = false` only for optional settings; not `image_dir` (use `change_image_dir`); for `staging_dir`, `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir` (same `st_dev`).
 - `change_image_dir`: the new folder exists or can be created, is writable, and is on the same file system as `staging_dir`.
 - `reset_settings`: every name is a known setting. Without names: all known settings except `admin_password_hash` and `lens_calibrations`.
 - `delete_setting`: not one of the [known settings](../database.md#known-settings).
-- All read requests: every filter field is a column of the table; `like` only on text columns.
+- Read requests with a Filter: every filter field is a column of the table; `like` only on text columns. `read_sessions`: `order_by` field is one of `saved_at`, `score`, `shot_count`, `id`.
 
 ## Error handling
 | Situation | Response | Acknowledge |

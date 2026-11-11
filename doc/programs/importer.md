@@ -6,7 +6,7 @@ Program `importer` (Rust): imports JSON export files and ZIP files of JSON expor
 - Reads an uploaded export file (`.json`, or `.zip` with `export.json` and images) from the staging folder.
 - Restores session target images and device images from a ZIP, by passing them to `database_handler` with the records.
 - Validates it completely against `schemas/export/v1.schema.json` and the consistency rules below, before anything is written.
-- Imports target types, devices and sessions through `database_handler`, keeping their `uuid`, so importing the same file twice changes nothing.
+- Imports shooters, target types, devices and sessions through `database_handler`, keeping their `uuid`, so importing the same file twice changes nothing.
 - Reports what was created, what existed already, and warnings.
 - Deletes the uploaded file afterwards.
 

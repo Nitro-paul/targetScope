@@ -178,7 +178,7 @@ Files that pass between programs (uploads, captured and transformed images, extr
 | Name | Created by | Content |
 |---|---|---|
 | `upload_<uuid>.<jpg\|png\|json\|zip>` | `web_server` | Uploaded file |
-| `raw_<uuid>.jpg` | `image_processor` (`capture_raw_image`) | Unchanged camera frame |
+| `raw_<uuid>.jpg` | `image_processor` (`capture_raw_image`) | Camera frame, not transformed (lens-corrected if a calibration applies) |
 | `target_<uuid>.jpg` | `image_processor` (`capture_target_image`, `live_new_paper`, `paper_replaced`) | Transformed paper from the camera, to be stored with a session |
 | `photo_<uuid>.jpg` | `image_processor` (`detect_shots_in_photo`) | Transformed paper from a photo, to be stored with a session |
 | `paper_<uuid>.jpg` | `image_processor` (`prepare_target_photo`) | Transformed paper for the target type editor |
@@ -469,7 +469,7 @@ Response `delete_session_response`: `{ "id": <deleted id> }`. Error `not_found` 
 ### Shooters
 
 #### save_shooter
-Creates a shooter, or renames it if `id` is given.
+Creates a shooter, or updates it (name, retired) if `id` is given.
 
 Payload: Shooter fields; `id` optional.
 
@@ -730,7 +730,7 @@ Saves the last good frame of the current paper (calibrated, nothing in front of 
 
 Payload: `{}`
 
-Response `capture_target_image_response`: `{ "staged_file": "target_<uuid>.jpg" }`. Error `unavailable` if live mode isn't calibrated.
+Response `capture_target_image_response`: `{ "staged_file": "target_<uuid>.jpg" }`. Error `unavailable` if there is no good frame of the current paper (never calibrated, or live mode not active).
 
 #### capture_raw_image
 Saves the newest camera frame, not transformed (used to take a picture for a new target type). Works with and without live mode. If the camera has an applied lens calibration, the frame is corrected.
@@ -866,7 +866,7 @@ Response `compute_statistics_response`: `{ "groups": [StatisticsGroup, ...], "se
 | Field | Type | Notes |
 |---|---|---|
 | `target_type_id` | integer | |
-| `group_key` | object or null | The value of the `group_by` field, e.g. `{ "shooter_id": 4 }`; `null` for `group_by = none` |
+| `group_key` | object or null | The value the group stands for, by `group_by`: `shooter` → `{ "shooter_id": 4 }` (`null` id for sessions without shooter), `device` → `{ "device_id": 2 }`, `device_category` → `{ "category": "air pistol" }`, `distance` → `{ "distance_m": 10 }`, `single_handed` / `supported` → `{ "single_handed": true }`; `null` for `group_by = none` |
 | `summary` | StatisticsValues | Over all sessions of the group |
 | `trend` | list of `{ "period_start": integer, "values": StatisticsValues }` | One entry per period with sessions, sorted by time |
 | `shots` | list of Shot | All shots of the group (for the shot distribution plot), at most 5 000; the newest are kept |

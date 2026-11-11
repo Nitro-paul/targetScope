@@ -13,8 +13,8 @@ Redis is still used for everything else about the camera (status, controls, cali
 ## iceoryx2 services
 | Service name | Publisher | Subscribers | Content |
 |---|---|---|---|
-| `targetscope/frames/raw` | `camera_reader` | `image_processor`; `web_server` for `/stream/raw.mjpg` and as fallback | Frames as read from the camera |
-| `targetscope/frames/live` | `image_processor` (live mode) | `web_server` | Transformed target paper with the holes and shots drawn on it |
+| `targetscope/frames/raw` | `camera_reader` | `image_processor`; `web_server` for `/stream/raw.mjpg` and as fallback | Frames as read from the camera, never lens-corrected |
+| `targetscope/frames/live` | `image_processor` (live mode) | `web_server` | Transformed target paper (lens-corrected if a calibration applies) with the holes and shots drawn on it |
 
 Each publish/subscribe service has a matching event service with the same name plus `/notify`. The publisher notifies it after each frame, so subscribers can block on a listener instead of polling.
 
@@ -64,7 +64,7 @@ In live mode, `image_processor` publishes the target paper, transformed so it is
 - candidates not yet confirmed: dashed circle,
 - the rings of the target type, thin, to check the calibration.
 
-Because the image shows the paper at a fixed scale, the web UI can map a click on the live image directly to paper millimeters.
+The live view is only for watching; shots are entered or corrected on the SVG target of the web UI.
 
 ## Subscriber rules
 - A subscriber may hold at most 2 samples at the same time and must release them quickly. `image_processor` processes a frame directly in shared memory and releases it before taking the next one. If it is slower than the camera, frames are skipped (safe overflow); it always processes the newest frame.
@@ -74,7 +74,7 @@ Because the image shows the paper at a fixed scale, the web UI can map a click o
 ## Live feed to the browser (MJPEG)
 `web_server` delivers the feeds as MJPEG over HTTP (`Content-Type: multipart/x-mixed-replace; boundary=frame`). The browser shows them with a plain `<img>` tag.
 - `GET /stream/live.mjpg`: frames of `targetscope/frames/live`
-- `GET /stream/raw.mjpg`: frames of `targetscope/frames/raw`, used to click the paper corners for manual calibration and to set up the camera
+- `GET /stream/raw.mjpg`: frames of `targetscope/frames/raw`, used to click the paper corners for manual calibration (corners are given in raw camera pixels, see [live_calibrate](interfaces.md#live_calibrate)), for the lens calibration and to set up the camera
 
 For each stream:
 1. A dedicated thread subscribes to the service, but only while at least one browser is watching.
