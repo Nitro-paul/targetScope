@@ -97,9 +97,11 @@ targetscope/
 ├── CMakeLists.txt          # C++ projects
 ├── schemas/                # language-neutral contract: JSON Schemas, examples, frame_header.h
 ├── crates/
-│   └── targetscope_common/         # Rust shared library
+│   ├── targetscope_common/         # Rust shared library
+│   └── targetscope_testkit/        # test tools (Redis test server, fakes, fake clock, frame feeder)
 ├── cpp/
-│   └── targetscope_common/         # C++ shared library (targetscope_common_cpp)
+│   ├── targetscope_common/         # C++ shared library (targetscope_common_cpp)
+│   └── targetscope_testkit/        # test tools for the C++ programs
 ├── programs/
 │   ├── launcher/           # Rust
 │   ├── database_handler/   # Rust
@@ -111,6 +113,9 @@ targetscope/
 │   ├── exporter/           # Rust
 │   ├── importer/           # Rust
 │   └── web_server/         # Rust, includes static/ with the frontend
+├── tests/
+│   └── system/             # system tests (all programs together)
+├── testdata/               # reference data, photos, videos, golden files
 ├── config/
 │   └── launcher.toml
 └── doc/
@@ -139,3 +144,4 @@ The staging and image folders must be on the same file system, so that moving a 
 - [frame_transport.md](frame_transport.md): video frames over iceoryx2 and the MJPEG live feeds
 - [shared_libraries.md](shared_libraries.md): the Rust and C++ libraries that implement the contract
 - [programs/](programs/): one design document per program, same names as the program folders in the code
+- [testing/](testing/overview.md): the complete test suite: test levels, tools, reference data and every test case per part

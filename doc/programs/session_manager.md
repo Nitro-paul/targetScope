@@ -84,6 +84,8 @@ A paper without shots is allowed (e.g. a sighting card).
 | `session_save` | at least one shot; device and target type set; current analysis | see [Saving](#saving) |
 | `session_cancel` | | camera: `live_stop`; delete state; → idle |
 
+**Failed guards:** a request that isn't allowed in the state or input mode answers `invalid_state`. A request that is allowed but whose guard fails answers `validation_failed` if a value is missing or invalid (no device or target type, no shots at saving, a retired or unknown record, an index out of range, notes too long), and `unavailable` if a resource isn't ready (not calibrated at `session_start` or `session_resume`, live mode not started yet at `session_calibrate`, the analyzer not answering at `session_save`). In every case nothing changes.
+
 After every change of the shots (detected, added, changed, deleted, or from a photo), the shots are analyzed again (see [Live analysis](#live-analysis)).
 
 Device and target type are read from `database_handler` (`read_devices`, `read_target_types`) when they are set, and kept in the state, so the bullet diameter and anchors are at hand without further requests.
@@ -102,6 +104,7 @@ In input mode `camera`, the newest CalibrationStatus is copied into the session 
 Read from `database_handler:events` (plain read). If the session's device or target type is changed or deleted while the session isn't saved yet (they aren't locked until a saved session uses them):
 - **changed:** read it again; analyze again; input mode `camera`, live mode active (setup, running, paused) and the target type or bullet diameter changed: `live_start` again (the paper is searched again, holes are scanned again, and all current camera shots get origin `manual`, because their hole ids are no longer known to the new live mode).
 - **deleted:** the setup field is cleared; saving is only possible after choosing another one.
+- **`all` / `reload`** (sent by `database_handler` after a restart or reconnect): device and target type are read again, handled like **changed**.
 
 Before saving, device and target type are read once more, so a missed event can't lead to a session saved with outdated values.
 
@@ -169,13 +172,4 @@ impl SessionActor {
 | Redis write fails | The request fails; the in-memory state is not changed (state is only replaced after a successful `EXEC`) |
 
 ## Testing
-- Table-driven tests of every state × request combination (allowed → new state, not allowed → `invalid_state`), with mocked dependencies.
-- Live analysis: burst of 10 shot events → at most 2 analyses, final result matches all shots.
-- Live view consistency: deleting a camera shot and a `shot_detected` while paused both send `live_uncount_hole`.
-- `session_save` without shots → `validation_failed`.
-- Device or target type changed during a session: re-analysis; camera: live mode restarted.
-- Recovery test: persist a running session, restart the actor, expect `recovered` with the same shots.
-- Duplicate tests: same request id twice, same `shot_detected` event twice.
-- Save retry test: crash after `create_session` was sent; restart; save again; expect one stored session.
-- Expired staged image: save succeeds without that image, with a warning.
-- Paper changes: `session_new_paper` and `paper_replaced` both add the old paper's image and increase `paper_no`; the same `paper_replaced` event twice, or a request and an automatic change at the same time, change the paper once; a `shot_detected` of the old paper that arrives after the change keeps the old `paper_no`.
+All test cases with their expected outcomes: [testing/session_manager.md](../testing/session_manager.md).

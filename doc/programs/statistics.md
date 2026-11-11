@@ -37,6 +37,4 @@ Every request reads the selected sessions again; nothing is cached, so results a
 | Unknown id in the filter | No error: it simply matches no session |
 
 ## Testing
-- `calc.rs`: extreme spread and mean radius against hand-calculated examples; one-shot sessions; weighting of per-shot averages.
-- Period grouping across month and year boundaries and daylight saving time changes.
-- Integration test with a test database: known sessions → expected groups and values.
+All test cases with their expected outcomes: [testing/statistics.md](../testing/statistics.md).

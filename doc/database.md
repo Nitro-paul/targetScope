@@ -8,7 +8,7 @@ Images (device photos and session target images) are stored as files in the imag
 ```
 image_dir/
 ├── devices/
-│   └── <device id>_<unix seconds>.<jpg|png>    # timestamp changes on replace, so browsers don't show a cached old image
+│   └── <device id>_<8 random hex>.<jpg|png>    # new name on every replace, so browsers don't show a cached old image
 └── sessions/
     └── <session uuid>_<paper_no>.<jpg|png>      # transformed target paper, one per paper of the session
 ```
@@ -147,7 +147,7 @@ Stores all devices (weapons) in use.
 - `category`: kind of device, e.g. `air pistol` (free text)
 - `description`: free text, e.g. model, sights, modifications
 - `caliber`: caliber designation, e.g. `.22 LR`
-- `image_path`: device image, e.g. `devices/3_1794393600.jpg`; `NULL` if there is none
+- `image_path`: device image, e.g. `devices/3_9f0c1c9e.jpg`; `NULL` if there is none
 - `bullet_diameter_mm`: bullet diameter in millimeters, used for scoring (a shot scores a ring if its edge touches the ring) and hole detection; locked once a session uses the device
 - `shot_count`: lifetime total of shots fired with the device; the database handler adds the session's shots each time a session is saved; never decreases
 - `retired`: hidden in the session setup (e.g. a sold device), still shown in history, statistics and exports

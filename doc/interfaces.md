@@ -34,6 +34,9 @@ Schemas use JSON Schema draft 2020-12. Contract tests in every language:
 1. Every example in `schemas/examples/` is valid against its schema.
 2. Every example can be deserialized into the language's type and serialized back to an equal JSON value.
 3. Messages produced by the language's types validate against the schema.
+4. Every file in `schemas/examples/invalid/` (each names its expected error) is rejected by its schema and by every language's types.
+
+The complete contract test cases are in [testing/shared_libraries.md](testing/shared_libraries.md#contract-schemas-and-examples-contract).
 
 A program written in a new language needs only: a Redis client, a JSON library, these schemas, and (for video) iceoryx2 bindings.
 
@@ -248,7 +251,7 @@ A shooter can be renamed at any time (e.g. to fix a typo); saved sessions refere
 | `description` | string or null | Free text, e.g. model, sights, modifications |
 | `caliber` | string or null | Caliber designation, e.g. `.22 LR` |
 | `bullet_diameter_mm` | float | Used for scoring (edge rule) and hole detection, required, `> 0`. Can't be changed once a saved session uses the device |
-| `image_path` | string or null | Device image, e.g. `devices/3_1794393600.jpg`; set by the database handler, read-only |
+| `image_path` | string or null | Device image, e.g. `devices/3_9f0c1c9e.jpg`; set by the database handler, read-only |
 | `shot_count` | integer | Lifetime total, maintained by the database handler, read-only, never decreases |
 | `locked` | bool | Read-only: `true` if a saved session uses the device (then `bullet_diameter_mm` can't change) |
 | `retired` | bool | Hidden in the session setup; still shown in history, statistics and exports |
@@ -611,6 +614,8 @@ Sent after every successful write.
 
 Payload: `{ "table": "sessions" | "shooters" | "devices" | "target_types" | "settings", "key": <id, or the name for settings>, "action": "created" | "updated" | "deleted" }`
 
+After every start and every reconnect to Redis, the database handler also sends `{ "table": "all", "key": null, "action": "reload" }`: events of writes processed just before a crash or a lost connection may not have been sent. Listeners then reload everything they keep from the database (settings, cached records, lists in the UI).
+
 ## camera_reader
 Stream `camera_reader:requests`. Implemented in C++. Design: [programs/camera_reader.md](programs/camera_reader.md).
 
@@ -807,7 +812,7 @@ Every successful response has the payload `{ "session": CurrentSession }`, the s
 | `session_save` | `{}` | review, recovered | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
 | `session_cancel` | `{}` | setup, running, paused, review, recovered | discarded, → idle |
 
-`index` counts from 0 in the `shots` list. `session_save` without shots answers `validation_failed`. `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
+`index` counts from 0 in the `shots` list. A request that's allowed in the state but whose guard fails answers `validation_failed` if a value is missing or invalid (e.g. `session_start` without device, `session_save` without shots) and `unavailable` if a resource isn't ready (e.g. `session_start` in input mode `camera` before calibration). `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
 
 ### Events (`session_manager:events`)
 

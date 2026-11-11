@@ -28,7 +28,7 @@ targetscope                       # = launcher with ~/.config/targetscope/launch
 targetscope --config <file>
 targetscope --reset-admin-password
 ```
-`--reset-admin-password` doesn't start anything: it connects to the Redis of the running TargetScope, sends `reset_settings` for `admin_password_hash` to `database_handler` (the web UI is open again), and exits. If TargetScope isn't running, it says so and exits.
+`--reset-admin-password` doesn't start anything: it connects to the Redis of the running TargetScope, sends `reset_settings` for `admin_password_hash` to `database_handler` (the web UI is open again), and exits with code 0. If TargetScope isn't running, it says so and exits with code 1.
 The launcher doesn't care which language a program is written in: every program is a binary that reads the bootstrap environment variables and answers `ping`.
 If the configuration file doesn't exist, the launcher writes the default one and uses it.
 
@@ -102,7 +102,7 @@ The launcher derives the bootstrap variables from the configuration and sets the
 | `TARGETSCOPE_LOG_DIR` | `paths.log_dir` |
 | `TARGETSCOPE_LOG` | `log.level` |
 
-Variables in `[env]` are added; they can't override these five.
+Variables in `[env]` are added; they can't override these five (an attempt is ignored with a warning in the log).
 
 ## Redis
 Started as a child process:
@@ -118,7 +118,7 @@ redis-server --port <redis.port> --bind 127.0.0.1 --dir <data_dir>/redis
 1. Take the lock `$XDG_RUNTIME_DIR/targetscope/launcher.lock`. If another launcher holds it: exit with a message.
 2. Create the data and log folders; clean up stale iceoryx2 resources (`cleanup_dead_nodes`).
 3. Start Redis; wait until `PING` answers (at most 10 s, otherwise exit).
-4. Start the programs in dependency order (topological sort of `depends_on`; cycles are a configuration error; dependencies on disabled programs are ignored, so e.g. `image_processor` still starts without `camera_reader`). A program is started when all its dependencies are `running`. It is `running` once it answers `ping` (checked every 250 ms, at most 30 s; otherwise it's stopped and handled as a crash).
+4. Start the programs in dependency order (topological sort of `depends_on`; cycles and names of programs that aren't configured are configuration errors: the launcher exits with code 1 and a message; dependencies on disabled programs are ignored, so e.g. `image_processor` still starts without `camera_reader`). A program is started when all its dependencies are `running`. It is `running` once it answers `ping` (checked every 250 ms, at most 30 s; otherwise it's stopped and handled as a crash).
 5. Serve `launcher:requests`.
 
 ## Supervision
@@ -126,7 +126,7 @@ redis-server --port <redis.port> --bind 127.0.0.1 --dir <data_dir>/redis
 |---|---|
 | Program exits (any exit code) while not stopping | State `backoff`, restart after the current backoff (doubling from 1 s up to 60 s). Programs that depend on it keep running; they handle the missing program through timeouts. |
 | Program ran longer than `stable_after_s` | Backoff resets to 1 s |
-| More than `max_restarts` restarts within `window_s` | State `failed`, no more restarts; the web UI shows it; `restart_program` resets it |
+| More than `max_restarts` restarts within `window_s` | State `failed`, no more restarts; the web UI shows it; `restart_program` resets it (`not_found` for a name that isn't configured) |
 | Redis exits | Restart Redis immediately (same backoff); programs reconnect on their own |
 
 Every state change is sent as `program_state_changed` and logged.
@@ -160,6 +160,4 @@ struct ProgramHandle {
 One supervisor task per program waits for its child to exit and reports to the main loop through a channel; the main loop owns all state.
 
 ## Testing
-- Dependency order and cycle detection with test configurations.
-- Supervision with small test programs that crash on purpose: backoff timing, `failed` after `max_restarts`, reset after `stable_after_s`.
-- Shutdown order and SIGKILL after the timeout.
+All test cases with their expected outcomes: [testing/launcher.md](../testing/launcher.md).

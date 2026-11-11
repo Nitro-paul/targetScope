@@ -65,6 +65,4 @@ Validation: target type as in [interfaces.md](../interfaces.md#targettype) (anch
 Because `session_manager` analyzes after every shot, a typical call (up to 60 shots) must answer within 200 ms; the worst case stays well under a second (see above).
 
 ## Testing
-- `shot_score`: center shot, shot exactly on a line, shot just outside a line, miss, zero bullet radius.
-- `analyze`: empty list; one shot (grouping score = maximum ring score); a tight group off-center (grouping score = N × maximum ring score); `grouping_score >= score` for random sessions (property test with `proptest`).
-- Comparison of the grid search with a brute-force search at 0.01 mm on small random sessions.
+All test cases with their expected outcomes: [testing/analyzer.md](../testing/analyzer.md).

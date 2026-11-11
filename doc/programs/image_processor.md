@@ -193,9 +193,4 @@ A calibration for another resolution isn't applied (`lens_calibration_status.app
 | Paper not found in a photo | `find_paper`: `corners = null`; `detect_shots_in_photo`: `processing_failed` |
 
 ## Testing
-- Unit tests: homography and coordinate conversions, corner ordering, ring generation, combined lens + homography map against applying both one after the other.
-- Paper change: video with a paper swap → `paper_replaced` once, holes of the new paper not counted; taking the same paper off and back on → no paper change.
-- **Test set** of photos and short videos with known hole positions (marked by hand once). Goal: hit rate > 98 %, position error < 1 mm. It is built up in this order:
-  1. target types: 10 m air pistol, 10 m air rifle, 25/50 m pistol, own targets;
-  2. conditions: indoor range with artificial light; camera at an angle to the target (up to about 45°).
-- Live detection is tested by feeding recorded videos through a test frame publisher, including occlusion (a hand in front of the target) and a pause with counting off.
+All test cases with their expected outcomes: [testing/image_processor.md](../testing/image_processor.md).

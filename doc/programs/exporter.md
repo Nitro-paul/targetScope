@@ -96,8 +96,4 @@ With `include_images` (only `csv` and `json`), the export is one file `<prefix>_
 | database_handler or analyzer not answering | `timeout`; nothing is written |
 
 ## Testing
-- Golden-file tests: fixed sessions → CSV and JSON compared with stored expected files.
-- PNG: renders without error; pixel checks at the target center and shot positions.
-- Duplicate test: same `request_id` twice returns the same files.
-- ZIP tests: layout and paths as above; every `image_entry` in the data exists in the ZIP; missing source images are skipped; `include_images` with `png` is rejected.
-
+All test cases with their expected outcomes: [testing/exporter.md](../testing/exporter.md).

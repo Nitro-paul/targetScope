@@ -59,8 +59,4 @@ Importing never changes `devices.shot_count` of existing devices. A device creat
 | File not found | `not_found` |
 
 ## Testing
-- Import of an export of a test database into an empty database: all records equal, including uuids and dates.
-- Importing the same file twice: second run creates nothing.
-- Interrupted import (fake database handler fails after n records), then a second run: everything imported once.
-- Invalid files: wrong format, unknown version, missing references, duplicate uuids.
-- ZIP: images are restored for created records and ignored for existing ones; entries with `..`, absolute paths, links or unexpected names reject the whole file; a missing image gives a warning; no extracted files are left in the staging folder.
+All test cases with their expected outcomes: [testing/importer.md](../testing/importer.md).

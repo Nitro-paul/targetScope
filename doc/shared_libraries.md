@@ -21,6 +21,7 @@ Library crate shared by all Rust programs. A change of a message or frame type i
 - iceoryx2 frame services: names, `FrameHeader`, publisher and subscriber setup
 - Geometry: polar ↔ Cartesian conversion
 - Bootstrap configuration, settings access and logging setup
+- Time source (`Clock`) and failpoints for tests
 
 It contains no program logic.
 
@@ -49,6 +50,7 @@ crates/targetscope_common/
     ├── targets.rs      # ring generation, target type validation
     ├── settings.rs     # SettingsCache
     ├── config.rs       # BootstrapConfig
+    ├── clock.rs        # Clock, SystemClock
     └── logging.rs      # tracing setup
 ```
 
@@ -190,7 +192,7 @@ pub fn validate_target_type(t: &TargetType) -> Result<(), String>;
 The same two functions exist in `targetscope_common_cpp`; both are tested with the same examples (`schemas/examples/target_types/*.json` with their expected rings).
 
 ## Contract tests
-`tests/contract.rs` runs, for every schema in `schemas/`: validate its examples (`jsonschema` crate), deserialize them into the Rust type, serialize back and compare as JSON values, and validate the serialized output. A message type without a schema, or a schema without a Rust type, fails the test.
+`tests/contract.rs` runs, for every schema in `schemas/`: validate its examples (`jsonschema` crate), deserialize them into the Rust type, serialize back and compare as JSON values, and validate the serialized output; every invalid example in `schemas/examples/invalid/` must be rejected. A message type without a schema, or a schema without a Rust type, fails the test. All cases: [testing/shared_libraries.md](testing/shared_libraries.md).
 
 ## Bootstrap configuration
 Values needed before the database can be read. The launcher sets them as environment variables for every program (see [launcher](programs/launcher.md#bootstrap-environment)).
@@ -208,7 +210,8 @@ pub struct BootstrapConfig {
 ```rust
 /// Notes the newest id of database_handler:events, reads all settings through database_handler,
 /// then keeps them up to date by reading data_changed events for the settings table after that id
-/// (plain read, so no change between loading and listening is missed).
+/// (plain read, so no change between loading and listening is missed). A `data_changed` with
+/// table "all" reloads every setting.
 pub struct SettingsCache { .. }
 impl SettingsCache {
     pub async fn load(bus: &Bus) -> Result<Self, BusError>;
@@ -220,6 +223,20 @@ impl SettingsCache {
     pub fn watch(&self, names: &[&str]) -> tokio::sync::watch::Receiver<()>;
 }
 ```
+
+## Clock and failpoints
+All code that depends on time (timeouts, backoff, retention, periods, running time) reads it through a `Clock`, so tests can control time:
+```rust
+pub trait Clock: Send + Sync {
+    fn now(&self) -> SystemTime;              // wall clock (timestamps, saved_at, periods)
+    fn monotonic(&self) -> Instant;           // durations and timeouts
+    async fn sleep(&self, d: Duration);
+}
+pub struct SystemClock;                       // the real clock, used in production
+```
+The test kit (`crates/targetscope_testkit`, see [testing/overview.md](testing/overview.md#test-kit)) adds `FakeClock`, whose time only moves when a test advances it.
+
+**Failpoints:** test builds contain named failpoints (`fail` crate) at the places listed in [testing/overview.md](testing/overview.md#failpoints); a test can make them return an error, wait or abort the process. Release builds don't contain them.
 
 ## Logging
 `logging::init(program)` sets up `tracing` with two outputs: stderr (collected by the launcher) and a daily rotated file `<log_dir>/<program>.log` (`tracing-appender`). Every log line of a request contains its `request_id`.
@@ -245,6 +262,7 @@ cpp/targetscope_common/
 │   ├── targets.hpp      # generate_rings, validate_target_type
 │   ├── settings.hpp     # SettingsCache
 │   ├── config.hpp       # BootstrapConfig (same environment variables)
+│   ├── clock.hpp        # Clock, SystemClock (same as in Rust)
 │   └── logging.hpp      # spdlog setup: stderr + daily file
 ├── src/
 └── tests/               # contract tests and unit tests (GoogleTest)
@@ -281,4 +299,4 @@ Handlers report errors by throwing `ServiceError{ErrorCode, message}`; the serve
 Dependencies are fetched with CMake `FetchContent` (or found as system packages, where available), so the C++ programs build with one `cmake --build`.
 
 ## Contract tests
-Same procedure as in Rust: every schema in `schemas/` that a C++ program uses is checked against its examples and the C++ types; `static_assert`s check size and field offsets of `TargetScopeFrameHeader`.
+Same procedure as in Rust: every schema in `schemas/` that a C++ program uses is checked against its valid and invalid examples and the C++ types; `static_assert`s check size and field offsets of `TargetScopeFrameHeader`. Failpoints use the `TS_FAILPOINT` macro, compiled into test builds only. All cases: [testing/shared_libraries.md](testing/shared_libraries.md) and [testing/frame_transport.md](testing/frame_transport.md).

@@ -44,13 +44,14 @@ Recording sessions, creating and editing shooters, devices and target types, cam
 
 - The password is stored as an Argon2id hash (`argon2` crate) in the setting `admin_password_hash`; the web server never sends it to the browser and filters it from `GET /api/settings`.
 - Login creates a random 256-bit token, kept in the web server's memory, sent as cookie (`HttpOnly`, `SameSite=Strict`). It expires after 30 minutes without use and when the web server restarts.
-- A protected endpoint without a valid cookie answers 401 with `{ "code": "auth_required" }`; the UI asks for the password and repeats the action.
+- A protected endpoint without a valid cookie answers 401 with `{ "code": "auth_required" }`; the UI asks for the password and repeats the action. A wrong password at login answers 401 `wrong_password`.
+- `PUT /api/settings/admin_password_hash` is refused (400 `validation_failed`); the password can only be set through `/api/admin/password`.
 - At most 5 wrong passwords per minute per client address; then 429.
 - Forgotten password: `targetscope --reset-admin-password` on the PC (see [launcher](launcher.md#usage)) removes it.
 - The connection is plain HTTP in the local network, so the password protects against accidental or casual changes, not against someone who records the network traffic.
 
 ## REST API
-All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` header (UUID); it's used as `request_id`, so the browser can safely resend a request after a network error. Without it, a new `request_id` is created.
+All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` header (UUID); it's used as `request_id`, so the browser can safely resend a request after a network error. Without it, a new `request_id` is created; a header that isn't a UUID answers 400 `validation_failed`.
 
 | Method and path | Redis request |
 |---|---|
@@ -65,7 +66,8 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | `POST /api/session/shots` | `session_add_shot` |
 | `PUT /api/session/shots/{index}` | `session_update_shot` |
 | `DELETE /api/session/shots/{index}` | `session_delete_shot` |
-| `POST /api/session/photo` (multipart, optional Corners) | upload, then `session_upload_photo` |
+| `POST /api/session/photo` (multipart: photo and optional Corners) | upload, then `session_upload_photo` |
+| `POST /api/session/photo` (JSON: `staged_file`, Corners) | `session_upload_photo` again with a photo that is already uploaded (after `processing_failed`, with corners placed by hand) |
 | **Saved sessions** (records: read and delete only) | |
 | `POST /api/sessions/query` (body: SessionFilter, `order_by`, `limit`, `offset`) | `read_sessions` (`include_shots = false`) |
 | `GET /api/sessions/{id}` | `read_sessions` (`session_ids = [id]`) |
@@ -127,8 +129,9 @@ File paths are checked: plain file names only, no `..`.
 | `invalid_message`, `validation_failed` | 400 |
 | `not_found` | 404 |
 | `in_use`, `invalid_state`, `setting_not_set` | 409 |
-| (web only) `auth_required` | 401 |
+| (web only) `auth_required`, `wrong_password` | 401 |
 | (web only) `too_many_attempts` | 429 |
+| (web only) `too_large` | 413 |
 | `unavailable` | 503 |
 | `processing_failed` | 422 |
 | `timeout` | 504 |
@@ -137,9 +140,9 @@ File paths are checked: plain file names only, no `..`.
 The response body is always the error object `{ "code": "...", "message": "...", "details": { } }`.
 
 ## Uploads
-1. Accept `multipart/form-data` with one file: images (JPEG or PNG, checked by magic bytes) up to 20 MB, import files up to 100 MB (JSON) or 2 GB (ZIP, checked by magic bytes). Uploads are streamed to disk, never held in memory.
+1. Accept `multipart/form-data` with one file: images (JPEG or PNG, checked by magic bytes) up to 20 MB, import files up to 100 MB (JSON) or 2 GB (ZIP, checked by magic bytes). Larger files answer 413 `too_large`, other types 400 `validation_failed`. Uploads are streamed to disk, never held in memory.
 2. Write it to the staging folder as `upload_<uuid>.<ext>` (temporary name first, then rename).
-3. Send the Redis request with that file name. If the request fails, delete the file, except when the UI may try again with the same file: the target type editor, and a photo upload that failed with `processing_failed` (the user then places the corners and the photo is sent again). Files left over are removed by the staging cleanup.
+3. Send the Redis request with that file name. If the request fails, delete the file, except when the UI may try again with the same file: the target type editor, and a photo upload that failed with `processing_failed` (the user then places the corners and the photo is sent again as JSON with its `staged_file`). In these cases the error's `details` contain `staged_file`. Files left over are removed by the staging cleanup.
 
 ## WebSocket events
 `/ws` sends every event from `session_manager:events`, `image_processor:events`, `camera_reader:events`, `launcher:events` and `database_handler:events` as JSON text messages, unchanged (event envelope). One background task per event stream reads it as a plain reader (see [interfaces.md](../interfaces.md#who-listens-to-which-events)) and writes into a `tokio::sync::broadcast` channel; each WebSocket connection subscribes to it. A client that falls behind by more than 256 events is sent `{"type": "resync"}` and reloads the state through the REST API. The browser reconnects automatically with backoff and also reloads the state after reconnecting.
@@ -228,7 +231,4 @@ Own page `#/statistics` in the navigation, separate from the session history.
 | Saving a locked target type or device bullet diameter | 409; the UI offers "Copy and edit" |
 
 ## Testing
-- API tests with a fake bus (request → expected Redis message, error code → HTTP status).
-- Upload tests: size limit, wrong type, cleanup on failure.
-- Target type editor: ring generation in JavaScript gives the same rings as the shared libraries for the examples in `schemas/examples/target_types/`.
-- Manual UI test checklist per view, on desktop and phone.
+All test cases with their expected outcomes: [testing/web_server.md](../testing/web_server.md).

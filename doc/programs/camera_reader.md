@@ -55,7 +55,7 @@ public:
 
 class V4l2Source : public FrameSource {
     // open(): resolve the setting camera_device (bus_info) to the current /dev/videoN by checking
-    // VIDIOC_QUERYCAP of every capture device; empty setting = first capture device found.
+    // VIDIOC_QUERYCAP of every capture device; empty setting = the capture device with the lowest N.
     // cv::VideoCapture(device, cv::CAP_V4L2); requests MJPG for high resolutions at full frame rate;
     // sets CAP_PROP_FRAME_WIDTH/HEIGHT/FPS and CAP_PROP_BUFFERSIZE = 1 for low latency.
 };
@@ -89,14 +89,12 @@ Every state change is sent as `camera_state_changed` and logged.
 ## Error handling
 | Situation | Behavior |
 |---|---|
-| Camera not present / RTSP unreachable | State `disconnected`, retry every 2 s, no crash |
+| Camera not present / RTSP unreachable | State `disconnected`, retry every 2 s, no crash; the message names the camera (`bus_info` or URL) |
+| `camera_source` `rtsp` without an active `camera_rtsp_url` | State `disconnected`, message names `camera_rtsp_url`; opened as soon as the setting is set |
 | Camera delivers a different resolution than requested | Use the real resolution, log a warning; the header carries it |
 | A stored control value is rejected (e.g. different firmware) | Log a warning, keep the camera's value |
 | No subscriber | Frames are still published |
 | Redis down | Capture continues; requests, status and events resume after reconnect |
 
 ## Testing
-- `FakeSource` producing generated test frames, to test the loop and publishing without a camera.
-- Integration test: publish frames and receive them with a Rust frame subscriber; check `seq` and header (checks the cross-language contract).
-- Control handling against the kernel's virtual test driver `vivid`, which offers all control types.
-- Manual tests with a USB webcam and an RTSP camera (or `mediamtx` streaming a video file).
+All test cases with their expected outcomes: [testing/camera_reader.md](../testing/camera_reader.md).

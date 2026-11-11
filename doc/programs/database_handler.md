@@ -15,7 +15,7 @@ Program `database_handler` (Rust): the only program that accesses the SQLite dat
 - Adds the generated `rings` and the `locked` flag to target types and devices it returns, and `optional`, `default_value`, `default_active` and `value_rule` to settings.
 - Translates Filters and SessionFilters into safe, parameterized SQL.
 - Sends a response to the request's `reply_to` stream and acknowledges the request.
-- Sends a `data_changed` event after every successful write.
+- Sends a `data_changed` event after every successful write, and `data_changed` `all`/`reload` after every start and reconnect (see [interfaces.md](../interfaces.md#data_changed)).
 - Defines the known settings (default value, default `active`, optional, value rule); checks every saved value against its rule; protects the known settings from deletion; resets settings to their defaults (`reset_settings`).
 - Changes the image folder and moves the images on request (`change_image_dir`).
 - Cleans up: old `processed_requests` entries and old files in the staging folder.
@@ -249,7 +249,7 @@ pub fn spawn_db_worker(db: Database, images: ImageStore) -> mpsc::Sender<DbComma
 2. `Database::open`: create the file and parent directory if missing; set `PRAGMA foreign_keys = ON`, `PRAGMA journal_mode = WAL`, `PRAGMA busy_timeout = 5000`; run migrations; insert default settings (folder defaults from `TARGETSCOPE_DATA_DIR`). No target types are inserted: they are always created by the user from a photo (see [target type editor](web_server.md#target-type-editor)) or imported.
 3. Create the image folder (`devices/`, `sessions/`) and the staging folder if missing.
 4. Start the DbWorker thread.
-5. Connect to Redis, create the consumer group (`XGROUP CREATE ... $ MKSTREAM`, ignoring `BUSYGROUP`), and start the StreamWorker. From now on `ping` is answered, which tells the launcher the program is ready.
+5. Connect to Redis, create the consumer group (`XGROUP CREATE ... $ MKSTREAM`, ignoring `BUSYGROUP`), send `data_changed` `all`/`reload`, and start the StreamWorker. From now on `ping` is answered, which tells the launcher the program is ready.
 6. Run maintenance at startup and then once an hour: purge `processed_requests` older than `processed_requests_retention_days`, and delete staging files (including leftover `.part` files) older than `staging_max_age_hours`.
 7. On SIGTERM/SIGINT: finish the current request and exit.
 
@@ -277,8 +277,8 @@ For each request:
 |---|---|
 | `create_session` / `import_session` with `images` | Moves each to `sessions/<uuid>_<paper_no>.<ext>`. The uuid is known before the insert, so the image paths are part of the insert and the record is never updated. `import_session` for an existing uuid leaves the files in the staging folder for the importer to delete |
 | `delete_session` | Deletes all `sessions/<uuid>_<paper_no>.<ext>` of the session after commit |
-| `import_device` with `staged_file` | Only if the device is created: moves it to `devices/<id>_<unix seconds>.<ext>` and sets `image_path`; otherwise the file is left in the staging folder for the importer to delete |
-| `set_device_image` | Moves it to `devices/<id>_<unix seconds>.<ext>`; sets `image_path`; deletes the previous image after commit |
+| `import_device` with `staged_file` | Only if the device is created: moves it to `devices/<id>_<8 random hex>.<ext>` and sets `image_path`; otherwise the file is left in the staging folder for the importer to delete |
+| `set_device_image` | Moves it to `devices/<id>_<8 random hex>.<ext>` (a new name every time, also when replaced twice within a second); sets `image_path`; deletes the previous image after commit |
 | `delete_device_image` | Sets `image_path = NULL`; deletes the file after commit |
 | `delete_device` | Deletes the device's image after commit |
 | `change_image_dir` / `reset_settings` with `move_images` | Copies all images to the new folder in the background, switches, then deletes the old copies (see [Image folder change](#image-folder-change)); other requests keep working meanwhile |
@@ -301,7 +301,7 @@ For each request:
 |---|---|---|
 | Unparseable message, validation error, not found, in use | error response | yes, retrying cannot succeed |
 | Database or file error (e.g. disk full, database locked after timeout) | `database_error` / `io_error` | yes, after logging |
-| Redis connection lost | none | no; reconnect with backoff and reprocess pending requests |
+| Redis connection lost | none | no; reconnect with backoff, send `data_changed` `all`/`reload` (events of writes done just before may be lost), reprocess pending requests |
 | Handler crashes while processing | none | no; the request is pending and is reprocessed on restart |
 
 Duplicates are safe: if the handler crashes after committing but before `XACK`, the request is reprocessed, its `request_id` is found in `processed_requests`, and the stored response is sent again without a second write. Only successful writes are recorded. Failed requests leave no record, so a resend is validated and executed again; deterministic errors (`validation_failed`, `not_found`, `in_use`) then give the same result, and a transient `database_error` may now succeed.
@@ -312,14 +312,7 @@ If the handler crashes between commit and deleting an image file, the file stays
 The schema version is stored in `PRAGMA user_version`. `schema.rs` holds an ordered list of migration SQL scripts. On startup, every script with an index greater than `user_version` runs in its own transaction, and `user_version` is updated after each one. Migration 1 is the schema in [database.md](../database.md#schema-sql). Default settings are inserted after the migrations with `INSERT ... ON CONFLICT(name) DO NOTHING`, so user changes are kept.
 
 ## Testing
-- Query and filter tests against an in-memory database (`Connection::open_in_memory`) with all migrations applied.
-- Validation tests without a database.
-- Duplicate tests: sending each write request twice with the same `request_id` stores it once and returns the same response both times.
-- Paper tests: images and shots with `paper_no` outside `1 ..= paper_count` are rejected; all images of a session are moved and deleted together.
-- Record tests: every way of changing a saved session, a used target type's geometry or a used device's bullet diameter is rejected (by the handler with `in_use`, and directly in SQL by the triggers); `shot_count` stays after `delete_session`.
-- Import tests: same uuid twice creates one record; name conflicts get the suffix.
-- Image tests in a temporary folder: move in, move back on failed transaction, delete; rejection of `../` and non-image files.
-- Integration tests with a local Redis: send each request type and check the response and the `data_changed` event.
+All test cases with their expected outcomes: [testing/database_handler.md](../testing/database_handler.md).
 
 ## Future: backups
 Not part of this version; see [database.md](../database.md#future-backups). A `backup` request can be added to this program without changing anything else.
