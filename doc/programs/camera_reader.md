@@ -54,6 +54,8 @@ public:
 };
 
 class V4l2Source : public FrameSource {
+    // open(): resolve the setting camera_device (bus_info) to the current /dev/videoN by checking
+    // VIDIOC_QUERYCAP of every capture device; empty setting = first capture device found.
     // cv::VideoCapture(device, cv::CAP_V4L2); requests MJPG for high resolutions at full frame rate;
     // sets CAP_PROP_FRAME_WIDTH/HEIGHT/FPS and CAP_PROP_BUFFERSIZE = 1 for low latency.
 };

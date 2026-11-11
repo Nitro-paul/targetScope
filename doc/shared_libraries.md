@@ -14,7 +14,7 @@ Both are tested against the same schemas and examples (contract tests), so a Rus
 Library crate shared by all Rust programs. A change of a message or frame type is a compile error in every Rust program that uses it, and a contract test failure if it no longer matches the schema.
 
 ## Responsibilities
-- Model types: `Session`, `NewSession`, `Shot`, `SessionShot`, `PaperImage`, `Shooter`, `Device`, `TargetType`, `Ring`, `Setting`, `Filter`, `Corners`, `AnalysisResult`, `CurrentSession`, `SessionSetup`, `CurrentShot`, `CalibrationStatus`, `CameraControl`, `StatisticsFilter`, `StatisticsGroup`, `StatisticsValues`
+- Model types: `Session`, `NewSession`, `Shot`, `SessionShot`, `PaperImage`, `Shooter`, `Device`, `TargetType`, `Ring`, `Setting`, `Filter`, `Corners`, `AnalysisResult`, `CurrentSession`, `SessionSetup`, `CurrentShot`, `CalibrationStatus`, `CameraControl`, `SessionFilter`, `StatisticsGroup`, `StatisticsValues`
 - Ring generation from the three anchors of a target type
 - Message types: request, response and event envelopes, and one request enum per receiving program
 - Redis bus: connecting, consumer groups, sending requests and waiting for responses, serving requests, publishing and reading events

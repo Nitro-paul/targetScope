@@ -68,6 +68,7 @@ struct LiveState {
     std::vector<Candidate> candidates;  // not yet confirmed
     bool counting = false;
     int next_hole_id = 1;
+    int live_paper = 1;                 // +1 at every paper change; sent with shot_detected
     cv::Mat last_good_raw;              // newest frame with the current paper fully visible, and
     cv::Mat last_good_homography;       //   its homography: used for the image of a paper that is replaced
 };
@@ -102,7 +103,7 @@ The camera is often at an angle to the target, so this step relies only on the p
 ## Live mode
 
 ### Start and calibration
-On `live_start`, the target type and bullet diameter are stored (a running live mode is replaced, and all its holes are forgotten). The paper is searched about once per second until it's found; without frames, the status message is `no camera frames`. After `live_calibrate`, the clicked corners are used instead. On success: `calibration_changed` (`calibrated`), then the **initial hole scan**.
+On `live_start`, the target type and bullet diameter are stored (a running live mode is replaced, and all its holes are forgotten; `live_paper = 1`). The paper is searched about once per second until it's found; without frames, the status message is `no camera frames`. After `live_calibrate`, the clicked corners are used instead. They're in raw camera pixels (the raw feed isn't lens-corrected), so with an applied lens calibration they're converted with `undistortPoints` first; `CalibrationStatus.corners` is always reported in raw camera pixels. On success: `calibration_changed` (`calibrated`), then the **initial hole scan**.
 
 **Supervision:** every 30th frame, the paper is searched again near the known corners. If a corner moved more than 2 mm (paper scale), the calibration is updated (auto) or set to `lost` (manual), and `calibration_changed` is sent. After an update, the reference image is created again from the current frame; the known holes keep their paper positions, so nothing is counted twice. While `lost`, no holes are detected.
 
@@ -125,10 +126,10 @@ For each new frame:
 
 ### Paper change
 A new paper starts in one of two ways:
-- **By request** (`live_new_paper`, the user pressed "new paper"): the last good frame of the old paper is warped at `capture_long_side_px` and saved as `target_<uuid>.jpg`.
-- **Automatically:** after the calibration was `lost` (the paper was taken away) and the paper is found again, the counted holes of the old paper are looked for at their paper positions. If none of them is visible, it's a new paper: the same image is saved and `paper_replaced` is sent. If they are visible, it's the same paper again and nothing changes.
+- **By request** (`live_new_paper`, the user pressed "new paper"): only if `from_live_paper` equals the current `live_paper` (otherwise the paper was already changed automatically, and nothing happens again). The last good frame of the old paper is warped at `capture_long_side_px` and saved as `target_<uuid>.jpg`.
+- **Automatically:** after the calibration was `lost` (the paper was taken away) and the paper is found again, all known holes of the old paper (counted or not) are looked for at their paper positions. If at most 20 % of them are visible, it's a new paper: the same image is saved and `paper_replaced` is sent. Otherwise it's the same paper again and nothing changes. If the old paper had no holes at all, nothing changes either (a blank paper replaced by a blank paper makes no difference).
 
-Then all holes are forgotten, the initial hole scan runs on the new paper (holes found are shown gray, not counted), and the live view numbering starts again at 1. Counting keeps its state.
+Then `live_paper` increases, all holes are forgotten, the initial hole scan runs on the new paper (holes found are shown gray, not counted), and the live view numbering starts again at 1. Counting keeps its state. Every `shot_detected` carries the `live_paper` of its hole, so session_manager assigns it to the right paper even if it arrives after the change.
 
 **Uncounting:** `live_uncount_hole` sets `counted = false` for the hole; it's drawn gray, and the remaining counted holes are numbered again.
 
@@ -140,7 +141,7 @@ After each processed frame, the transformed color image is drawn as described in
 ## Capture mode
 
 ### capture_target_image
-Transforms `newest_raw` with the live homography, at a resolution where the long side has `capture_long_side_px` pixels (default 2400). Nothing is drawn. Written as JPEG (quality 92) to the staging folder as `target_<uuid>.jpg`. This is the image stored with the session.
+Transforms `last_good_raw` (the newest frame in which the paper was calibrated and nothing was in front of it) with its homography, at a resolution where the long side has `capture_long_side_px` pixels (default 2400). Nothing is drawn. Written as JPEG (quality 92) to the staging folder as `target_<uuid>.jpg`. This is the image stored with the session.
 
 ### capture_raw_image
 Writes `newest_raw` (not transformed, but lens-corrected if a calibration applies) as JPEG to the staging folder (`raw_<uuid>.jpg`). Used to take a picture for a new target type.
@@ -173,6 +174,8 @@ Cheap webcams bend straight lines (barrel distortion). The homography from the p
 1. `lens_calibration_start`. The user holds a printed checkerboard (9 × 6 inner corners; PDF in the web UI; the square size doesn't matter for the distortion) in front of the camera.
 2. For each view, `lens_calibration_capture`: `findChessboardCornersSB` on the newest raw frame (not corrected); if found, the corners are kept. The UI asks for at least 10 views, at different positions, distances and angles, covering the image corners too.
 3. `lens_calibration_finish`: `calibrateCamera` with all views → camera matrix and distortion coefficients (k1, k2, p1, p2, k3) and the RMS reprojection error. Stored in the setting `lens_calibrations` under the camera's `camera_key`, together with the resolution (`save_setting` through `database_handler`). The UI shows the RMS error; below 0.5 px is good, above 1 px suggests repeating.
+
+**Camera changes:** if the camera or its resolution changes while views are being collected, the views are discarded (`lens_calibration_status.collecting_views` drops to 0) and the UI asks to start again.
 
 **Applying:** the current camera's `camera_key` and resolution come from `camera_status` at startup and from `camera_state_changed` events. If a calibration for that `camera_key` and resolution exists, `initUndistortRectifyMap` builds a correction map once:
 - every raw frame is corrected before anything else (`remap`), so finding the paper, hole detection, captures and the live view all work on corrected frames,

@@ -16,7 +16,7 @@ Program `database_handler` (Rust): the only program that accesses the SQLite dat
 - Translates Filters into safe, parameterized SQL.
 - Sends a response to the request's `reply_to` stream and acknowledges the request.
 - Sends a `data_changed` event after every successful write.
-- Defines the known settings (default value, default `active`, optional); validates the folder settings; protects the known settings from deletion; resets settings to their defaults (`reset_settings`).
+- Defines the known settings (default value, default `active`, optional, value rule); checks every saved value against its rule; protects the known settings from deletion; resets settings to their defaults (`reset_settings`).
 - Changes the image folder and moves the images on request (`change_image_dir`).
 - Cleans up: old `processed_requests` entries and old files in the staging folder.
 - Logs every request and error.
@@ -62,7 +62,8 @@ programs/database_handler/
     ├── stream_worker.rs   # request handling on top of targetscope_common::bus
     ├── db_worker.rs       # DbCommand, DbWorker thread
     ├── images.rs          # ImageStore: staging -> image folder, delete, move to a new image folder
-    ├── known_settings.rs  # list of known settings: name, display name, default value, default active, optional
+    ├── known_settings.rs  # list of known settings: name, display name, default value, default active, optional, value rule
+    ├── image_dir_change.rs  # change_image_dir: background copy, switch, cleanup
     ├── maintenance.rs     # daily purge of processed_requests and staging folder
     └── db/
         ├── mod.rs         # Database: open connection, pragmas
@@ -89,6 +90,12 @@ Bootstrap values come from environment variables set by the launcher (see [share
 /// Values are always bound as parameters, never formatted into SQL.
 pub fn filter_to_sql(filter: &Filter, columns: &[(&str, ColumnType)])
     -> Result<(String, Vec<rusqlite::types::Value>), HandlerError>;
+
+/// Same for sessions: builds the WHERE clause for a SessionFilter, with a join on devices
+/// for device_categories and calibers, and on shooters/devices/target_types for include_retired.
+/// An empty list becomes a condition that matches nothing.
+pub fn session_filter_to_sql(filter: &SessionFilter)
+    -> (String, Vec<rusqlite::types::Value>);
 ```
 
 ### Errors
@@ -130,7 +137,8 @@ pub mod sessions {
     /// Returns (id, created); created = false if the uuid exists.
     pub fn import(c: &Connection, s: &Session, images: &[(u32, String)]) -> Result<(i64, bool), HandlerError>;
     pub fn exists(c: &Connection, uuid: Uuid) -> Result<Option<i64>, HandlerError>;
-    pub fn find(c: &Connection, f: &Filter, include_shots: bool) -> Result<Vec<Session>, HandlerError>;
+    /// Returns the page of sessions and the total number of matches.
+    pub fn find(c: &Connection, f: &SessionFilter, order: &SessionOrder, page: Page, include_shots: bool) -> Result<(Vec<Session>, u64), HandlerError>;
     /// Returns the deleted session's image paths, so the files can be removed after commit.
     pub fn delete(c: &Connection, id: i64) -> Result<Vec<String>, HandlerError>;
 }
@@ -204,12 +212,19 @@ impl ImageStore {
     pub fn move_back(&self, image_path: &str, file: &str) -> Result<(), HandlerError>;
     /// Deletes a file from the image folder; a missing file is only logged.
     pub fn delete(&self, image_path: &str);
-    /// Moves all files of devices/ and sessions/ to `new_dir` (rename, or copy + delete across
-    /// file systems); returns the number moved and the image_paths that couldn't be moved.
-    pub fn move_all(&self, new_dir: &Path) -> MoveReport;
+    /// Switches to a new image folder (used by the image folder change, see below).
+    pub fn set_image_dir(&mut self, new_dir: PathBuf);
 }
 ```
 Folder paths come from the settings `image_dir` and `staging_dir`; the handler updates them when it saves these settings. `image_dir` is only changed through `change_image_dir` (or `reset_settings`), which can move the images: the UI asks the user in a popup (see [web_server](web_server.md#settings-view)). Images that weren't moved are shown as "image missing" until the user moves them by hand.
+
+### Image folder change
+Copying thousands of images can take minutes. So that sessions can still be saved meanwhile, the copy doesn't run in the DbWorker:
+1. **Copy** (background task, `spawn_blocking`): copy all files of `devices/` and `sessions/` into the new folder. The DbWorker keeps handling requests; new images still go to the old folder.
+2. **Switch** (one DbWorker command, short): copy the files added since step 1, delete copies of files deleted since step 1, save the setting, `ImageStore::set_image_dir`. From now on new images go to the new folder.
+3. **Clean up** (background task): delete the copied files in the old folder. Files that couldn't be copied stay there and are reported in the response.
+
+Without `move_images`, only step 2 (save the setting) runs. Only one image folder change can run at a time; a second one gets `invalid_state`.
 
 ### DbWorker
 ```rust
@@ -265,7 +280,7 @@ For each request:
 | `set_device_image` | Moves it to `devices/<id>_<unix seconds>.<ext>`; sets `image_path`; deletes the previous image after commit |
 | `delete_device_image` | Sets `image_path = NULL`; deletes the file after commit |
 | `delete_device` | Deletes the device's image after commit |
-| `change_image_dir` / `reset_settings` with `move_images` | Moves all images to the new folder before the setting is saved (`ImageStore::move_all`). Other requests wait meanwhile, because the DbWorker handles one command at a time |
+| `change_image_dir` / `reset_settings` with `move_images` | Copies all images to the new folder in the background, switches, then deletes the old copies (see [Image folder change](#image-folder-change)); other requests keep working meanwhile |
 
 ### Validation rules
 - `create_session`: at least one shot; `shot_count == shots.len()`; `paper_count >= 1`; every `paper_no` of shots and images in `1 ..= paper_count`, at most one image per paper; `notes` at most 10 000 characters; every image passes `check_staged`; `device_id`, `target_type_id` and (if given) `shooter_id` exist; for every shot `0 <= angle_turns < 1` and `radius_mm >= 0`; `distance_m` and `duration_s` are `>= 0` if given.
@@ -274,9 +289,9 @@ For each request:
 - `set_device_image`: device exists; `staged_file` passes `check_staged`.
 - `save_target_type`: `name` not empty and unique; all TargetType rules in [interfaces.md](../interfaces.md#targettype) (paper size, center and outermost ring on the paper, radii increasing, scores decreasing); only `name` changed if the type is locked.
 - `save_shooter`: name not empty after trimming, unique ignoring case.
-- `save_setting`: `name` and `display_name` not empty; `active = false` only for optional settings; not `image_dir` (use `change_image_dir`); for `staging_dir`, `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir` (same `st_dev`).
+- `save_setting`: `name` and `display_name` not empty; the value matches the setting's value rule (see [known settings](../database.md#known-settings)); `active = false` only for optional settings; not `image_dir` (use `change_image_dir`); for `staging_dir`, `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir` (same `st_dev`).
 - `change_image_dir`: the new folder exists or can be created, is writable, and is on the same file system as `staging_dir`.
-- `reset_settings`: every name is a known setting.
+- `reset_settings`: every name is a known setting. Without names: all known settings except `admin_password_hash` and `lens_calibrations`.
 - `delete_setting`: not one of the [known settings](../database.md#known-settings).
 - All read requests: every filter field is a column of the table; `like` only on text columns.
 

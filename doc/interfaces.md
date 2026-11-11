@@ -260,7 +260,7 @@ A target type describes the paper target and its scoring rings. All positions ar
 |---|---|---|
 | `id` | integer | Set by the database handler |
 | `uuid` | string (UUID) | Permanent identity; set by the database handler |
-| `name` | string | Unique, required |
+| `name` | string | Unique (ignoring upper/lower case), required |
 | `paper_width_mm` | float | Width of the paper |
 | `paper_height_mm` | float | Height of the paper |
 | `center_x_mm`, `center_y_mm` | float | Position of the ring center on the paper |
@@ -282,7 +282,7 @@ r(s) = r_a + (s_a - s) · (r_b - r_a) / (s_a - s_b)
 ```
 Example (scores 12 / 7 / 1): rings 11–8 are spaced equally between the white and black edges, rings 6–2 between the black and outer edges.
 
-`rings` is only output. Every program that needs rings generates them from the anchors with the shared function `generate_rings` ([shared_libraries.md](shared_libraries.md#target-types)); a `rings` field in a request is ignored. Read-only fields (`rings`, `locked`, `image_path`, `shot_count` of devices, `optional`/`default_value`/`default_active` of settings) are ignored in every request.
+`rings` is only output. Every program that needs rings generates them from the anchors with the shared function `generate_rings` ([shared_libraries.md](shared_libraries.md#target-types)); a `rings` field in a request is ignored. Read-only fields (`uuid` except in import requests, `rings`, `locked`, `image_path`, `shot_count` of devices, `optional`/`default_value`/`default_active`/`value_rule` of settings) are ignored in every request.
 
 ### Ring
 | Field | Type | Notes |
@@ -302,9 +302,10 @@ Rings are ordered from the inside out (increasing radius, decreasing score).
 | `optional` | bool | Read-only: `true` if the setting may be unset (e.g. `export_dir`). A program that needs an unset optional setting answers `setting_not_set` |
 | `default_value` | string | Read-only: value restored by `reset_settings` |
 | `default_active` | bool | Read-only: `active` restored by `reset_settings` |
+| `value_rule` | string | Read-only: what `value` must look like, e.g. `integer 1..=120`, `one of v4l2, rtsp, none`, `folder`; checked by `save_setting` (see [known settings](database.md#known-settings)) |
 
 ### Filter
-Used by all read requests of the database handler to select records.
+Used by the read requests of the database handler for shooters, devices, target types and settings. Sessions are selected with the richer [SessionFilter](#sessionfilter).
 ```json
 {
   "conditions": [
@@ -318,9 +319,31 @@ Used by all read requests of the database handler to select records.
 ```
 - `conditions`: all conditions must match (AND). An empty list matches every record.
 - `field`: a stored column of the requested record type (not `rings`, `locked` or `shots`). Unknown fields are rejected with `validation_failed`.
-- `op`: `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `like` (SQL `LIKE` pattern, text fields only), `in` (`value` is a list; matches any of its values)
+- `op`: `eq`, `ne`, `lt`, `le`, `gt`, `ge`, `like` (SQL `LIKE` pattern, text fields only), `in` (`value` is a list; matches any of its values; an empty list matches nothing)
 - `order_by`: optional; `direction` is `asc` or `desc`
 - `limit`, `offset`: optional, for paging
+
+### SessionFilter
+Selects saved sessions. Used by `read_sessions`, `export_sessions` and `compute_statistics`, and by the same filter panel in the web UI (history, export, statistics).
+
+Every field is optional; a missing field doesn't restrict. A given list matches any of its values; an empty list matches nothing. All given fields must match (AND).
+| Field | Type | Matches sessions … |
+|---|---|---|
+| `session_ids` | list of integer | with these ids |
+| `shooter_ids` | list of integer | of these shooters |
+| `device_ids` | list of integer | with these devices |
+| `device_categories` | list of string | with devices of these categories |
+| `calibers` | list of string | with devices of these calibers |
+| `target_type_ids` | list of integer | on these target types |
+| `distance_m` | `{ "min": integer, "max": integer }` | within this distance range (each bound optional) |
+| `saved_at` | `{ "from": integer, "to": integer }` | saved in this time range (Unix seconds, each bound optional) |
+| `single_handed` | bool | shot single-handed or not |
+| `supported` | bool | shot supported or not |
+| `shot_count` | `{ "min": integer, "max": integer }` | with this number of shots |
+| `include_retired` | bool | default `true`; `false` leaves out sessions whose shooter, device or target type is retired |
+
+The database handler resolves device fields (`device_categories`, `calibers`) with a join on `devices`.
+
 
 ### Corners
 Four points in image pixel coordinates (origin top-left, x right, y down), used for the paper corners:
@@ -416,7 +439,7 @@ Images are passed as `staged_file`: the sender writes the file to the staging fo
 There is no request to change a saved session.
 
 #### create_session
-Saves a new session record together with its shots and, optionally, its target image.
+Saves a new session record together with its shots and its target images.
 
 Payload: all Session fields except `id`, `uuid`, `saved_at` and `images`, plus:
 - `images`: list of `{ "paper_no": integer, "staged_file": string }`, the transformed target image per paper (may be empty)
@@ -429,10 +452,12 @@ Response `create_session_response`: `{ "id": <new session id>, "uuid": <uuid>, "
 Returns all sessions that match a filter, each with its shots.
 
 Payload:
-- `filter`: Filter on Session fields
+- `filter`: SessionFilter
+- `order_by`: optional `{ "field": "saved_at" | "score" | "shot_count" | "id", "direction": "asc" | "desc" }`, default `saved_at desc`
+- `limit`, `offset`: optional, for paging
 - `include_shots`: bool, default `true`; set to `false` for overview lists
 
-Response `read_sessions_response`: `{ "sessions": [Session, ...] }`, in the order given by `order_by`, otherwise by `id`.
+Response `read_sessions_response`: `{ "sessions": [Session, ...], "total": integer }`; `total` is the number of matching sessions without `limit`/`offset`, for paging.
 
 #### delete_session
 Deletes a session record completely: the session, its shots and its target images. `devices.shot_count` is not reduced.
@@ -502,7 +527,7 @@ Payload: TargetType fields; `id` optional.
 
 Validation: see TargetType.
 
-Response `save_target_type_response`: `{ "id": <target type id> }`. Error `in_use` if anything but `name` changes on a locked target type. To change a locked type, the UI saves a copy as a new type.
+Response `save_target_type_response`: `{ "id": <target type id> }`. Error `in_use` if anything but `name` and `retired` changes on a locked target type. To change a locked type, the UI saves a copy as a new type.
 
 #### read_target_types
 Payload: `{ "filter": Filter on TargetType fields }`
@@ -515,7 +540,7 @@ Payload: `{ "id": <target type id> }`
 Response `delete_target_type_response`: `{ "id": <deleted id> }`. Error `in_use` if a session references the target type.
 
 ### Import
-Used only by `importer`. Records keep the `uuid` from the file, so importing the same file again changes nothing. All three requests answer `{ "id": <local id>, "created": bool }`; if the uuid already exists, the existing id is returned with `created = false` and nothing is changed.
+Used only by `importer`. Records keep the `uuid` from the file, so importing the same file again changes nothing. All import requests answer `{ "id": <local id>, "created": bool }`; if the uuid already exists, the existing id is returned with `created = false` and nothing is changed.
 
 #### import_shooter
 Payload: Shooter with `uuid`.
@@ -544,7 +569,7 @@ Creates the setting with the given `name`, or updates it if it exists.
 
 Payload: Setting fields
 
-Validation: `active = false` only for optional settings. For the folder settings `staging_dir` and `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir`. `image_dir` can't be changed with `save_setting` (`validation_failed`); use `change_image_dir`.
+Validation: the value matches the setting's `value_rule`; `active = false` only for optional settings. For the folder settings `staging_dir` and `export_dir`: the folder exists or can be created and is writable; `staging_dir` is on the same file system as `image_dir`. `image_dir` can't be changed with `save_setting` (`validation_failed`); use `change_image_dir`.
 
 Response `save_setting_response`: `{ "name": <setting name> }`
 
@@ -561,7 +586,7 @@ Response `delete_setting_response`: `{ "name": <deleted name> }`. Error `not_fou
 #### reset_settings
 Restores settings to their default value and default `active` state.
 
-Payload: `{ "names": [<setting name>, ...] or null, "move_images": bool }`. `names = null` resets all known settings. `move_images` is used if `image_dir` is reset (see `change_image_dir`).
+Payload: `{ "names": [<setting name>, ...] or null, "move_images": bool }`. `names = null` resets all known settings except `admin_password_hash` and `lens_calibrations` (a password and measured calibrations aren't preferences; they can only be reset by name). `move_images` is used if `image_dir` is reset (see `change_image_dir`).
 
 Response `reset_settings_response`: `{ "names": [<reset setting names>], "images": { "moved": integer, "failed": [<image_path>, ...] } or null }`
 
@@ -571,8 +596,11 @@ Changes the image folder, and optionally moves the stored images there.
 Payload: `{ "path": <new folder>, "move_images": bool }`
 
 1. Check the new folder: exists or can be created, writable, on the same file system as `staging_dir`.
-2. If `move_images`: move every file of the old folder's `devices/` and `sessions/` into the new folder (rename; copy and delete if the folders are on different file systems). A file that can't be moved stays where it is and is reported.
-3. Save the setting. Stored `image_path`s don't change, because they're relative to the image folder.
+2. If `move_images`: copy every file of the old folder's `devices/` and `sessions/` into the new folder. This runs in the background, so all other database requests keep working meanwhile.
+3. Switch: save the setting; copy files that were added in the meantime and remove copies of files that were deleted in the meantime. From now on, new images go to the new folder.
+4. If `move_images`: delete the files in the old folder that were copied. A file that couldn't be copied stays in the old folder and is reported.
+
+Stored `image_path`s don't change, because they're relative to the image folder.
 
 Response `change_image_dir_response`: `{ "path": <new folder>, "images": { "moved": integer, "failed": [<image_path>, ...] } or null }` (`null` without `move_images`). Images that weren't moved are shown as missing until the user moves them by hand.
 
@@ -593,7 +621,7 @@ Response `camera_status_response`:
 ```json
 { "state": "connected", "camera_source": "v4l2", "device": "/dev/video0", "camera_key": "usb-0000:00:14.0-2", "width_px": 1920, "height_px": 1080, "fps": 30.0, "frames_published": 123456 }
 ```
-`state` is `connected`, `disconnected` (configured but not reachable; retrying) or `disabled` (setting `camera_source` is `none`). `camera_key` identifies the camera for stored per-camera data (control values, lens calibration): the V4L2 `bus_info` for USB cameras (stable when the device number changes), the RTSP URL for network cameras.
+`state` is `connected`, `disconnected` (configured but not reachable; retrying) or `disabled` (setting `camera_source` is `none`). `device` is the V4L2 device the selected camera currently has. `camera_key` identifies the camera for stored per-camera data (control values, lens calibration): the V4L2 `bus_info` for USB cameras (stable when the device number changes), the RTSP URL for network cameras.
 
 #### camera_list_devices
 Lists the USB cameras and the formats they support, for the camera settings menu.
@@ -639,10 +667,10 @@ Starts live mode for a target type, or restarts it with new values if it's alrea
 
 Payload: `{ "target_type": TargetType, "bullet_diameter_mm": float }`
 
-Response `live_start_response`: CalibrationStatus.
+Response `live_start_response`: CalibrationStatus. `live_paper` starts at 1.
 
 #### live_calibrate
-Calibrates live mode from the four paper corners the user clicked in the raw camera feed.
+Calibrates live mode from the four paper corners the user clicked in the raw camera feed. Corners are always given in pixels of the raw camera frame as `camera_reader` publishes it (without lens correction); `image_processor` converts them itself if a lens calibration applies. `CalibrationStatus.corners` uses the same coordinates, so the UI can draw them on the raw feed.
 
 Payload: `{ "corners": Corners }`
 
@@ -663,11 +691,13 @@ Payload: `{ "hole_id": integer }`
 Response `live_uncount_hole_response`: `{}`. Unknown ids are ignored.
 
 #### live_new_paper
-The user has put up a new target paper. Saves the newest good frame of the old paper as transformed image, forgets all holes, and searches the paper again; holes already on the new paper are shown but not counted. Shot numbering in the live view starts again at 1.
+The user has put up a new target paper. Saves the last good frame of the old paper as transformed image, forgets all holes, and searches the paper again; holes already on the new paper are shown but not counted. Shot numbering in the live view starts again at 1.
 
-Payload: `{}`
+Live mode counts its papers in `live_paper` (1 at `live_start`, +1 at every paper change, whether requested or detected automatically).
 
-Response `live_new_paper_response`: `{ "previous_paper_staged_file": "target_<uuid>.jpg" or null }` (`null` if the old paper was never calibrated).
+Payload: `{ "from_live_paper": integer }`, the paper the sender believes is current. If the paper was already changed automatically in the meantime (current `live_paper` is higher), nothing happens again; the response reports the current paper, and the matching `paper_replaced` event carries the image.
+
+Response `live_new_paper_response`: `{ "changed": bool, "live_paper": integer, "previous_paper_staged_file": "target_<uuid>.jpg" or null }` (`null` if not changed, or if the old paper was never calibrated).
 
 #### live_stop
 Ends live mode.
@@ -696,7 +726,7 @@ Corrects the lens distortion of a camera (straight lines that look bent). Option
 ### Capture mode
 
 #### capture_target_image
-Saves the newest camera frame of live mode, transformed to the target paper, without drawing.
+Saves the last good frame of the current paper (calibrated, nothing in front of the paper), transformed to the target paper, without drawing.
 
 Payload: `{}`
 
@@ -744,12 +774,12 @@ Payload: CalibrationStatus
 #### paper_replaced
 Sent in live mode when the paper was taken away and a paper without the counted holes was put up (detected automatically after the calibration was `lost` and is found again). Does the same as `live_new_paper`.
 
-Payload: `{ "previous_paper_staged_file": "target_<uuid>.jpg" or null }`
+Payload: `{ "live_paper": integer, "previous_paper_staged_file": "target_<uuid>.jpg" or null }` (`live_paper` is the new paper)
 
 #### shot_detected
 Sent while counting is on, once per new hole.
 
-Payload: `{ "hole_id": integer, "angle_turns": float, "radius_mm": float, "confidence": float (0–1), "frame_seq": integer }`
+Payload: `{ "hole_id": integer, "live_paper": integer, "angle_turns": float, "radius_mm": float, "confidence": float (0–1), "frame_seq": integer }`
 
 `hole_id` is unique within one live mode (from `live_start` to `live_stop`).
 
@@ -768,16 +798,16 @@ Every successful response has the payload `{ "session": CurrentSession }`, the s
 | `session_upload_photo` | `{ "staged_file": <file name>, "corners": Corners (optional) }` | setup, review (input mode `photo`) | photo transformed, shots detected and added as a new paper; from setup → review |
 | `session_pause` | `{}` | running | → paused |
 | `session_resume` | `{}` | paused | → running |
-| `session_add_shot` | Shot | running (input mode `manual`), review | shot added |
+| `session_add_shot` | Shot, plus optional `paper_no` (default: the current paper; in review: the last paper) | running (input mode `manual`), review | shot added |
 | `session_update_shot` | `{ "index": integer, "angle_turns": float, "radius_mm": float }` | running (input mode `manual`), review | shot changed |
 | `session_delete_shot` | `{ "index": integer }` | running, paused, review | shot removed |
 | `session_new_paper` | `{}` | running, paused (input mode `camera` or `manual`) | next paper; camera: `live_new_paper` |
 | `session_set_notes` | `{ "notes": string or null }` | setup, running, paused, review, recovered | notes changed |
-| `session_stop` | `{}` | running, paused | → review |
-| `session_save` | `{}` | review, recovered; at least one shot | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
+| `session_stop` | `{}` | running, paused | → review; camera: the last paper's image is taken, live mode ends |
+| `session_save` | `{}` | review, recovered | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
 | `session_cancel` | `{}` | setup, running, paused, review, recovered | discarded, → idle |
 
-`index` counts from 0 in the `shots` list. `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
+`index` counts from 0 in the `shots` list. `session_save` without shots answers `validation_failed`. `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
 
 ### Events (`session_manager:events`)
 
@@ -801,7 +831,7 @@ Response `analyze_shots_response`: AnalysisResult
 Stream `exporter:requests`. Design and file formats: [programs/exporter.md](programs/exporter.md).
 
 #### export_sessions
-Payload: `{ "filter": Filter on Session fields, "format": "csv" | "json" | "png", "include_images": bool }`
+Payload: `{ "filter": SessionFilter, "format": "csv" | "json" | "png", "include_images": bool }`
 
 - `include_images` (default `false`): only for `csv` and `json`. The data files and the session target images and device images are written into one ZIP file (layout in [programs/exporter.md](programs/exporter.md#zip-with-images)). With `png`: `validation_failed`.
 
@@ -823,29 +853,14 @@ Stream `statistics:requests`. Design: [programs/statistics.md](programs/statisti
 #### compute_statistics
 Payload:
 ```json
-{ "filter": StatisticsFilter,
+{ "filter": SessionFilter,
   "group_by": "none" | "shooter" | "device" | "device_category" | "distance" | "single_handed" | "supported",
   "period": "session" | "day" | "week" | "month" }
 ```
 - `group_by`: splits the result into groups for comparison. Results are always also split by target type, because scores of different target types can't be compared.
 - `period`: resolution of the trend (`session`: one point per session).
 
-Response `compute_statistics_response`: `{ "groups": [StatisticsGroup, ...], "session_count": integer }`. Error `validation_failed` for unknown ids in the filter.
-
-### StatisticsFilter
-Every field is optional; a missing field or empty list doesn't restrict. All given fields must match (AND); values within one list are alternatives (OR).
-| Field | Type | Matches sessions … |
-|---|---|---|
-| `shooter_ids` | list of integer | of these shooters |
-| `device_ids` | list of integer | with these devices |
-| `device_categories` | list of string | with devices of these categories |
-| `calibers` | list of string | with devices of these calibers |
-| `target_type_ids` | list of integer | on these target types |
-| `distance_m` | `{ "min": integer, "max": integer }` | within this distance range (each bound optional) |
-| `saved_at` | `{ "from": integer, "to": integer }` | saved in this time range (Unix seconds, each bound optional) |
-| `single_handed` | bool | shot single-handed or not |
-| `supported` | bool | shot supported or not |
-| `shot_count` | `{ "min": integer, "max": integer }` | with this number of shots |
+Response `compute_statistics_response`: `{ "groups": [StatisticsGroup, ...], "session_count": integer }`. Ids in the filter that don't exist simply match no session.
 
 ### StatisticsGroup
 | Field | Type | Notes |

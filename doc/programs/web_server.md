@@ -67,8 +67,8 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | `DELETE /api/session/shots/{index}` | `session_delete_shot` |
 | `POST /api/session/photo` (multipart, optional Corners) | upload, then `session_upload_photo` |
 | **Saved sessions** (records: read and delete only) | |
-| `GET /api/sessions?shooter_id=…&device_id=…&target_type_id=…&from=…&to=…&limit=…&offset=…` | `read_sessions` (`include_shots = false`; `from`/`to` filter `saved_at`) |
-| `GET /api/sessions/{id}` | `read_sessions` (filter `id eq`) |
+| `POST /api/sessions/query` (body: SessionFilter, `order_by`, `limit`, `offset`) | `read_sessions` (`include_shots = false`) |
+| `GET /api/sessions/{id}` | `read_sessions` (`session_ids = [id]`) |
 | `DELETE /api/sessions/{id}` | `delete_session` |
 | **Shooters** | |
 | `GET /api/shooters` · `POST /api/shooters` · `PUT /api/shooters/{id}` · `DELETE /api/shooters/{id}` | `read_shooters` / `save_shooter` / `delete_shooter` |
@@ -99,14 +99,14 @@ All bodies are JSON. Every write endpoint accepts an optional `Idempotency-Key` 
 | **Analysis** | |
 | `POST /api/analyze` | `analyze_shots` (used by the history view to show shot scores) |
 | **Export and import** | |
-| `POST /api/exports` | `export_sessions` (body: filter, format, `include_images`) |
+| `POST /api/exports` | `export_sessions` (body: SessionFilter, format, `include_images`) |
 | `GET /api/exports` · `DELETE /api/exports/{name}` | `list_exports` / `delete_export` |
 | `POST /api/imports` (multipart, `.json` or `.zip`) | upload, then `import_file` |
 | **System** | |
 | `GET /api/system` | `launcher_status` |
 | `POST /api/system/programs/{name}/restart` | `restart_program` |
 
-Query parameters of `GET /api/sessions` are translated into a Filter; only the listed parameters are accepted. There is no endpoint that changes a saved session.
+History, export and statistics use the same [SessionFilter](../interfaces.md#sessionfilter) and the same filter panel in the UI. There is no endpoint that changes a saved session.
 
 ### Files and streams
 | Path | Content |
@@ -156,7 +156,8 @@ programs/web_server/static/
     ├── overlay.js      # draggable handles (corners, center, radii) over an image
     └── views/
         ├── session.js  # current session: setup, live view, live score, shots, review, recovery dialog
-        ├── history.js  # saved sessions: list, filter, detail with target plot and target image, delete
+        ├── filter_panel.js # shared SessionFilter panel (history, export, statistics), kept in the page URL
+        ├── history.js  # saved sessions: list with the filter panel and paging, detail with target plot and the target images per paper, delete
         ├── shooters.js # shooters: create, rename, retire, delete
         ├── devices.js  # devices with description, image upload, retire
         ├── targets.js  # target types: list, target type editor, copy of locked types, retire
@@ -192,7 +193,7 @@ The picture is only used to fill in the parameters; it isn't stored. A **locked*
 
 ### Statistics page
 Own page `#/statistics` in the navigation, separate from the session history.
-- **Filter panel:** multi-select for shooters, devices, device categories, calibers and target types; ranges for distance, time (with shortcuts: last 7 days, 30 days, year) and shot count; three-way switches (any / yes / no) for single-handed and supported. The filter is kept in the page URL, so a view can be bookmarked and reopened.
+- **Filter panel** (the shared one, also used by history and export): multi-select for shooters, devices, device categories, calibers and target types; ranges for distance, time (with shortcuts: last 7 days, 30 days, year) and shot count; three-way switches (any / yes / no) for single-handed and supported. The filter is kept in the page URL, so a view can be bookmarked and reopened.
 - **Group by:** none, shooter, device, device category, distance, single-handed, supported. **Period:** session, day, week, month.
 - **Per target type** (results are never mixed across target types):
   - summary table per group (sessions, shots, score avg/min/max, score per shot, grouping score per shot, extreme spread, mean radius, mean point offset),
@@ -201,8 +202,8 @@ Own page `#/statistics` in the navigation, separate from the session history.
 - Charts are drawn as SVG by the page itself (no chart library), like the targets.
 
 ### Settings view
-- All settings with their display name and value. Optional settings have an "active" switch; when it's off, the value field shows the stored suggestion greyed out.
-- **Restore default:** per setting, and "Restore all defaults" for all settings (with a confirmation). Both use `reset_settings`.
+- All settings with their display name, value and allowed values (`value_rule`); invalid input is shown before saving. Optional settings have an "active" switch; when it's off, the value field shows the stored suggestion greyed out. `camera_controls`, `lens_calibrations` and `admin_password_hash` aren't shown here; they have their own menus.
+- **Restore default:** per setting, and "Restore all defaults" for all settings (with a confirmation; the admin password and lens calibrations are kept). Both use `reset_settings`.
 - **Image folder:** changing `image_dir` (or restoring its default) opens a popup: "Move the existing images to the new folder?" with *Move images* / *Don't move* / *Cancel*. The answer is sent as `move_images`. Afterwards the UI shows how many images were moved and lists those that couldn't be moved.
 - **Unset settings:** when a request answers `setting_not_set` (e.g. the first export without `export_dir`), the UI opens a dialog to set that setting (prefilled with the suggestion), saves it as active and repeats the request.
 
