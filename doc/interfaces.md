@@ -812,6 +812,8 @@ Every successful response has the payload `{ "session": CurrentSession }`, the s
 | `session_save` | `{}` | review, recovered | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
 | `session_cancel` | `{}` | setup, running, paused, review, recovered | discarded, → idle |
 
+In `session_update_setup`, a field that is present sets the value, also to `null` (e.g. `"shooter_id": null` removes the shooter); a missing field keeps its value.
+
 `index` counts from 0 in the `shots` list. A request that's allowed in the state but whose guard fails answers `validation_failed` if a value is missing or invalid (e.g. `session_start` without device, `session_save` without shots) and `unavailable` if a resource isn't ready (e.g. `session_start` in input mode `camera` before calibration). `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
 
 ### Events (`session_manager:events`)
