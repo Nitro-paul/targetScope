@@ -258,6 +258,61 @@ impl Bus {
         }
     }
 
+    // doc/shared_libraries.md#redis-bus
+    pub async fn serve_concurrent<Req, H>(&self, handler: Arc<H>, limit: usize) -> Result<(), BusError>
+    where
+        Req: DeserializeOwned + Send + 'static,
+        H: RequestHandler<Req> + 'static,
+    {
+        let stream = request_stream(&self.inner.program);
+        let group = self.inner.program.clone();
+        let permits = Arc::new(tokio::sync::Semaphore::new(limit.max(1)));
+        let mut backoff = MIN_BACKOFF;
+        let mut conn: Option<ConnectionManager> = None;
+        let mut pending_phase = true;
+        loop {
+            let c = match conn.as_mut() {
+                Some(c) => c,
+                None => match self.prepare_group(&stream, &group).await {
+                    Ok(c) => {
+                        pending_phase = true;
+                        conn.insert(c)
+                    }
+                    Err(e) => {
+                        tracing::warn!(error = %e, "redis not reachable");
+                        self.inner.clock.sleep(backoff).await;
+                        backoff = (backoff * 2).min(MAX_BACKOFF);
+                        continue;
+                    }
+                },
+            };
+            let start = if pending_phase { "0" } else { ">" };
+            match xreadgroup(c, &stream, &group, &self.inner.consumer, start, !pending_phase).await {
+                Ok(entries) => {
+                    backoff = MIN_BACKOFF;
+                    if pending_phase {
+                        pending_phase = false;
+                    }
+                    for entry in entries {
+                        let permit = permits.clone().acquire_owned().await.expect("semaphore closed");
+                        let (bus, handler, mut c, stream, group) =
+                            (self.clone(), handler.clone(), c.clone(), stream.clone(), group.clone());
+                        tokio::spawn(async move {
+                            bus.handle_entry(&mut c, &stream, &group, entry, handler.as_ref()).await;
+                            drop(permit);
+                        });
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(error = %e, "reading requests failed");
+                    conn = None;
+                    self.inner.clock.sleep(backoff).await;
+                    backoff = (backoff * 2).min(MAX_BACKOFF);
+                }
+            }
+        }
+    }
+
     async fn prepare_group(&self, stream: &str, group: &str) -> Result<ConnectionManager, BusError> {
         let mut c = blocking_connection(&self.inner.client).await?;
         create_group(&mut c, stream, group).await?;

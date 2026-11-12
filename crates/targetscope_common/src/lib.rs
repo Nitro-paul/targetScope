@@ -10,5 +10,6 @@ pub mod idempotency;
 pub mod logging;
 pub mod messages;
 pub mod model;
+pub mod program;
 pub mod settings;
 pub mod targets;
