@@ -5,7 +5,7 @@ Tests of the program `statistics`.
 Design: [statistics.md](../programs/statistics.md), [interfaces.md](../interfaces.md#statistics). Reference data and tools: [overview.md](overview.md).
 
 ## Setup
-- **Unit tests** call the functions of `calc.rs` directly.
+- **Unit tests** call the functions of `calc.rs` and `periods.rs` directly.
 - **Integration tests** run `statistics` as a process with `RedisTestServer` and either a `FakeProgram` as `database_handler` (to check the requests it sends) or a real `database_handler` with a fixture database.
 - Periods are calculated in local time; tests set the time zone to `Europe/Berlin`.
 
@@ -38,8 +38,8 @@ What is tested: splitting by target type and by `group_by` ([interfaces.md](../i
 | ST-GRP-07 | By single-handed and supported | `group_by` `single_handed`; then `supported` | Groups with `true` and `false` |
 | ST-GRP-08 | Shots of a group | A group with 6 000 shots | `shots` has 5 000 shots, all from the newest sessions |
 
-## Periods (integration)
-What is tested: the trend periods in local time ([statistics.md](../programs/statistics.md#calculation-flow-compute_statistics)).
+## Periods (unit)
+What is tested: the trend periods in local time ([statistics.md](../programs/statistics.md#calculation-flow-compute_statistics)). The cases call `periods::period_start` directly; the session times are local times in `Europe/Berlin`.
 
 | ID | Case | Sessions (local time) | Expected outcome |
 |---|---|---|---|
