@@ -1,72 +1,156 @@
-// AN-ANL: Session analysis (unit)
-// Cases: ../../../doc/testing/analyzer.md#session-analysis-unit
+// doc/testing/analyzer.md#session-analysis-unit
 
-/// AN-ANL-01: No shots
+mod common;
+
+use analyzer::scoring::{analyze, total_score};
+use common::{s_ref, shot, tt_ref, Rng, DEV_REF_DIAMETER};
+use proptest::prelude::*;
+use targetscope_common::geometry::Point;
+use targetscope_common::model::{OffsetMm, Ring, Shot};
+use targetscope_common::targets::generate_rings;
+
+fn near(a: f64, b: f64, tol: f64) -> bool {
+    (a - b).abs() <= tol
+}
+
+// AN-ANL-01
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_01_no_shots() {
-    todo!("AN-ANL-01")
+    let r = analyze(&[], &tt_ref(), DEV_REF_DIAMETER);
+    assert!(r.shot_scores.is_empty());
+    assert_eq!((r.score, r.grouping_score), (0, 0));
+    assert_eq!(r.grouping_shift, OffsetMm { x_mm: 0.0, y_mm: 0.0 });
+    assert_eq!(r.mean_point, None);
 }
 
-/// AN-ANL-02: `S-REF`
+// AN-ANL-02
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_02_s_ref() {
-    todo!("AN-ANL-02")
+    let r = analyze(&s_ref(), &tt_ref(), DEV_REF_DIAMETER);
+    assert_eq!(r.shot_scores, vec![12, 11, 9, 6, 0]);
+    assert_eq!(r.score, 38);
+    let m = r.mean_point.unwrap();
+    assert!(near(m.x_mm, 7.435, 1e-3) && near(m.y_mm, 9.035, 1e-3), "{m:?}");
 }
 
-/// AN-ANL-03: One shot off center
+// AN-ANL-03
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_03_one_shot_off_center() {
-    todo!("AN-ANL-03")
+    let r = analyze(&[shot(0.25, 50.0)], &tt_ref(), DEV_REF_DIAMETER);
+    assert_eq!((r.score, r.grouping_score), (5, 12));
+    assert!(near(r.grouping_shift.x_mm, 43.0, 0.05) && near(r.grouping_shift.y_mm, 0.0, 0.05), "{:?}", r.grouping_shift);
 }
 
-/// AN-ANL-04: Three shots on one spot
+// AN-ANL-04
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_04_three_shots_on_one_spot() {
-    todo!("AN-ANL-04")
+    let r = analyze(&[shot(0.25, 50.0); 3], &tt_ref(), DEV_REF_DIAMETER);
+    assert_eq!((r.score, r.grouping_score), (15, 36));
+    assert!(near(r.grouping_shift.x_mm, 43.0, 0.05) && near(r.grouping_shift.y_mm, 0.0, 0.05), "{:?}", r.grouping_shift);
 }
 
-/// AN-ANL-05: Tie: no shift is better
+// AN-ANL-05
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_05_tie_no_shift_is_better() {
-    todo!("AN-ANL-05")
+    let r = analyze(&[shot(0.25, 10.0), shot(0.75, 10.0)], &tt_ref(), DEV_REF_DIAMETER);
+    assert_eq!(r.shot_scores, vec![11, 11]);
+    assert_eq!((r.score, r.grouping_score), (22, 22));
+    assert_eq!(r.grouping_shift, OffsetMm { x_mm: 0.0, y_mm: 0.0 });
 }
 
-/// AN-ANL-06: Mean point
+// AN-ANL-06
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_06_mean_point() {
-    todo!("AN-ANL-06")
+    let m = analyze(&[shot(0.0, 10.0), shot(0.25, 10.0)], &tt_ref(), DEV_REF_DIAMETER).mean_point.unwrap();
+    assert!(near(m.x_mm, 5.0, 1e-9) && near(m.y_mm, 5.0, 1e-9));
 }
 
-/// AN-ANL-07: Grouping never worse
-#[test]
-#[ignore = "not implemented"]
-fn an_anl_07_grouping_never_worse() {
-    todo!("AN-ANL-07")
+fn shots_strategy() -> impl Strategy<Value = Vec<Shot>> {
+    prop::collection::vec((0.0f64..1.0, 0.0f64..100.0).prop_map(|(a, r)| shot(a, r)), 1..=60)
 }
 
-/// AN-ANL-08: Same result every time
+// AN-ANL-07
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(10_000))]
+    #[test]
+    #[ignore = "long"]
+    fn an_anl_07_grouping_never_worse(shots in shots_strategy()) {
+        let r = analyze(&shots, &tt_ref(), DEV_REF_DIAMETER);
+        prop_assert!(r.grouping_score >= r.score);
+    }
+}
+
+// AN-ANL-07
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(100))]
+    #[test]
+    fn an_anl_07_grouping_never_worse_quick(shots in shots_strategy()) {
+        let r = analyze(&shots, &tt_ref(), DEV_REF_DIAMETER);
+        prop_assert!(r.grouping_score >= r.score);
+    }
+}
+
+// AN-ANL-08
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_08_same_result_every_time() {
-    todo!("AN-ANL-08")
+    let first = serde_json::to_string(&analyze(&s_ref(), &tt_ref(), DEV_REF_DIAMETER)).unwrap();
+    for _ in 0..100 {
+        assert_eq!(serde_json::to_string(&analyze(&s_ref(), &tt_ref(), DEV_REF_DIAMETER)).unwrap(), first);
+    }
 }
 
-/// AN-ANL-09: `rings` in the request are ignored
+// AN-ANL-09
 #[test]
-#[ignore = "not implemented"]
 fn an_anl_09_rings_in_the_request_are_ignored() {
-    todo!("AN-ANL-09")
+    let mut t = tt_ref();
+    t.rings = vec![Ring { score: 99, radius_mm: 1.0 }, Ring { score: 50, radius_mm: 2.0 }, Ring { score: 1, radius_mm: 3.0 }];
+    assert_eq!(analyze(&s_ref(), &t, DEV_REF_DIAMETER), analyze(&s_ref(), &tt_ref(), DEV_REF_DIAMETER));
 }
 
-/// AN-ANL-10: Compared with brute force
+// doc/testing/analyzer.md#session-analysis-unit
+fn exact_grouping(points: &[Point], rings: &[Ring], b: f64) -> i64 {
+    let circles: Vec<(Point, f64)> =
+        points.iter().flat_map(|p| rings.iter().map(move |r| (*p, r.radius_mm + b))).collect();
+    let mut best = total_score(points, Point { x: 0.0, y: 0.0 }, rings, b);
+    for p in points {
+        best = best.max(total_score(points, *p, rings, b));
+    }
+    for (i, (p0, r0)) in circles.iter().enumerate() {
+        for (p1, r1) in &circles[i + 1..] {
+            let d = p0.distance(p1);
+            if d == 0.0 || d > r0 + r1 || d < (r0 - r1).abs() {
+                continue;
+            }
+            let a = (r0 * r0 - r1 * r1 + d * d) / (2.0 * d);
+            let h = (r0 * r0 - a * a).max(0.0).sqrt();
+            let (ux, uy) = ((p1.x - p0.x) / d, (p1.y - p0.y) / d);
+            let (mx, my) = (p0.x + a * ux, p0.y + a * uy);
+            for s in [-1.0, 1.0] {
+                best = best.max(total_score(points, Point { x: mx - s * h * uy, y: my + s * h * ux }, rings, b));
+            }
+        }
+    }
+    best
+}
+
+// AN-ANL-10
 #[test]
-#[ignore = "not implemented"]
-fn an_anl_10_compared_with_brute_force() {
-    todo!("AN-ANL-10")
+fn an_anl_10_compared_with_an_exact_reference() {
+    let rings = generate_rings(&tt_ref());
+    let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
+    let (mut equal, total) = (0, 1000);
+    for _ in 0..total {
+        let n = 2 + (rng.next() * 9.0) as usize;
+        let shots: Vec<Shot> = (0..n).map(|_| shot(rng.next(), rng.next() * 40.0)).collect();
+        let points: Vec<Point> = shots.iter().map(|s| Point::from(*s)).collect();
+        let found = analyze(&shots, &tt_ref(), DEV_REF_DIAMETER).grouping_score;
+        let exact = exact_grouping(&points, &rings, DEV_REF_DIAMETER / 2.0);
+        assert!(found <= exact);
+        if found == exact {
+            equal += 1;
+        }
+    }
+    let rate = equal as f64 / total as f64;
+    println!("AN-ANL-10 miss rate: {:.1} %", (1.0 - rate) * 100.0);
+    assert!(rate >= 0.99, "{rate}");
 }

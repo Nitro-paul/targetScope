@@ -1,6 +1,6 @@
 [package]
 name = "analyzer"
-description = "Calculates ring scores, session score and grouping score (doc/programs/analyzer.md)"
+description = "TargetScope analyzer"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
@@ -16,5 +16,6 @@ thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+proptest.workspace = true
 targetscope_testkit.workspace = true
 tokio.workspace = true
