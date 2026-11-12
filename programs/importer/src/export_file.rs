@@ -1,22 +1,25 @@
-//! The export file format (schemas/export/v1.schema.json), as read by the importer.
+// doc/programs/importer.md#import-flow-import_file
 
-use serde::Deserialize;
+use targetscope_common::export::ExportFile;
+use targetscope_common::messages::ServiceError;
 
-pub const FORMAT: &str = "targetscope-export";
-pub const SUPPORTED_VERSIONS: &[u32] = &[1];
-/// Embedded schema, validated before anything is imported.
-// TODO: pub const SCHEMA: &str = include_str!("../../../schemas/export/v1.schema.json");
+pub const SCHEMA: &str = include_str!("../../../schemas/export/v1.schema.json");
+pub const MAX_JSON_BYTES: u64 = 100 * 1024 * 1024;
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct ExportFile {
-    pub format: String,
-    pub format_version: u32,
-    pub exported_at: String,
-    // TODO: shooters, target_types, devices, sessions (doc/programs/exporter.md#json)
-}
-
-/// Step 2: validate against the export schema; Err names the first problem.
-pub fn parse_and_validate(json: &[u8]) -> Result<ExportFile, String> {
-    let _ = json;
-    todo!()
+// doc/programs/importer.md#import-flow-import_file
+pub fn parse_and_validate(bytes: &[u8]) -> Result<ExportFile, ServiceError> {
+    let value: serde_json::Value =
+        serde_json::from_slice(bytes).map_err(|e| ServiceError::validation(format!("not a JSON file: {e}")))?;
+    if value.get("format").and_then(|v| v.as_str()) != Some(targetscope_common::export::FORMAT) {
+        return Err(ServiceError::validation("format must be targetscope-export"));
+    }
+    if value.get("format_version").and_then(|v| v.as_u64()) != Some(targetscope_common::export::FORMAT_VERSION as u64) {
+        return Err(ServiceError::validation("unsupported format_version"));
+    }
+    let schema: serde_json::Value = serde_json::from_str(SCHEMA).expect("export schema is JSON");
+    let validator = jsonschema::validator_for(&schema).expect("export schema compiles");
+    if let Err(e) = validator.validate(&value) {
+        return Err(ServiceError::validation(format!("{} at {}", e, e.instance_path())));
+    }
+    serde_json::from_value(value).map_err(|e| ServiceError::validation(e.to_string()))
 }

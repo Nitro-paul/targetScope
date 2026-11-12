@@ -1,6 +1,6 @@
 [package]
 name = "importer"
-description = "Imports JSON exports (also as ZIP with images), also from other installations (doc/programs/importer.md)"
+description = "TargetScope importer"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
