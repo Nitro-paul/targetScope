@@ -91,6 +91,9 @@ struct Inner {
     started_at: i64,
     clock: Arc<dyn Clock>,
     pending: Mutex<HashMap<Uuid, oneshot::Sender<ResponseEnvelope>>>,
+    stopping: tokio::sync::watch::Sender<bool>,
+    reconnects: tokio::sync::watch::Sender<u64>,
+    permits: Mutex<Option<Arc<tokio::sync::Semaphore>>>,
 }
 
 impl Bus {
@@ -111,10 +114,33 @@ impl Bus {
             started_at: unix_s(clock.now()),
             clock,
             pending: Mutex::new(HashMap::new()),
+            stopping: tokio::sync::watch::channel(false).0,
+            reconnects: tokio::sync::watch::channel(0).0,
+            permits: Mutex::new(None),
         });
         let reader_conn = blocking_connection(&inner.client).await?;
         tokio::spawn(read_responses(Arc::downgrade(&inner), reader_conn, start_id));
         Ok(Bus { inner })
+    }
+
+    // doc/shared_libraries.md#redis-bus
+    pub fn stop(&self) {
+        self.inner.stopping.send_replace(true);
+    }
+
+    pub fn is_stopping(&self) -> bool {
+        *self.inner.stopping.borrow()
+    }
+
+    // doc/shared_libraries.md#redis-bus
+    pub fn reconnects(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.inner.reconnects.subscribe()
+    }
+
+    fn note_reconnect(&self, first: &mut bool) {
+        if !std::mem::take(first) {
+            self.inner.reconnects.send_modify(|n| *n += 1);
+        }
     }
 
     pub fn program(&self) -> &str {
@@ -221,12 +247,17 @@ impl Bus {
         let mut backoff = MIN_BACKOFF;
         let mut conn: Option<ConnectionManager> = None;
         let mut pending_phase = true;
+        let mut first = true;
         loop {
+            if self.is_stopping() {
+                return Ok(());
+            }
             let c = match conn.as_mut() {
                 Some(c) => c,
                 None => match self.prepare_group(&stream, &group).await {
                     Ok(c) => {
                         pending_phase = true;
+                        self.note_reconnect(&mut first);
                         conn.insert(c)
                     }
                     Err(e) => {
@@ -264,18 +295,34 @@ impl Bus {
         Req: DeserializeOwned + Send + 'static,
         H: RequestHandler<Req> + 'static,
     {
+        let limit = limit.max(1);
+        let result = self.serve_tasks(handler, limit).await;
+        let _ = self.inner_permits_drain(limit).await;
+        result
+    }
+
+    async fn serve_tasks<Req, H>(&self, handler: Arc<H>, limit: usize) -> Result<(), BusError>
+    where
+        Req: DeserializeOwned + Send + 'static,
+        H: RequestHandler<Req> + 'static,
+    {
         let stream = request_stream(&self.inner.program);
         let group = self.inner.program.clone();
-        let permits = Arc::new(tokio::sync::Semaphore::new(limit.max(1)));
+        let permits = self.permits(limit);
         let mut backoff = MIN_BACKOFF;
         let mut conn: Option<ConnectionManager> = None;
         let mut pending_phase = true;
+        let mut first = true;
         loop {
+            if self.is_stopping() {
+                return Ok(());
+            }
             let c = match conn.as_mut() {
                 Some(c) => c,
                 None => match self.prepare_group(&stream, &group).await {
                     Ok(c) => {
                         pending_phase = true;
+                        self.note_reconnect(&mut first);
                         conn.insert(c)
                     }
                     Err(e) => {
@@ -311,6 +358,16 @@ impl Bus {
                 }
             }
         }
+    }
+
+    fn permits(&self, limit: usize) -> Arc<tokio::sync::Semaphore> {
+        let mut slot = self.inner.permits.lock().unwrap();
+        slot.get_or_insert_with(|| Arc::new(tokio::sync::Semaphore::new(limit))).clone()
+    }
+
+    async fn inner_permits_drain(&self, limit: usize) -> Option<()> {
+        let permits = self.inner.permits.lock().unwrap().clone()?;
+        permits.acquire_many(limit as u32).await.ok().map(drop)
     }
 
     async fn prepare_group(&self, stream: &str, group: &str) -> Result<ConnectionManager, BusError> {

@@ -60,8 +60,11 @@ impl RequestEnvelope {
                 format!("unsupported version {} of {}", self.version, self.r#type),
             ));
         }
-        decode_tagged(&self.r#type, &self.payload)
-            .map_err(|e| ServiceError::new(ErrorCode::InvalidMessage, e.to_string()))
+        decode_tagged(&self.r#type, &self.payload).map_err(|e| {
+            let msg = e.to_string();
+            let code = if msg.contains("unknown variant") { ErrorCode::InvalidMessage } else { ErrorCode::ValidationFailed };
+            ServiceError::new(code, msg)
+        })
     }
 
     pub fn ok_response(&self, payload: Value) -> ResponseEnvelope {

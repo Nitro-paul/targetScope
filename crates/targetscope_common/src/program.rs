@@ -48,3 +48,12 @@ pub async fn shutdown_signal() {
     }
     tracing::info!("stopping");
 }
+
+// doc/shared_libraries.md#program-startup
+pub fn stop_on_signal(bus: &Bus) {
+    let bus = bus.clone();
+    tokio::spawn(async move {
+        shutdown_signal().await;
+        bus.stop();
+    });
+}
