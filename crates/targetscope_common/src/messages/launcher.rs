@@ -1,66 +1,59 @@
-//! Messages of `launcher` (doc/interfaces.md#launcher).
-//! Source of truth: `schemas/launcher/`.
-
-use std::time::Duration;
+// doc/interfaces.md#launcher
 
 use serde::{Deserialize, Serialize};
 
-use super::Request;
+use super::{request, Ping};
 
+pub const PROGRAM: &str = "launcher";
 pub const STREAM: &str = "launcher:requests";
 
-/// Requests understood by `launcher`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum LauncherRequest {
-    Ping {},
+    Ping(Ping),
     LauncherStatus(LauncherStatus),
     RestartProgram(RestartProgram),
 }
 
-/// Events on `launcher:events`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// doc/interfaces.md#events-launcherevents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum LauncherEvent {
-    ProgramStateChanged(ProgramStateChanged),
+    ProgramStateChanged(ProgramStatus),
 }
 
-/// `launcher_status` request (doc/interfaces.md#launcher_status, schemas/launcher/launcher_status.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#launcher_status
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProgramState {
+    Starting,
+    Running,
+    Backoff,
+    Failed,
+    Stopped,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ProgramStatus {
+    pub name: String,
+    pub state: ProgramState,
+    pub pid: Option<i64>,
+    pub restarts: i64,
+    pub since_ms: i64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LauncherStatus {}
 
-/// `launcher_status_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LauncherStatusResponse {
-    // TODO: fields
+    pub programs: Vec<ProgramStatus>,
 }
+request!(LauncherStatus, LauncherStatusResponse, "launcher_status", 5);
 
-impl Request for LauncherStatus {
-    type Response = LauncherStatusResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `restart_program` request (doc/interfaces.md#restart_program, schemas/launcher/restart_program.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#restart_program
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RestartProgram {
     pub name: String,
 }
-
-/// `restart_program_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct RestartProgramResponse {
-    pub name: String,
-}
-
-impl Request for RestartProgram {
-    type Response = RestartProgramResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `program_state_changed` event (doc/interfaces.md#program_state_changed, schemas/launcher/program_state_changed.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProgramStateChanged {
-    // TODO: fields
-}
+request!(RestartProgram, RestartProgram, "restart_program", 5);

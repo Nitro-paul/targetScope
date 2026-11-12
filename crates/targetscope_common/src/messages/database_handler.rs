@@ -1,20 +1,20 @@
-//! Messages of `database_handler` (doc/interfaces.md#database_handler).
-//! Source of truth: `schemas/database_handler/`.
-
-use std::time::Duration;
+// doc/interfaces.md#database_handler
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use super::Request;
-use crate::model::{Device, Session, Setting, Shooter, TargetType};
+use super::{request, Ping};
+use crate::model::{
+    Device, Filter, ImportedSession, NewSession, PaperImage, Session, SessionFilter, Setting, Shooter, TargetType,
+};
 
+pub const PROGRAM: &str = "database_handler";
 pub const STREAM: &str = "database_handler:requests";
 
-/// Requests understood by `database_handler`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum DatabaseHandlerRequest {
-    Ping {},
+    Ping(Ping),
     CreateSession(CreateSession),
     ReadSessions(ReadSessions),
     DeleteSession(DeleteSession),
@@ -40,433 +40,296 @@ pub enum DatabaseHandlerRequest {
     ChangeImageDir(ChangeImageDir),
 }
 
-/// Events on `database_handler:events`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// doc/interfaces.md#events-database_handlerevents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum DatabaseHandlerEvent {
     DataChanged(DataChanged),
 }
 
-/// `create_session` request (doc/interfaces.md#create_session, schemas/database_handler/create_session.schema.json)
+// doc/interfaces.md#create_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CreateSession {
-    // TODO: fields
-}
+pub struct CreateSession(pub NewSession);
 
-/// `create_session_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CreateSessionResponse {
-    // TODO: fields
+    pub id: i64,
+    pub uuid: Uuid,
+    pub images: Vec<PaperImage>,
+}
+request!(CreateSession, CreateSessionResponse, "create_session", 5);
+
+// doc/interfaces.md#read_sessions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionOrderField {
+    SavedAt,
+    Score,
+    ShotCount,
+    Id,
 }
 
-impl Request for CreateSession {
-    type Response = CreateSessionResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SessionOrder {
+    pub field: SessionOrderField,
+    pub direction: crate::model::Direction,
 }
 
-/// `read_sessions` request (doc/interfaces.md#read_sessions, schemas/database_handler/read_sessions.schema.json)
+// doc/interfaces.md#read_sessions
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadSessions {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: SessionFilter,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub order_by: Option<SessionOrder>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offset: Option<i64>,
+    #[serde(default = "default_true")]
+    pub include_shots: bool,
 }
 
-/// `read_sessions_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadSessionsResponse {
     pub sessions: Vec<Session>,
     pub total: i64,
 }
+request!(ReadSessions, ReadSessionsResponse, "read_sessions", 5);
 
-impl Request for ReadSessions {
-    type Response = ReadSessionsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_session` request (doc/interfaces.md#delete_session, schemas/database_handler/delete_session.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_session
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteSession {
     pub id: i64,
 }
 
-/// `delete_session_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteSessionResponse {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IdResponse {
     pub id: i64,
 }
+request!(DeleteSession, IdResponse, "delete_session", 5);
 
-impl Request for DeleteSession {
-    type Response = DeleteSessionResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `save_shooter` request (doc/interfaces.md#save_shooter, schemas/database_handler/save_shooter.schema.json)
+// doc/interfaces.md#save_shooter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveShooter {
-    // TODO: fields
-}
+pub struct SaveShooter(pub Shooter);
+request!(SaveShooter, IdResponse, "save_shooter", 5);
 
-/// `save_shooter_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveShooterResponse {
-    pub id: i64,
-}
-
-impl Request for SaveShooter {
-    type Response = SaveShooterResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `read_shooters` request (doc/interfaces.md#read_shooters, schemas/database_handler/read_shooters.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#read_shooters
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ReadShooters {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: Filter,
 }
 
-/// `read_shooters_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadShootersResponse {
     pub shooters: Vec<Shooter>,
 }
+request!(ReadShooters, ReadShootersResponse, "read_shooters", 5);
 
-impl Request for ReadShooters {
-    type Response = ReadShootersResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_shooter` request (doc/interfaces.md#delete_shooter, schemas/database_handler/delete_shooter.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_shooter
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteShooter {
     pub id: i64,
 }
+request!(DeleteShooter, IdResponse, "delete_shooter", 5);
 
-/// `delete_shooter_response`
+// doc/interfaces.md#save_device
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteShooterResponse {
-    pub id: i64,
-}
+pub struct SaveDevice(pub Device);
+request!(SaveDevice, IdResponse, "save_device", 5);
 
-impl Request for DeleteShooter {
-    type Response = DeleteShooterResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `save_device` request (doc/interfaces.md#save_device, schemas/database_handler/save_device.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveDevice {
-    // TODO: fields
-}
-
-/// `save_device_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveDeviceResponse {
-    pub id: i64,
-}
-
-impl Request for SaveDevice {
-    type Response = SaveDeviceResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `read_devices` request (doc/interfaces.md#read_devices, schemas/database_handler/read_devices.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#read_devices
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ReadDevices {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: Filter,
 }
 
-/// `read_devices_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadDevicesResponse {
     pub devices: Vec<Device>,
 }
+request!(ReadDevices, ReadDevicesResponse, "read_devices", 5);
 
-impl Request for ReadDevices {
-    type Response = ReadDevicesResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_device` request (doc/interfaces.md#delete_device, schemas/database_handler/delete_device.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_device
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteDevice {
     pub id: i64,
 }
+request!(DeleteDevice, IdResponse, "delete_device", 5);
 
-/// `delete_device_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteDeviceResponse {
-    pub id: i64,
-}
-
-impl Request for DeleteDevice {
-    type Response = DeleteDeviceResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `set_device_image` request (doc/interfaces.md#set_device_image, schemas/database_handler/set_device_image.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#set_device_image
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetDeviceImage {
     pub device_id: i64,
     pub staged_file: String,
 }
 
-/// `set_device_image_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SetDeviceImageResponse {
     pub image_path: String,
 }
+request!(SetDeviceImage, SetDeviceImageResponse, "set_device_image", 5);
 
-impl Request for SetDeviceImage {
-    type Response = SetDeviceImageResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_device_image` request (doc/interfaces.md#delete_device_image, schemas/database_handler/delete_device_image.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_device_image
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteDeviceImage {
     pub device_id: i64,
 }
+request!(DeleteDeviceImage, DeleteDeviceImage, "delete_device_image", 5);
 
-/// `delete_device_image_response`
+// doc/interfaces.md#save_target_type
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteDeviceImageResponse {
-    pub device_id: i64,
-}
+pub struct SaveTargetType(pub TargetType);
+request!(SaveTargetType, IdResponse, "save_target_type", 5);
 
-impl Request for DeleteDeviceImage {
-    type Response = DeleteDeviceImageResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `save_target_type` request (doc/interfaces.md#save_target_type, schemas/database_handler/save_target_type.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveTargetType {
-    // TODO: fields
-}
-
-/// `save_target_type_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveTargetTypeResponse {
-    pub id: i64,
-}
-
-impl Request for SaveTargetType {
-    type Response = SaveTargetTypeResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `read_target_types` request (doc/interfaces.md#read_target_types, schemas/database_handler/read_target_types.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#read_target_types
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ReadTargetTypes {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: Filter,
 }
 
-/// `read_target_types_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadTargetTypesResponse {
     pub target_types: Vec<TargetType>,
 }
+request!(ReadTargetTypes, ReadTargetTypesResponse, "read_target_types", 5);
 
-impl Request for ReadTargetTypes {
-    type Response = ReadTargetTypesResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_target_type` request (doc/interfaces.md#delete_target_type, schemas/database_handler/delete_target_type.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_target_type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteTargetType {
     pub id: i64,
 }
+request!(DeleteTargetType, IdResponse, "delete_target_type", 5);
 
-/// `delete_target_type_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteTargetTypeResponse {
+// doc/interfaces.md#import
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImportResponse {
     pub id: i64,
+    pub created: bool,
 }
 
-impl Request for DeleteTargetType {
-    type Response = DeleteTargetTypeResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `import_shooter` request (doc/interfaces.md#import_shooter, schemas/database_handler/import_shooter.schema.json)
+// doc/interfaces.md#import_shooter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportShooter {
-    // TODO: fields
-}
+pub struct ImportShooter(pub Shooter);
+request!(ImportShooter, ImportResponse, "import_shooter", 5);
 
-/// `import_shooter_response`
+// doc/interfaces.md#import_target_type
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportShooterResponse {
-    // TODO: fields
-}
+pub struct ImportTargetType(pub TargetType);
+request!(ImportTargetType, ImportResponse, "import_target_type", 5);
 
-impl Request for ImportShooter {
-    type Response = ImportShooterResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `import_target_type` request (doc/interfaces.md#import_target_type, schemas/database_handler/import_target_type.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportTargetType {
-    // TODO: fields
-}
-
-/// `import_target_type_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportTargetTypeResponse {
-    // TODO: fields
-}
-
-impl Request for ImportTargetType {
-    type Response = ImportTargetTypeResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `import_device` request (doc/interfaces.md#import_device, schemas/database_handler/import_device.schema.json)
+// doc/interfaces.md#import_device
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImportDevice {
-    // TODO: fields
+    #[serde(flatten)]
+    pub device: Device,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub staged_file: Option<String>,
 }
+request!(ImportDevice, ImportResponse, "import_device", 5);
 
-/// `import_device_response`
+// doc/interfaces.md#import_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportDeviceResponse {
-    // TODO: fields
-}
+pub struct ImportSession(pub ImportedSession);
+request!(ImportSession, ImportResponse, "import_session", 5);
 
-impl Request for ImportDevice {
-    type Response = ImportDeviceResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `import_session` request (doc/interfaces.md#import_session, schemas/database_handler/import_session.schema.json)
+// doc/interfaces.md#save_setting
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportSession {
-    // TODO: fields
-}
+pub struct SaveSetting(pub Setting);
 
-/// `import_session_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ImportSessionResponse {
-    // TODO: fields
-}
-
-impl Request for ImportSession {
-    type Response = ImportSessionResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `save_setting` request (doc/interfaces.md#save_setting, schemas/database_handler/save_setting.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveSetting {
-    // TODO: fields
-}
-
-/// `save_setting_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SaveSettingResponse {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NameResponse {
     pub name: String,
 }
+request!(SaveSetting, NameResponse, "save_setting", 5);
 
-impl Request for SaveSetting {
-    type Response = SaveSettingResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `read_settings` request (doc/interfaces.md#read_settings, schemas/database_handler/read_settings.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#read_settings
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ReadSettings {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: Filter,
 }
 
-/// `read_settings_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReadSettingsResponse {
     pub settings: Vec<Setting>,
 }
+request!(ReadSettings, ReadSettingsResponse, "read_settings", 5);
 
-impl Request for ReadSettings {
-    type Response = ReadSettingsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_setting` request (doc/interfaces.md#delete_setting, schemas/database_handler/delete_setting.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_setting
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteSetting {
     pub name: String,
 }
+request!(DeleteSetting, NameResponse, "delete_setting", 5);
 
-/// `delete_setting_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteSettingResponse {
-    pub name: String,
-}
-
-impl Request for DeleteSetting {
-    type Response = DeleteSettingResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `reset_settings` request (doc/interfaces.md#reset_settings, schemas/database_handler/reset_settings.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#reset_settings
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResetSettings {
-    // TODO: fields
+    pub names: Option<Vec<String>>,
+    #[serde(default)]
+    pub move_images: bool,
 }
 
-/// `reset_settings_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MovedImages {
+    pub moved: i64,
+    pub failed: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResetSettingsResponse {
-    // TODO: fields
+    pub names: Vec<String>,
+    pub images: Option<MovedImages>,
 }
+request!(ResetSettings, ResetSettingsResponse, "reset_settings", 300);
 
-impl Request for ResetSettings {
-    type Response = ResetSettingsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(300);
-}
-
-/// `change_image_dir` request (doc/interfaces.md#change_image_dir, schemas/database_handler/change_image_dir.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#change_image_dir
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChangeImageDir {
-    // TODO: fields
+    pub path: String,
+    #[serde(default)]
+    pub move_images: bool,
 }
 
-/// `change_image_dir_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChangeImageDirResponse {
-    // TODO: fields
+    pub path: String,
+    pub images: Option<MovedImages>,
+}
+request!(ChangeImageDir, ChangeImageDirResponse, "change_image_dir", 300);
+
+// doc/interfaces.md#data_changed
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Table {
+    Sessions,
+    Shooters,
+    Devices,
+    TargetTypes,
+    Settings,
+    All,
 }
 
-impl Request for ChangeImageDir {
-    type Response = ChangeImageDirResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(300);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ChangeAction {
+    Created,
+    Updated,
+    Deleted,
+    Reload,
 }
 
-/// `data_changed` event (doc/interfaces.md#data_changed, schemas/database_handler/data_changed.schema.json)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataChanged {
-    pub table: String,
-    pub key: Option<serde_json::Value>,
-    pub action: String,
+    pub table: Table,
+    pub key: serde_json::Value,
+    pub action: ChangeAction,
+}
+
+fn default_true() -> bool {
+    true
 }

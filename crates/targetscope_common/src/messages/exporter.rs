@@ -1,72 +1,66 @@
-//! Messages of `exporter` (doc/interfaces.md#exporter).
-//! Source of truth: `schemas/exporter/`.
-
-use std::time::Duration;
+// doc/interfaces.md#exporter
 
 use serde::{Deserialize, Serialize};
 
-use super::Request;
+use super::{request, Ping};
+use crate::model::SessionFilter;
 
+pub const PROGRAM: &str = "exporter";
 pub const STREAM: &str = "exporter:requests";
 
-/// Requests understood by `exporter`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum ExporterRequest {
-    Ping {},
+    Ping(Ping),
     ExportSessions(ExportSessions),
     ListExports(ListExports),
     DeleteExport(DeleteExport),
 }
 
-/// `export_sessions` request (doc/interfaces.md#export_sessions, schemas/exporter/export_sessions.schema.json)
+// doc/interfaces.md#export_sessions
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExportFormat {
+    Csv,
+    Json,
+    Png,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ExportSessions {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: SessionFilter,
+    pub format: ExportFormat,
+    #[serde(default)]
+    pub include_images: bool,
 }
 
-/// `export_sessions_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ExportSessionsResponse {
-    // TODO: fields
+    pub files: Vec<String>,
 }
+request!(ExportSessions, ExportSessionsResponse, "export_sessions", 300);
 
-impl Request for ExportSessions {
-    type Response = ExportSessionsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(300);
-}
-
-/// `list_exports` request (doc/interfaces.md#list_exports, schemas/exporter/list_exports.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#list_exports
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ListExports {}
 
-/// `list_exports_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ExportFile {
+    pub name: String,
+    pub size_bytes: i64,
+    pub created_ms: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ListExportsResponse {
-    // TODO: fields
+    pub files: Vec<ExportFile>,
 }
+request!(ListExports, ListExportsResponse, "list_exports", 5);
 
-impl Request for ListExports {
-    type Response = ListExportsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `delete_export` request (doc/interfaces.md#delete_export, schemas/exporter/delete_export.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#delete_export
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DeleteExport {
     pub name: String,
 }
-
-/// `delete_export_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DeleteExportResponse {
-    pub name: String,
-}
-
-impl Request for DeleteExport {
-    type Response = DeleteExportResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
+request!(DeleteExport, DeleteExport, "delete_export", 5);

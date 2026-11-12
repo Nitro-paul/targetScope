@@ -1,20 +1,17 @@
-//! Messages of `image_processor` (doc/interfaces.md#image_processor).
-//! Source of truth: `schemas/image_processor/`.
-
-use std::time::Duration;
+// doc/interfaces.md#image_processor
 
 use serde::{Deserialize, Serialize};
 
-use super::Request;
+use super::{request, Empty, Ping};
 use crate::model::{CalibrationStatus, Corners, TargetType};
 
+pub const PROGRAM: &str = "image_processor";
 pub const STREAM: &str = "image_processor:requests";
 
-/// Requests understood by `image_processor`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum ImageProcessorRequest {
-    Ping {},
+    Ping(Ping),
     LiveStart(LiveStart),
     LiveCalibrate(LiveCalibrate),
     LiveSetCounting(LiveSetCounting),
@@ -35,8 +32,8 @@ pub enum ImageProcessorRequest {
     DetectShotsInPhoto(DetectShotsInPhoto),
 }
 
-/// Events on `image_processor:events`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// doc/interfaces.md#events-image_processorevents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum ImageProcessorEvent {
     CalibrationChanged(CalibrationStatus),
@@ -44,302 +41,212 @@ pub enum ImageProcessorEvent {
     ShotDetected(ShotDetected),
 }
 
-/// `live_start` request (doc/interfaces.md#live_start, schemas/image_processor/live_start.schema.json)
+// doc/interfaces.md#live_start
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LiveStart {
     pub target_type: TargetType,
     pub bullet_diameter_mm: f64,
 }
+request!(LiveStart, CalibrationStatus, "live_start", 5);
 
-impl Request for LiveStart {
-    type Response = CalibrationStatus;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_calibrate` request (doc/interfaces.md#live_calibrate, schemas/image_processor/live_calibrate.schema.json)
+// doc/interfaces.md#live_calibrate
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LiveCalibrate {
     pub corners: Corners,
 }
+request!(LiveCalibrate, CalibrationStatus, "live_calibrate", 5);
 
-impl Request for LiveCalibrate {
-    type Response = CalibrationStatus;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_set_counting` request (doc/interfaces.md#live_set_counting, schemas/image_processor/live_set_counting.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#live_set_counting
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LiveSetCounting {
     pub counting: bool,
 }
+request!(LiveSetCounting, Empty, "live_set_counting", 5);
 
-/// `live_set_counting_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LiveSetCountingResponse {}
-
-impl Request for LiveSetCounting {
-    type Response = LiveSetCountingResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_uncount_hole` request (doc/interfaces.md#live_uncount_hole, schemas/image_processor/live_uncount_hole.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#live_uncount_hole
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LiveUncountHole {
-    pub hole_id: u32,
+    pub hole_id: i64,
 }
+request!(LiveUncountHole, Empty, "live_uncount_hole", 5);
 
-/// `live_uncount_hole_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LiveUncountHoleResponse {}
-
-impl Request for LiveUncountHole {
-    type Response = LiveUncountHoleResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_new_paper` request (doc/interfaces.md#live_new_paper, schemas/image_processor/live_new_paper.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#live_new_paper
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LiveNewPaper {
-    pub from_live_paper: u32,
+    pub from_live_paper: i64,
 }
 
-/// `live_new_paper_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LiveNewPaperResponse {
     pub changed: bool,
-    pub live_paper: u32,
+    pub live_paper: i64,
     pub previous_paper_staged_file: Option<String>,
 }
+request!(LiveNewPaper, LiveNewPaperResponse, "live_new_paper", 5);
 
-impl Request for LiveNewPaper {
-    type Response = LiveNewPaperResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_stop` request (doc/interfaces.md#live_stop, schemas/image_processor/live_stop.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#live_stop
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LiveStop {}
+request!(LiveStop, Empty, "live_stop", 5);
 
-/// `live_stop_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LiveStopResponse {}
-
-impl Request for LiveStop {
-    type Response = LiveStopResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `live_calibration_status` request (doc/interfaces.md#live_calibration_status, schemas/image_processor/live_calibration_status.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#live_calibration_status
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LiveCalibrationStatus {}
+request!(LiveCalibrationStatus, CalibrationStatus, "live_calibration_status", 5);
 
-impl Request for LiveCalibrationStatus {
-    type Response = CalibrationStatus;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `lens_calibration_start` request (doc/interfaces.md#lens_calibration_start, schemas/image_processor/lens_calibration_start.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#lens-calibration
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationStart {}
 
-/// `lens_calibration_start_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LensCalibrationStartResponse {
-    // TODO: fields
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ViewsResponse {
+    pub views: i64,
 }
+request!(LensCalibrationStart, ViewsResponse, "lens_calibration_start", 5);
 
-impl Request for LensCalibrationStart {
-    type Response = LensCalibrationStartResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `lens_calibration_capture` request (doc/interfaces.md#lens_calibration_capture, schemas/image_processor/lens_calibration_capture.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationCapture {}
 
-/// `lens_calibration_capture_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LensCalibrationCaptureResponse {
-    // TODO: fields
+    pub found: bool,
+    pub views: i64,
 }
+request!(LensCalibrationCapture, LensCalibrationCaptureResponse, "lens_calibration_capture", 5);
 
-impl Request for LensCalibrationCapture {
-    type Response = LensCalibrationCaptureResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `lens_calibration_finish` request (doc/interfaces.md#lens_calibration_finish, schemas/image_processor/lens_calibration_finish.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationFinish {}
 
-/// `lens_calibration_finish_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationFinishResponse {
-    // TODO: fields
+    pub rms_px: f64,
+    pub views: i64,
 }
+request!(LensCalibrationFinish, LensCalibrationFinishResponse, "lens_calibration_finish", 60);
 
-impl Request for LensCalibrationFinish {
-    type Response = LensCalibrationFinishResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(60);
-}
-
-/// `lens_calibration_cancel` request (doc/interfaces.md#lens_calibration_cancel, schemas/image_processor/lens_calibration_cancel.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationCancel {}
+request!(LensCalibrationCancel, Empty, "lens_calibration_cancel", 5);
 
-/// `lens_calibration_cancel_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LensCalibrationCancelResponse {}
-
-impl Request for LensCalibrationCancel {
-    type Response = LensCalibrationCancelResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `lens_calibration_delete` request (doc/interfaces.md#lens_calibration_delete, schemas/image_processor/lens_calibration_delete.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationDelete {}
+request!(LensCalibrationDelete, Empty, "lens_calibration_delete", 5);
 
-/// `lens_calibration_delete_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LensCalibrationDeleteResponse {}
-
-impl Request for LensCalibrationDelete {
-    type Response = LensCalibrationDeleteResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `lens_calibration_status` request (doc/interfaces.md#lens_calibration_status, schemas/image_processor/lens_calibration_status.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationStatus {}
 
-/// `lens_calibration_status_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LensCalibrationStatusResponse {
-    // TODO: fields
+    pub camera_key: Option<String>,
+    pub calibrated: bool,
+    pub applied: bool,
+    pub rms_px: Option<f64>,
+    pub width_px: Option<i64>,
+    pub height_px: Option<i64>,
+    pub collecting_views: Option<i64>,
 }
+request!(LensCalibrationStatus, LensCalibrationStatusResponse, "lens_calibration_status", 5);
 
-impl Request for LensCalibrationStatus {
-    type Response = LensCalibrationStatusResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `capture_target_image` request (doc/interfaces.md#capture_target_image, schemas/image_processor/capture_target_image.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#capture_target_image
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CaptureTargetImage {}
 
-/// `capture_target_image_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CaptureTargetImageResponse {
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StagedFileResponse {
     pub staged_file: String,
 }
+request!(CaptureTargetImage, StagedFileResponse, "capture_target_image", 5);
 
-impl Request for CaptureTargetImage {
-    type Response = CaptureTargetImageResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `capture_raw_image` request (doc/interfaces.md#capture_raw_image, schemas/image_processor/capture_raw_image.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#capture_raw_image
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CaptureRawImage {}
 
-/// `capture_raw_image_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CaptureRawImageResponse {
     pub staged_file: String,
     pub lens_corrected: bool,
 }
+request!(CaptureRawImage, CaptureRawImageResponse, "capture_raw_image", 5);
 
-impl Request for CaptureRawImage {
-    type Response = CaptureRawImageResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `find_paper` request (doc/interfaces.md#find_paper, schemas/image_processor/find_paper.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#find_paper
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FindPaper {
     pub staged_file: String,
 }
 
-/// `find_paper_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FindPaperResponse {
     pub corners: Option<Corners>,
-    pub width_px: u32,
-    pub height_px: u32,
+    pub width_px: i64,
+    pub height_px: i64,
 }
+request!(FindPaper, FindPaperResponse, "find_paper", 60);
 
-impl Request for FindPaper {
-    type Response = FindPaperResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(60);
-}
-
-/// `prepare_target_photo` request (doc/interfaces.md#prepare_target_photo, schemas/image_processor/prepare_target_photo.schema.json)
+// doc/interfaces.md#prepare_target_photo
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PrepareTargetPhoto {
-    // TODO: fields
+    pub staged_file: String,
+    pub corners: Corners,
+    pub paper_width_mm: f64,
+    pub paper_height_mm: f64,
 }
 
-/// `prepare_target_photo_response`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RingProposal {
+    pub center_x_mm: Option<f64>,
+    pub center_y_mm: Option<f64>,
+    pub inner_white_radius_mm: Option<f64>,
+    pub black_radius_mm: Option<f64>,
+    pub outer_radius_mm: Option<f64>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PrepareTargetPhotoResponse {
-    // TODO: fields
+    pub staged_file: String,
+    pub px_per_mm: f64,
+    pub proposal: RingProposal,
 }
+request!(PrepareTargetPhoto, PrepareTargetPhotoResponse, "prepare_target_photo", 60);
 
-impl Request for PrepareTargetPhoto {
-    type Response = PrepareTargetPhotoResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(60);
-}
-
-/// `detect_shots_in_photo` request (doc/interfaces.md#detect_shots_in_photo, schemas/image_processor/detect_shots_in_photo.schema.json)
+// doc/interfaces.md#detect_shots_in_photo
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DetectShotsInPhoto {
-    // TODO: fields
+    pub staged_file: String,
+    pub target_type: TargetType,
+    pub bullet_diameter_mm: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corners: Option<Corners>,
 }
 
-/// `detect_shots_in_photo_response`
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct DetectedShot {
+    pub angle_turns: f64,
+    pub radius_mm: f64,
+    pub confidence: f64,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DetectShotsInPhotoResponse {
-    // TODO: fields
+    pub shots: Vec<DetectedShot>,
+    pub staged_file: String,
+    pub warnings: Vec<String>,
 }
+request!(DetectShotsInPhoto, DetectShotsInPhotoResponse, "detect_shots_in_photo", 60);
 
-impl Request for DetectShotsInPhoto {
-    type Response = DetectShotsInPhotoResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(60);
-}
-
-/// `paper_replaced` event (doc/interfaces.md#paper_replaced, schemas/image_processor/paper_replaced.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#paper_replaced
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PaperReplaced {
-    pub live_paper: u32,
+    pub live_paper: i64,
     pub previous_paper_staged_file: Option<String>,
 }
 
-/// `shot_detected` event (doc/interfaces.md#shot_detected, schemas/image_processor/shot_detected.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#shot_detected
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct ShotDetected {
-    pub hole_id: u32,
-    pub live_paper: u32,
+    pub hole_id: i64,
+    pub live_paper: i64,
     pub angle_turns: f64,
     pub radius_mm: f64,
-    pub confidence: f32,
-    pub frame_seq: u64,
+    pub confidence: f64,
+    pub frame_seq: i64,
 }

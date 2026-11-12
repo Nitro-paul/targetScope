@@ -1,102 +1,112 @@
-//! Messages of `camera_reader` (doc/interfaces.md#camera_reader).
-//! Source of truth: `schemas/camera_reader/`.
-
-use std::time::Duration;
+// doc/interfaces.md#camera_reader
 
 use serde::{Deserialize, Serialize};
 
-use super::Request;
+use super::{request, Ping};
 use crate::model::CameraControl;
 
+pub const PROGRAM: &str = "camera_reader";
 pub const STREAM: &str = "camera_reader:requests";
 
-/// Requests understood by `camera_reader`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum CameraReaderRequest {
-    Ping {},
+    Ping(Ping),
     CameraStatus(CameraStatus),
     CameraListDevices(CameraListDevices),
     CameraListControls(CameraListControls),
     CameraSetControl(CameraSetControl),
 }
 
-/// Events on `camera_reader:events`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// doc/interfaces.md#events-camera_readerevents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum CameraReaderEvent {
     CameraStateChanged(CameraStateChanged),
 }
 
-/// `camera_status` request (doc/interfaces.md#camera_status, schemas/camera_reader/camera_status.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CameraState {
+    Connected,
+    Disconnected,
+    Disabled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CameraSource {
+    V4l2,
+    Rtsp,
+    None,
+}
+
+// doc/interfaces.md#camera_status
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CameraStatus {}
 
-/// `camera_status_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CameraStatusResponse {
-    // TODO: fields
+    pub state: CameraState,
+    pub camera_source: CameraSource,
+    pub device: Option<String>,
+    pub camera_key: Option<String>,
+    pub width_px: Option<i64>,
+    pub height_px: Option<i64>,
+    pub fps: Option<f64>,
+    pub frames_published: i64,
 }
+request!(CameraStatus, CameraStatusResponse, "camera_status", 5);
 
-impl Request for CameraStatus {
-    type Response = CameraStatusResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `camera_list_devices` request (doc/interfaces.md#camera_list_devices, schemas/camera_reader/camera_list_devices.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#camera_list_devices
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CameraListDevices {}
 
-/// `camera_list_devices_response`
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DeviceFormat {
+    pub width_px: i64,
+    pub height_px: i64,
+    pub fps: Vec<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CaptureDevice {
+    pub path: String,
+    pub name: String,
+    pub bus_info: String,
+    pub formats: Vec<DeviceFormat>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CameraListDevicesResponse {
-    // TODO: fields
+    pub devices: Vec<CaptureDevice>,
 }
+request!(CameraListDevices, CameraListDevicesResponse, "camera_list_devices", 5);
 
-impl Request for CameraListDevices {
-    type Response = CameraListDevicesResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `camera_list_controls` request (doc/interfaces.md#camera_list_controls, schemas/camera_reader/camera_list_controls.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#camera_list_controls
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct CameraListControls {}
 
-/// `camera_list_controls_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CameraListControlsResponse {
+pub struct ControlsResponse {
     pub controls: Vec<CameraControl>,
 }
+request!(CameraListControls, ControlsResponse, "camera_list_controls", 5);
 
-impl Request for CameraListControls {
-    type Response = CameraListControlsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `camera_set_control` request (doc/interfaces.md#camera_set_control, schemas/camera_reader/camera_set_control.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#camera_set_control
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CameraSetControl {
     pub id: i64,
     pub value: i64,
 }
+request!(CameraSetControl, ControlsResponse, "camera_set_control", 5);
 
-/// `camera_set_control_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct CameraSetControlResponse {
-    pub controls: Vec<CameraControl>,
-}
-
-impl Request for CameraSetControl {
-    type Response = CameraSetControlResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `camera_state_changed` event (doc/interfaces.md#camera_state_changed, schemas/camera_reader/camera_state_changed.schema.json)
+// doc/interfaces.md#camera_state_changed
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CameraStateChanged {
-    // TODO: fields
+    pub state: CameraState,
+    pub message: String,
+    pub camera_key: Option<String>,
+    pub width_px: Option<i64>,
+    pub height_px: Option<i64>,
 }

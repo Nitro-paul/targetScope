@@ -1,10 +1,9 @@
-//! Model types shared by all programs (doc/interfaces.md#shared-types).
-//! Field names are the JSON names of the schemas in `schemas/common/`.
+// doc/interfaces.md#shared-types
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// A saved session record (doc/interfaces.md#session).
+// doc/interfaces.md#session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Session {
     pub id: i64,
@@ -22,65 +21,126 @@ pub struct Session {
     pub duration_s: Option<i64>,
     pub notes: Option<String>,
     pub paper_count: i64,
+    #[serde(default)]
     pub images: Vec<PaperImage>,
+    #[serde(default)]
     pub shots: Vec<SessionShot>,
 }
 
-/// Payload of `create_session`: all Session fields except id, uuid, saved_at; images as staged files.
+// doc/interfaces.md#create_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NewSession {
-    // TODO: fields (doc/interfaces.md#create_session)
+    pub score: i64,
+    pub grouping_score: i64,
+    pub distance_m: Option<i64>,
+    pub target_type_id: i64,
+    pub shooter_id: Option<i64>,
+    pub device_id: i64,
+    pub single_handed: bool,
+    pub supported: bool,
+    pub shot_count: i64,
+    pub duration_s: Option<i64>,
+    pub notes: Option<String>,
+    pub paper_count: i64,
+    pub shots: Vec<SessionShot>,
+    #[serde(default)]
+    pub images: Vec<StagedPaperImage>,
 }
 
-/// Stored image of one target paper of a session.
+// doc/interfaces.md#import_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ImportedSession {
+    pub uuid: Uuid,
+    pub saved_at: i64,
+    #[serde(flatten)]
+    pub session: NewSession,
+}
+
+// doc/interfaces.md#session
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PaperImage {
     pub paper_no: i64,
     pub image_path: String,
 }
 
-/// A shot in polar coordinates around the ring center (doc/interfaces.md#shot).
+// doc/interfaces.md#create_session
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StagedPaperImage {
+    pub paper_no: i64,
+    pub staged_file: String,
+}
+
+// doc/interfaces.md#shot
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Shot {
     pub angle_turns: f64,
     pub radius_mm: f64,
 }
 
-/// A shot of a saved session, with the paper it was on.
+impl Shot {
+    // doc/interfaces.md#shot
+    pub fn is_valid(&self) -> bool {
+        self.angle_turns.is_finite()
+            && self.radius_mm.is_finite()
+            && (0.0..1.0).contains(&self.angle_turns)
+            && self.radius_mm >= 0.0
+    }
+}
+
+// doc/interfaces.md#sessionshot
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SessionShot {
-    #[serde(flatten)]
-    pub shot: Shot,
+    pub angle_turns: f64,
+    pub radius_mm: f64,
     pub paper_no: i64,
 }
 
+impl SessionShot {
+    pub fn shot(&self) -> Shot {
+        Shot { angle_turns: self.angle_turns, radius_mm: self.radius_mm }
+    }
+}
+
+// doc/interfaces.md#shooter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Shooter {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
     pub name: String,
+    #[serde(default)]
     pub retired: bool,
 }
 
+// doc/interfaces.md#device
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Device {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
     pub name: String,
     pub category: Option<String>,
     pub description: Option<String>,
     pub caliber: Option<String>,
     pub bullet_diameter_mm: f64,
+    #[serde(default)]
     pub image_path: Option<String>,
+    #[serde(default)]
     pub shot_count: i64,
+    #[serde(default)]
     pub locked: bool,
+    #[serde(default)]
     pub retired: bool,
 }
 
-/// Paper target with its three ring anchors (doc/interfaces.md#targettype).
+// doc/interfaces.md#targettype
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TargetType {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
     pub name: String,
     pub paper_width_mm: f64,
@@ -93,42 +153,65 @@ pub struct TargetType {
     pub black_score: i64,
     pub outer_radius_mm: f64,
     pub outer_score: i64,
-    /// Output only: generated with `targets::generate_rings`.
     #[serde(default)]
     pub rings: Vec<Ring>,
     #[serde(default)]
     pub locked: bool,
+    #[serde(default)]
     pub retired: bool,
 }
 
+// doc/interfaces.md#ring
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Ring {
     pub score: i64,
     pub radius_mm: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#setting
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Setting {
     pub name: String,
     pub display_name: String,
     pub active: bool,
     pub value: String,
+    #[serde(default)]
     pub optional: bool,
+    #[serde(default)]
     pub default_value: String,
+    #[serde(default)]
     pub default_active: bool,
+    #[serde(default)]
     pub value_rule: String,
 }
 
-/// Generic filter of the read requests for shooters, devices, target types and settings.
+// doc/interfaces.md#filter
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Filter {
     #[serde(default)]
     pub conditions: Vec<Condition>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub order_by: Option<OrderBy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limit: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub offset: Option<i64>,
 }
 
+impl Filter {
+    pub fn eq(field: &str, value: impl Into<serde_json::Value>) -> Self {
+        Self::with(field, FilterOp::Eq, value)
+    }
+
+    pub fn with(field: &str, op: FilterOp, value: impl Into<serde_json::Value>) -> Self {
+        Filter {
+            conditions: vec![Condition { field: field.to_string(), op, value: value.into() }],
+            ..Default::default()
+        }
+    }
+}
+
+// doc/interfaces.md#filter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Condition {
     pub field: String,
@@ -136,6 +219,7 @@ pub struct Condition {
     pub value: serde_json::Value,
 }
 
+// doc/interfaces.md#filter
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FilterOp {
@@ -149,7 +233,8 @@ pub enum FilterOp {
     In,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#filter
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrderBy {
     pub field: String,
     pub direction: Direction,
@@ -162,36 +247,54 @@ pub enum Direction {
     Desc,
 }
 
-/// Selects saved sessions (doc/interfaces.md#sessionfilter). Every field is optional.
+// doc/interfaces.md#sessionfilter
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SessionFilter {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_ids: Option<Vec<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shooter_ids: Option<Vec<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub device_ids: Option<Vec<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub device_categories: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub calibers: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target_type_ids: Option<Vec<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub distance_m: Option<IntRange>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub saved_at: Option<TimeRange>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub single_handed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub supported: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub shot_count: Option<IntRange>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub include_retired: Option<bool>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#sessionfilter
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntRange {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max: Option<i64>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#sessionfilter
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeRange {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub to: Option<i64>,
 }
 
-/// Paper corners in image pixels (origin top-left, x right, y down).
+// doc/interfaces.md#corners
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Corners {
     pub top_left: PixelPoint,
@@ -200,19 +303,21 @@ pub struct Corners {
     pub bottom_left: PixelPoint,
 }
 
+// doc/interfaces.md#corners
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct PixelPoint {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#analysisresult
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct OffsetMm {
     pub x_mm: f64,
     pub y_mm: f64,
 }
 
-/// Result of `analyze_shots` (doc/interfaces.md#analysisresult).
+// doc/interfaces.md#analysisresult
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AnalysisResult {
     pub shot_scores: Vec<i64>,
@@ -222,11 +327,23 @@ pub struct AnalysisResult {
     pub mean_point: Option<OffsetMm>,
 }
 
-/// State of the current session in session_manager (doc/interfaces.md#currentsession).
+// doc/interfaces.md#currentsession
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionState {
+    Idle,
+    Setup,
+    Running,
+    Paused,
+    Review,
+    Recovered,
+}
+
+// doc/interfaces.md#currentsession
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CurrentSession {
-    pub state: String, // TODO: enum of the states in doc/programs/session_manager.md#state-machine
-    pub recovered_from: Option<String>,
+    pub state: SessionState,
+    pub recovered_from: Option<SessionState>,
     pub setup: SessionSetup,
     pub shots: Vec<CurrentShot>,
     pub paper_no: i64,
@@ -239,15 +356,19 @@ pub struct CurrentSession {
     pub calibration: Option<CalibrationStatus>,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct StagedPaperImage {
-    pub paper_no: i64,
-    pub staged_file: String,
+// doc/interfaces.md#sessionsetup
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum InputMode {
+    Camera,
+    Manual,
+    Photo,
 }
 
+// doc/interfaces.md#sessionsetup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionSetup {
-    pub input_mode: String, // TODO: enum camera | manual | photo
+    pub input_mode: InputMode,
     pub shooter_id: Option<i64>,
     pub device_id: Option<i64>,
     pub distance_m: Option<i64>,
@@ -256,20 +377,45 @@ pub struct SessionSetup {
     pub supported: bool,
 }
 
+// doc/interfaces.md#currentshot
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CurrentShot {
     pub angle_turns: f64,
     pub radius_mm: f64,
-    pub origin: String, // TODO: enum (doc/interfaces.md#currentshot)
-    pub confidence: Option<f32>,
+    pub origin: InputMode,
+    pub confidence: Option<f64>,
     pub hole_id: Option<i64>,
     pub paper_no: i64,
 }
 
+impl CurrentShot {
+    pub fn shot(&self) -> Shot {
+        Shot { angle_turns: self.angle_turns, radius_mm: self.radius_mm }
+    }
+}
+
+// doc/interfaces.md#calibrationstatus
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CalibrationState {
+    NotCalibrated,
+    Calibrated,
+    Lost,
+}
+
+// doc/interfaces.md#calibrationstatus
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CalibrationMethod {
+    Auto,
+    Manual,
+}
+
+// doc/interfaces.md#calibrationstatus
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CalibrationStatus {
-    pub state: String,          // TODO: enum (doc/interfaces.md#calibrationstatus)
-    pub method: Option<String>, // TODO: enum auto | manual
+    pub state: CalibrationState,
+    pub method: Option<CalibrationMethod>,
     pub target_type_id: Option<i64>,
     pub corners: Option<Corners>,
     pub px_per_mm: Option<f64>,
@@ -277,11 +423,22 @@ pub struct CalibrationStatus {
     pub updated_ms: i64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#cameracontrol
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ControlKind {
+    Integer,
+    Boolean,
+    Menu,
+    Button,
+}
+
+// doc/interfaces.md#cameracontrol
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CameraControl {
     pub id: i64,
     pub name: String,
-    pub kind: String, // TODO: enum (doc/interfaces.md#cameracontrol)
+    pub kind: ControlKind,
     pub min: i64,
     pub max: i64,
     pub step: i64,
@@ -292,13 +449,14 @@ pub struct CameraControl {
     pub inactive: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#cameracontrol
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MenuEntry {
     pub value: i64,
     pub label: String,
 }
 
-/// One group of `compute_statistics` (doc/interfaces.md#statisticsgroup).
+// doc/interfaces.md#statisticsgroup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StatisticsGroup {
     pub target_type_id: i64,
@@ -308,12 +466,14 @@ pub struct StatisticsGroup {
     pub shots: Vec<Shot>,
 }
 
+// doc/interfaces.md#statisticsgroup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TrendEntry {
     pub period_start: i64,
     pub values: StatisticsValues,
 }
 
+// doc/interfaces.md#statisticsvalues
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StatisticsValues {
     pub session_count: i64,

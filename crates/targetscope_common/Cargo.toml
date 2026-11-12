@@ -1,12 +1,12 @@
 [package]
 name = "targetscope_common"
-description = "Shared Rust library of TargetScope: model, messages, Redis bus, frames (doc/shared_libraries.md)"
+description = "Shared Rust library of TargetScope"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
 [features]
-# Compiles the named failpoints in (test builds only, see doc/testing/overview.md#failpoints).
+# doc/testing/overview.md#failpoints
 failpoints = ["fail/failpoints"]
 
 [dependencies]
@@ -20,8 +20,9 @@ iceoryx2.workspace = true
 thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
-tracing-appender.workspace = true
 fail.workspace = true
+hostname.workspace = true
+libc.workspace = true
 
 [dev-dependencies]
 jsonschema.workspace = true

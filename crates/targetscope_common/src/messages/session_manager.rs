@@ -1,22 +1,19 @@
-//! Messages of `session_manager` (doc/interfaces.md#session_manager).
-//! Source of truth: `schemas/session_manager/`.
+// doc/interfaces.md#session_manager
 
-use std::time::Duration;
+use serde::{Deserialize, Deserializer, Serialize};
 
-use serde::{Deserialize, Serialize};
+use super::{request, Ping};
+use crate::model::{Corners, CurrentSession, InputMode};
 
-use super::Request;
-use crate::model::{Corners, CurrentSession};
-
+pub const PROGRAM: &str = "session_manager";
 pub const STREAM: &str = "session_manager:requests";
 
-/// Requests understood by `session_manager`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum SessionManagerRequest {
-    Ping {},
+    Ping(Ping),
     SessionGet(SessionGet),
-    SessionSetup(SessionSetup),
+    SessionSetup(SessionSetupRequest),
     SessionUpdateSetup(SessionUpdateSetup),
     SessionCalibrate(SessionCalibrate),
     SessionStart(SessionStart),
@@ -33,296 +30,126 @@ pub enum SessionManagerRequest {
     SessionCancel(SessionCancel),
 }
 
-/// Events on `session_manager:events`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+// doc/interfaces.md#events-session_managerevents
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum SessionManagerEvent {
-    SessionChanged(SessionChanged),
+    SessionChanged(SessionResponse),
     SessionSaved(SessionSaved),
 }
 
-/// `session_get` request (doc/interfaces.md#session_get, schemas/session_manager/session_get.schema.json)
+// doc/interfaces.md#session_manager
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionGet {}
-
-/// `session_get_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionGetResponse {
+pub struct SessionResponse {
     pub session: CurrentSession,
 }
 
-impl Request for SessionGet {
-    type Response = SessionGetResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
+macro_rules! empty_request {
+    ($name:ident, $type:literal, $secs:expr) => {
+        #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+        pub struct $name {}
+        request!($name, SessionResponse, $type, $secs);
+    };
 }
 
-/// `session_setup` request (doc/interfaces.md#session_setup, schemas/session_manager/session_setup.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionSetup {
-    // TODO: fields
-}
+empty_request!(SessionGet, "session_get", 5);
+empty_request!(SessionStart, "session_start", 30);
+empty_request!(SessionPause, "session_pause", 30);
+empty_request!(SessionResume, "session_resume", 30);
+empty_request!(SessionNewPaper, "session_new_paper", 30);
+empty_request!(SessionStop, "session_stop", 30);
+empty_request!(SessionCancel, "session_cancel", 30);
 
-/// `session_setup_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionSetupResponse {
-    pub session: CurrentSession,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SessionSetupRequest {
+    pub input_mode: InputMode,
 }
+request!(SessionSetupRequest, SessionResponse, "session_setup", 5);
 
-impl Request for SessionSetup {
-    type Response = SessionSetupResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `session_update_setup` request (doc/interfaces.md#session_update_setup, schemas/session_manager/session_update_setup.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#session_manager
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SessionUpdateSetup {
-    // TODO: fields
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_mode: Option<InputMode>,
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
+    pub shooter_id: Option<Option<i64>>,
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<Option<i64>>,
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
+    pub distance_m: Option<Option<i64>>,
+    #[serde(default, deserialize_with = "present", skip_serializing_if = "Option::is_none")]
+    pub target_type_id: Option<Option<i64>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub single_handed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supported: Option<bool>,
+}
+request!(SessionUpdateSetup, SessionResponse, "session_update_setup", 30);
+
+fn present<'de, D, T>(d: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(d).map(Some)
 }
 
-/// `session_update_setup_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionUpdateSetupResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionUpdateSetup {
-    type Response = SessionUpdateSetupResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_calibrate` request (doc/interfaces.md#session_calibrate, schemas/session_manager/session_calibrate.schema.json)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionCalibrate {
     pub corners: Corners,
 }
+request!(SessionCalibrate, SessionResponse, "session_calibrate", 30);
 
-/// `session_calibrate_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionCalibrateResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionCalibrate {
-    type Response = SessionCalibrateResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_start` request (doc/interfaces.md#session_start, schemas/session_manager/session_start.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionStart {}
-
-/// `session_start_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionStartResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionStart {
-    type Response = SessionStartResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_upload_photo` request (doc/interfaces.md#session_upload_photo, schemas/session_manager/session_upload_photo.schema.json)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionUploadPhoto {
-    // TODO: fields
+    pub staged_file: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub corners: Option<Corners>,
 }
+request!(SessionUploadPhoto, SessionResponse, "session_upload_photo", 90);
 
-/// `session_upload_photo_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionUploadPhotoResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionUploadPhoto {
-    type Response = SessionUploadPhotoResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(90);
-}
-
-/// `session_pause` request (doc/interfaces.md#session_pause, schemas/session_manager/session_pause.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionPause {}
-
-/// `session_pause_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionPauseResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionPause {
-    type Response = SessionPauseResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_resume` request (doc/interfaces.md#session_resume, schemas/session_manager/session_resume.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionResume {}
-
-/// `session_resume_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionResumeResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionResume {
-    type Response = SessionResumeResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_add_shot` request (doc/interfaces.md#session_add_shot, schemas/session_manager/session_add_shot.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SessionAddShot {
-    // TODO: fields
+    pub angle_turns: f64,
+    pub radius_mm: f64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub paper_no: Option<i64>,
 }
+request!(SessionAddShot, SessionResponse, "session_add_shot", 5);
 
-/// `session_add_shot_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionAddShotResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionAddShot {
-    type Response = SessionAddShotResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `session_update_shot` request (doc/interfaces.md#session_update_shot, schemas/session_manager/session_update_shot.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SessionUpdateShot {
-    // TODO: fields
+    pub index: i64,
+    pub angle_turns: f64,
+    pub radius_mm: f64,
 }
+request!(SessionUpdateShot, SessionResponse, "session_update_shot", 5);
 
-/// `session_update_shot_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionUpdateShotResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionUpdateShot {
-    type Response = SessionUpdateShotResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `session_delete_shot` request (doc/interfaces.md#session_delete_shot, schemas/session_manager/session_delete_shot.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionDeleteShot {
-    pub index: u32,
+    pub index: i64,
 }
+request!(SessionDeleteShot, SessionResponse, "session_delete_shot", 30);
 
-/// `session_delete_shot_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionDeleteShotResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionDeleteShot {
-    type Response = SessionDeleteShotResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_new_paper` request (doc/interfaces.md#session_new_paper, schemas/session_manager/session_new_paper.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionNewPaper {}
-
-/// `session_new_paper_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionNewPaperResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionNewPaper {
-    type Response = SessionNewPaperResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_set_notes` request (doc/interfaces.md#session_set_notes, schemas/session_manager/session_set_notes.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSetNotes {
     pub notes: Option<String>,
 }
+request!(SessionSetNotes, SessionResponse, "session_set_notes", 5);
 
-/// `session_set_notes_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionSetNotesResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionSetNotes {
-    type Response = SessionSetNotesResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `session_stop` request (doc/interfaces.md#session_stop, schemas/session_manager/session_stop.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionStop {}
-
-/// `session_stop_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionStopResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionStop {
-    type Response = SessionStopResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(5);
-}
-
-/// `session_save` request (doc/interfaces.md#session_save, schemas/session_manager/session_save.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct SessionSave {}
 
-/// `session_save_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SessionSaveResponse {
     pub session: CurrentSession,
     pub session_id: i64,
     pub warnings: Vec<String>,
 }
+request!(SessionSave, SessionSaveResponse, "session_save", 30);
 
-impl Request for SessionSave {
-    type Response = SessionSaveResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_cancel` request (doc/interfaces.md#session_cancel, schemas/session_manager/session_cancel.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionCancel {}
-
-/// `session_cancel_response`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionCancelResponse {
-    pub session: CurrentSession,
-}
-
-impl Request for SessionCancel {
-    type Response = SessionCancelResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(30);
-}
-
-/// `session_changed` event (doc/interfaces.md#session_changed, schemas/session_manager/session_changed.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SessionChanged {
-    pub session: CurrentSession,
-}
-
-/// `session_saved` event (doc/interfaces.md#session_saved, schemas/session_manager/session_saved.schema.json)
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+// doc/interfaces.md#session_saved
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SessionSaved {
     pub session_id: i64,
 }

@@ -1,36 +1,53 @@
-//! Messages of `statistics` (doc/interfaces.md#statistics).
-//! Source of truth: `schemas/statistics/`.
-
-use std::time::Duration;
+// doc/interfaces.md#statistics
 
 use serde::{Deserialize, Serialize};
 
-use super::Request;
+use super::{request, Ping};
+use crate::model::{SessionFilter, StatisticsGroup};
 
+pub const PROGRAM: &str = "statistics";
 pub const STREAM: &str = "statistics:requests";
 
-/// Requests understood by `statistics`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum StatisticsRequest {
-    Ping {},
+    Ping(Ping),
     ComputeStatistics(ComputeStatistics),
 }
 
-/// `compute_statistics` request (doc/interfaces.md#compute_statistics, schemas/statistics/compute_statistics.schema.json)
+// doc/interfaces.md#compute_statistics
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GroupBy {
+    None,
+    Shooter,
+    Device,
+    DeviceCategory,
+    Distance,
+    SingleHanded,
+    Supported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Period {
+    Session,
+    Day,
+    Week,
+    Month,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ComputeStatistics {
-    // TODO: fields
+    #[serde(default)]
+    pub filter: SessionFilter,
+    pub group_by: GroupBy,
+    pub period: Period,
 }
 
-/// `compute_statistics_response`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ComputeStatisticsResponse {
-    // TODO: fields
+    pub groups: Vec<StatisticsGroup>,
+    pub session_count: i64,
 }
-
-impl Request for ComputeStatistics {
-    type Response = ComputeStatisticsResponse;
-    const STREAM: &'static str = STREAM;
-    const TIMEOUT: Duration = Duration::from_secs(90);
-}
+request!(ComputeStatistics, ComputeStatisticsResponse, "compute_statistics", 90);
