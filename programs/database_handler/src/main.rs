@@ -1,4 +1,4 @@
-//! database_handler: load config, init logging, open DB, start workers and maintenance.
+// doc/programs/database_handler.md
 
 #[tokio::main]
 async fn main() -> std::process::ExitCode {

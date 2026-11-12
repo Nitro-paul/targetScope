@@ -1,70 +1,69 @@
-// DB-EVT: Change events (integration)
-// Cases: ../../../doc/testing/database_handler.md#change-events-integration
+// doc/testing/database_handler.md#change-events-integration
 
-/// DB-EVT-01: Session created
+// DB-EVT-01
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_01_session_created() {
     todo!("DB-EVT-01")
 }
 
-/// DB-EVT-02: Session deleted
+// DB-EVT-02
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_02_session_deleted() {
     todo!("DB-EVT-02")
 }
 
-/// DB-EVT-03: Shooters
+// DB-EVT-03
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_03_shooters() {
     todo!("DB-EVT-03")
 }
 
-/// DB-EVT-04: Devices
+// DB-EVT-04
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_04_devices() {
     todo!("DB-EVT-04")
 }
 
-/// DB-EVT-05: Target types
+// DB-EVT-05
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_05_target_types() {
     todo!("DB-EVT-05")
 }
 
-/// DB-EVT-06: Settings
+// DB-EVT-06
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_06_settings() {
     todo!("DB-EVT-06")
 }
 
-/// DB-EVT-07: Reset
+// DB-EVT-07
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_07_reset() {
     todo!("DB-EVT-07")
 }
 
-/// DB-EVT-08: Image folder change
+// DB-EVT-08
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_08_image_folder_change() {
     todo!("DB-EVT-08")
 }
 
-/// DB-EVT-09: Imports
+// DB-EVT-09
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_09_imports() {
     todo!("DB-EVT-09")
 }
 
-/// DB-EVT-10: No event without a write
+// DB-EVT-10
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_evt_10_no_event_without_a_write() {

@@ -1,4 +1,4 @@
--- Migration 1: initial schema. Copied from doc/database.md#schema-sql; keep both in sync.
+-- doc/database.md#schema-sql
 
 CREATE TABLE settings (
     id            INTEGER PRIMARY KEY,
@@ -98,7 +98,7 @@ CREATE INDEX idx_sessions_saved_at       ON sessions(saved_at);
 CREATE INDEX idx_shots_session_id        ON shots(session_id);
 CREATE INDEX idx_processed_requests_processed_at ON processed_requests(processed_at);
 
--- Records: saved sessions, their shots and their images are never changed.
+-- doc/database.md#records
 CREATE TRIGGER sessions_are_records BEFORE UPDATE ON sessions
 BEGIN SELECT RAISE(ABORT, 'record: sessions cannot be changed'); END;
 
@@ -108,7 +108,7 @@ BEGIN SELECT RAISE(ABORT, 'record: shots cannot be changed'); END;
 CREATE TRIGGER session_images_are_records BEFORE UPDATE ON session_images
 BEGIN SELECT RAISE(ABORT, 'record: session images cannot be changed'); END;
 
--- Values the scoring of saved sessions depends on are locked once used.
+-- doc/database.md#records
 CREATE TRIGGER target_types_locked_when_used
 BEFORE UPDATE OF paper_width_mm, paper_height_mm, center_x_mm, center_y_mm,
                  inner_white_radius_mm, inner_white_score, black_radius_mm, black_score,

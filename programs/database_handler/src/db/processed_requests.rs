@@ -1,29 +1,26 @@
-//! Duplicate protection: processed request ids with their responses.
+// doc/database.md#processed_requests
 
-use rusqlite::Connection;
+use rusqlite::{params, Connection, OptionalExtension};
 use uuid::Uuid;
 
-use crate::error::HandlerError;
+use crate::error::Result;
 
-/// Stored response payload if request_id was already processed.
-pub fn find(c: &Connection, request_id: &Uuid) -> Result<Option<serde_json::Value>, HandlerError> {
-    let _ = (c, request_id);
-    todo!()
+pub fn find(c: &Connection, request_id: &Uuid) -> Result<Option<serde_json::Value>> {
+    let text: Option<String> = c
+        .query_row("SELECT response FROM processed_requests WHERE request_id = ?1", [request_id.to_string()], |r| r.get(0))
+        .optional()?;
+    Ok(text.and_then(|t| serde_json::from_str(&t).ok()))
 }
 
-/// Must be called inside the transaction of the write it records.
-pub fn record(
-    c: &Connection,
-    request_id: &Uuid,
-    r#type: &str,
-    response: &serde_json::Value,
-) -> Result<(), HandlerError> {
-    let _ = (c, request_id, r#type, response);
-    todo!()
+pub fn record(c: &Connection, request_id: &Uuid, r#type: &str, response: &serde_json::Value, now_s: i64) -> Result<()> {
+    c.execute(
+        "INSERT INTO processed_requests (request_id, type, processed_at, response) VALUES (?1, ?2, ?3, ?4)",
+        params![request_id.to_string(), r#type, now_s, response.to_string()],
+    )?;
+    Ok(())
 }
 
-/// Deletes entries older than max_age_days; returns the number deleted.
-pub fn purge(c: &Connection, max_age_days: u32) -> Result<usize, HandlerError> {
-    let _ = (c, max_age_days);
-    todo!()
+// doc/programs/database_handler.md#startup
+pub fn purge(c: &Connection, max_age_days: u32, now_s: i64) -> Result<usize> {
+    Ok(c.execute("DELETE FROM processed_requests WHERE processed_at < ?1", [now_s - max_age_days as i64 * 86_400])?)
 }

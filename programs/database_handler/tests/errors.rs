@@ -1,35 +1,34 @@
-// DB-ERR: Error handling (integration)
-// Cases: ../../../doc/testing/database_handler.md#error-handling-integration
+// doc/testing/database_handler.md#error-handling-integration
 
-/// DB-ERR-01: Redis lost
+// DB-ERR-01
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_err_01_redis_lost() {
     todo!("DB-ERR-01")
 }
 
-/// DB-ERR-02: Disk full
+// DB-ERR-02
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_err_02_disk_full() {
     todo!("DB-ERR-02")
 }
 
-/// DB-ERR-03: Database locked
+// DB-ERR-03
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_err_03_database_locked() {
     todo!("DB-ERR-03")
 }
 
-/// DB-ERR-04: Many writes at once
+// DB-ERR-04
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_err_04_many_writes_at_once() {
     todo!("DB-ERR-04")
 }
 
-/// DB-ERR-05: Shutdown during a request
+// DB-ERR-05
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn db_err_05_shutdown_during_a_request() {

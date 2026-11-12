@@ -1,22 +1,33 @@
-//! Migrations (doc/programs/database_handler.md#schema-migrations) and default settings.
-//! `PRAGMA user_version` = number of applied migrations; each migration runs in its own transaction.
+// doc/programs/database_handler.md#schema-migrations
 
-use rusqlite::Connection;
+use std::path::Path;
 
-use crate::error::HandlerError;
+use rusqlite::{params, Connection};
+
+use crate::error::Result;
+use crate::known_settings::KNOWN_SETTINGS;
 
 pub const MIGRATIONS: &[&str] = &[include_str!("../../migrations/0001_initial.sql")];
 
-pub fn migrate(c: &mut Connection) -> Result<(), HandlerError> {
-    let _ = c;
-    todo!()
+pub fn migrate(c: &mut Connection, migrations: &[&str]) -> Result<()> {
+    let version: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    for (i, sql) in migrations.iter().enumerate().skip(version as usize) {
+        let tx = c.transaction()?;
+        tx.execute_batch(sql)?;
+        tx.pragma_update(None, "user_version", (i + 1) as i64)?;
+        tx.commit()?;
+        tracing::info!(version = i + 1, "migration applied");
+    }
+    Ok(())
 }
 
-/// Inserts every known setting that doesn't exist yet with its default value and active state.
-pub fn insert_default_settings(
-    c: &Connection,
-    data_dir: &std::path::Path,
-) -> Result<(), HandlerError> {
-    let _ = (c, data_dir);
-    todo!()
+// doc/database.md#known-settings
+pub fn insert_default_settings(c: &Connection, data_dir: &Path) -> Result<()> {
+    let mut stmt = c.prepare(
+        "INSERT INTO settings (name, display_name, active, value) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(name) DO NOTHING",
+    )?;
+    for k in KNOWN_SETTINGS {
+        stmt.execute(params![k.name, k.display_name, k.default_active, k.default_value(data_dir)])?;
+    }
+    Ok(())
 }
