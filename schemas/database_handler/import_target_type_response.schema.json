@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/import_target_type_response.schema.json",
+  "title": "import_target_type_response",
+  "description": "response of database_handler; doc/interfaces.md#import_target_type",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "import_target_type_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "$comment": "TODO: fields from doc/interfaces.md#import_target_type"
+    }
+  }
+}

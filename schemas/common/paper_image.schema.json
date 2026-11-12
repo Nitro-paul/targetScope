@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/paper_image.schema.json",
+  "title": "PaperImage",
+  "description": "doc/interfaces.md#paperimage",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false,
+  "$comment": "TODO: fields from doc/interfaces.md#paperimage"
+}

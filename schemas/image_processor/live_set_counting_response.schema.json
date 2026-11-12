@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/live_set_counting_response.schema.json",
+  "title": "live_set_counting_response",
+  "description": "response of image_processor; doc/interfaces.md#live_set_counting",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "live_set_counting_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

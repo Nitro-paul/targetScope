@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/find_paper.schema.json",
+  "title": "find_paper",
+  "description": "request of image_processor; doc/interfaces.md#find_paper",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "find_paper"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "$comment": "TODO: fields from doc/interfaces.md#find_paper"
+    }
+  }
+}

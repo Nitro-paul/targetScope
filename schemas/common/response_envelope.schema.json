@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/response_envelope.schema.json",
+  "title": "Response envelope",
+  "description": "doc/interfaces.md#response-envelope",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "request_id",
+    "status",
+    "error",
+    "payload"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*_response$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": [
+        "ok",
+        "error"
+      ]
+    },
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "error.schema.json"
+        }
+      ]
+    },
+    "payload": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "status": {
+        "const": "ok"
+      }
+    }
+  },
+  "then": {
+    "properties": {
+      "error": {
+        "type": "null"
+      },
+      "payload": {
+        "type": "object"
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "error": {
+        "$ref": "error.schema.json"
+      },
+      "payload": {
+        "type": "null"
+      }
+    }
+  }
+}

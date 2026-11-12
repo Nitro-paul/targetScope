@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/lens_calibration_status.schema.json",
+  "title": "lens_calibration_status",
+  "description": "request of image_processor; doc/interfaces.md#lens_calibration_status",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "lens_calibration_status"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

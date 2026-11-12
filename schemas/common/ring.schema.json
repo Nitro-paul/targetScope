@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/ring.schema.json",
+  "title": "Ring",
+  "description": "doc/interfaces.md#ring",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false,
+  "$comment": "TODO: fields from doc/interfaces.md#ring"
+}

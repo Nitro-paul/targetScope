@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/capture_raw_image.schema.json",
+  "title": "capture_raw_image",
+  "description": "request of image_processor; doc/interfaces.md#capture_raw_image",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "capture_raw_image"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/export/v1.schema.json",
+  "title": "TargetScope export file, format version 1",
+  "description": "doc/programs/exporter.md#json; read by importer (doc/programs/importer.md)",
+  "type": "object",
+  "required": [
+    "format",
+    "format_version"
+  ],
+  "properties": {
+    "format": {
+      "const": "targetscope-export"
+    },
+    "format_version": {
+      "const": 1
+    }
+  },
+  "$comment": "TODO: exported_at, shooters, devices, target_types, sessions (doc/programs/exporter.md#json)"
+}

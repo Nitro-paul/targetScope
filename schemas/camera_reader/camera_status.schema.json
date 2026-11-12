@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/camera_reader/camera_status.schema.json",
+  "title": "camera_status",
+  "description": "request of camera_reader; doc/interfaces.md#camera_status",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "camera_status"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

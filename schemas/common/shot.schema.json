@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/shot.schema.json",
+  "title": "Shot",
+  "description": "doc/interfaces.md#shot",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false,
+  "$comment": "TODO: fields from doc/interfaces.md#shot"
+}

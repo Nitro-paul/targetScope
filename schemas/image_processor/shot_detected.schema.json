@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/shot_detected.schema.json",
+  "title": "shot_detected",
+  "description": "event of image_processor; doc/interfaces.md#shot_detected",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "shot_detected"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "image_processor"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "$comment": "TODO: fields from doc/interfaces.md#shot_detected"
+    }
+  }
+}

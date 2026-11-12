@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/error_code.schema.json",
+  "title": "Error code",
+  "description": "doc/interfaces.md#error-codes",
+  "enum": [
+    "invalid_message",
+    "validation_failed",
+    "not_found",
+    "in_use",
+    "setting_not_set",
+    "invalid_state",
+    "unavailable",
+    "processing_failed",
+    "io_error",
+    "database_error",
+    "timeout"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/data_changed.schema.json",
+  "title": "data_changed",
+  "description": "event of database_handler; doc/interfaces.md#data_changed",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "data_changed"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "database_handler"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "$comment": "TODO: fields from doc/interfaces.md#data_changed"
+    }
+  }
+}

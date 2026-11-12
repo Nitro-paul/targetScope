@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/ping.schema.json",
+  "title": "ping",
+  "description": "request of common; doc/interfaces.md#ping",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "ping"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
+}

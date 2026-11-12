@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/paper_replaced.schema.json",
+  "title": "paper_replaced",
+  "description": "event of image_processor; doc/interfaces.md#paper_replaced",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "paper_replaced"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "image_processor"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "$comment": "TODO: fields from doc/interfaces.md#paper_replaced"
+    }
+  }
+}

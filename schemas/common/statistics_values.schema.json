@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/statistics_values.schema.json",
+  "title": "StatisticsValues",
+  "description": "doc/interfaces.md#statisticsvalues",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false,
+  "$comment": "TODO: fields from doc/interfaces.md#statisticsvalues"
+}
