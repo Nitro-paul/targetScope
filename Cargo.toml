@@ -63,6 +63,7 @@ http-body-util = "0.1"
 
 # doc/testing/overview.md#test-environment
 tempfile = "3"
+proptest = "1.12"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "cookies"] }
 tokio-tungstenite = "0.30"
 
