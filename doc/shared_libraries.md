@@ -51,6 +51,8 @@ crates/targetscope_common/
     ├── targets.rs      # ring generation, target type validation
     ├── settings.rs     # SettingsCache
     ├── config.rs       # BootstrapConfig
+    ├── export.rs       # export file format v1 (exporter, importer)
+    ├── program.rs      # program startup, shutdown signal
     ├── clock.rs        # Clock, SystemClock, local time
     └── logging.rs      # tracing setup, daily log file
 ```
@@ -182,6 +184,9 @@ pub fn frame_subscriber(node: &Node<ipc::Service>, service: &str) -> Result<Fram
 pub fn cleanup_dead_nodes() -> Result<(), FrameError>;
 ```
 `FramePublisher::publish(header, |buf: &mut [u8]| ...)` loans a slice, lets the caller fill it, sends it and notifies the matching `/notify` event service. `FrameSubscriber::wait(timeout)` blocks on the event service and returns the newest sample. Details in [frame_transport.md](frame_transport.md).
+
+## Export file
+`export.rs` holds the types of the export file format version 1 (`ExportFile`, `ExportShooter`, `ExportTargetType`, `ExportDevice`, `ExportSession`, `ExportImage`), written by `exporter` and read by `importer`, so both always agree. The format is defined by `schemas/export/v1.schema.json` (see [exporter.md](programs/exporter.md#json)); `session_image_entry` and `device_image_entry` build the image paths inside a ZIP.
 
 ## Geometry
 ```rust

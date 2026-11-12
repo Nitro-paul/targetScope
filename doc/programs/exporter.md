@@ -67,6 +67,8 @@ One file per session: `<prefix>_session_<id>.png`, the target paper to scale (lo
 - mean point of impact as a cross, and the grouping shift as an arrow from the target center,
 - header text: saved_at, shooter, device, distance, target type, score, grouping score, shot count, paper count.
 
+Layout: the header is 170 px high (three text lines); below it the paper with a gray outline, the black area filled, ring lines white inside the black area and black outside, ring scores along the horizontal to the right of the center, shots blue with a darker outline (labels white inside the black area), the mean point as a red cross, the grouping shift as a green arrow. The font (DejaVu Sans, `assets/DejaVuSans.ttf`, license next to it) is built into the program.
+
 ### ZIP with images
 With `include_images` (only `csv` and `json`), the export is one file `<prefix>_csv.zip` or `<prefix>_json.zip`:
 ```
