@@ -39,7 +39,7 @@ What is tested: `analyze`: shot scores, score, grouping score, grouping shift, m
 | AN-ANL-07 | Grouping never worse | 10 000 random sessions with 1–60 shots (`proptest`) | `grouping_score >= score` every time |
 | AN-ANL-08 | Same result every time | The same input 100 times | Identical output (bit-equal) |
 | AN-ANL-09 | `rings` in the request are ignored | `TT-REF` with 3 made-up rings | Same result as with the generated rings |
-| AN-ANL-10 | Compared with an exact reference | 1 000 random sessions with 2–10 shots within 40 mm of the center; reference: `S(c)` at (0, 0), at every shot, and at every intersection point of two circles of radius `r_i + b` around the shots (the maximum of `S` is reached at one of these points, because `S` only changes on these circles) | `grouping_score` never above the reference, and equal in at least 99 % of the sessions; the miss rate is written to the test report |
+| AN-ANL-10 | Compared with brute force | 1 000 random sessions with 2–10 shots within 40 mm of the center; brute force: `S(c)` at every point of a 0.01 mm grid over the same area (computed with branch and bound: a box of grid points is skipped when an upper bound of `S` over it, from each shot's distance to the box, can't beat the best value found, so the result equals evaluating every point) | `grouping_score` equal in at least 99 % of the sessions; the miss rate is written to the test report |
 
 ## Requests (integration)
 What is tested: `analyze_shots` over Redis and its validation ([analyzer.md](../programs/analyzer.md#interface)).

@@ -45,8 +45,8 @@ grouping_shift = the c that reaches it
 `S(c)` is a step function (it only changes when a ring edge crosses a shot), so gradient methods don't work. A two-stage grid search is used:
 
 1. **Search area:** the bounding box of all shots, extended on each side by `r_n + b`. Outside this area no shot touches any ring, so `S(c) = 0` there.
-2. **Coarse grid:** step `h = min(0.5 mm, (r_1 + b) / 5)`. Evaluate `S(c)` at every grid point, plus `(0, 0)` and the mean point. Keep the 10 best points.
-3. **Fine grid:** around each of the 10 points, a grid of ±`h` with step `h / 10`. Evaluate `S(c)`.
+2. **Coarse grid:** step `h = min(0.5 mm, (r_1 + b) / 5)`. Evaluate `S(c)` at every grid point, plus `(0, 0)` and the mean point. Keep every point with the best coarse score (at least the 10 best points, at most 1 000, ordered by the tie rule of step 4). Many points usually share the best score; a higher zone narrower than `h` lies next to one of them, so refining only 10 of them would miss it in about 6 % of sessions.
+3. **Fine grid:** around each kept point, a grid of ±`h` with step `h / 10`. Evaluate `S(c)`.
 4. **Result:** the highest `S(c)`. Ties are resolved by the smallest shift `|c|`, then by smallest `c_x`, then `c_y`, so the result is deterministic.
 
 With a score lookup by binary search over the ring radii, a 60-shot session on a 155 mm target needs a few tens of millions of shot evaluations in the worst case, which takes well under a second. The calculation runs in `spawn_blocking`.
