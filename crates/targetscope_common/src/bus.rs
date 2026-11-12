@@ -527,6 +527,7 @@ async fn read_responses(inner: Weak<Inner>, mut conn: ConnectionManager, mut las
 
 pub struct Event<E> {
     pub entry_id: String,
+    pub data: String,
     pub envelope: EventEnvelope,
     pub event: E,
 }
@@ -552,11 +553,12 @@ impl<E: DeserializeOwned> EventReader<E> {
                 if let ReadMode::After(_) = self.mode {
                     self.last_id = entry.id.clone();
                 }
-                let decoded = entry_data(&entry)
-                    .and_then(|d| serde_json::from_str::<EventEnvelope>(&d).ok())
+                let data = entry_data(&entry).unwrap_or_default();
+                let decoded = serde_json::from_str::<EventEnvelope>(&data)
+                    .ok()
                     .and_then(|env| env.decode::<E>().ok().map(|ev| (env, ev)));
                 match decoded {
-                    Some((envelope, event)) => return Ok(Event { entry_id: entry.id, envelope, event }),
+                    Some((envelope, event)) => return Ok(Event { entry_id: entry.id, data, envelope, event }),
                     None => {
                         tracing::debug!(entry = %entry.id, stream = %self.stream, "event skipped");
                         if let ReadMode::ConsumerGroup = self.mode {
