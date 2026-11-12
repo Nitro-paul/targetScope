@@ -1,4 +1,4 @@
-//! exporter
+// doc/programs/exporter.md
 
 #[tokio::main]
 async fn main() -> std::process::ExitCode {

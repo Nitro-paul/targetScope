@@ -1,52 +1,112 @@
-//! File names, .part files and duplicate protection.
-//! Names start with `<yyyy-mm-dd_HHMMSS>_<id8>_…` (id8 = first 8 characters of request_id);
-//! a repeated request returns the existing files with the same id8.
+// doc/programs/exporter.md#export-flow-export_sessions
+// doc/programs/exporter.md#list_exports-and-delete_export
 
+use std::fs;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
+use targetscope_common::clock::local;
+use targetscope_common::failpoints;
+use targetscope_common::messages::exporter::ExportFile;
 use uuid::Uuid;
 
-pub fn prefix(now: time::OffsetDateTime, request_id: &Uuid) -> String {
-    let _ = (now, request_id);
-    todo!()
+pub fn id8(request_id: &Uuid) -> String {
+    request_id.simple().to_string()[..8].to_string()
 }
 
-/// Files of an earlier export with the same request_id.
-pub fn existing_files(export_dir: &Path, request_id: &Uuid) -> std::io::Result<Vec<String>> {
-    let _ = (export_dir, request_id);
-    todo!()
+// doc/programs/exporter.md#export-flow-export_sessions
+pub fn prefix(now_s: i64, request_id: &Uuid) -> String {
+    let l = local(now_s);
+    format!(
+        "{:04}-{:02}-{:02}_{:02}{:02}{:02}_{}",
+        l.date.year,
+        l.date.month,
+        l.date.day,
+        l.hour,
+        l.minute,
+        l.second,
+        id8(request_id)
+    )
 }
 
-/// Writes `.<name>.part`, then renames (failpoint exporter.before_rename between the two).
-pub fn write_atomic(
-    export_dir: &Path,
-    name: &str,
-    write: impl FnOnce(&Path) -> std::io::Result<()>,
-) -> std::io::Result<PathBuf> {
-    let _ = (export_dir, name, write);
-    todo!()
+fn is_part(name: &str) -> bool {
+    name.starts_with('.') && name.ends_with(".part")
 }
 
-/// Deletes leftover .part files at startup.
-pub fn remove_part_files(export_dir: &Path) -> std::io::Result<()> {
-    let _ = export_dir;
-    todo!()
+// doc/programs/exporter.md#export-flow-export_sessions
+pub fn existing_files(export_dir: &Path, request_id: &Uuid) -> io::Result<Vec<String>> {
+    let tag = format!("_{}", id8(request_id));
+    let mut files: Vec<String> = list_names(export_dir)?
+        .into_iter()
+        .filter(|n| n.len() > 17 && n[17..].starts_with(&tag))
+        .collect();
+    files.sort();
+    Ok(files)
 }
 
-pub struct ExportFile {
-    pub name: String,
-    pub size_bytes: u64,
-    pub created_ms: i64,
+fn list_names(dir: &Path) -> io::Result<Vec<String>> {
+    let mut names = Vec::new();
+    for e in fs::read_dir(dir)? {
+        let e = e?;
+        if e.file_type()?.is_file() {
+            let name = e.file_name().to_string_lossy().into_owned();
+            if !is_part(&name) {
+                names.push(name);
+            }
+        }
+    }
+    Ok(names)
 }
 
-/// list_exports: files without .part, newest first.
-pub fn list(export_dir: &Path) -> std::io::Result<Vec<ExportFile>> {
-    let _ = export_dir;
-    todo!()
+pub fn part_path(export_dir: &Path, name: &str) -> PathBuf {
+    export_dir.join(format!(".{name}.part"))
 }
 
-/// delete_export: plain file name only (no separators, no "..").
-pub fn delete(export_dir: &Path, name: &str) -> std::io::Result<()> {
-    let _ = (export_dir, name);
-    todo!()
+// doc/programs/exporter.md#export-flow-export_sessions
+pub fn write_atomic(export_dir: &Path, name: &str, write: impl FnOnce(&mut fs::File) -> io::Result<()>) -> io::Result<()> {
+    let part = part_path(export_dir, name);
+    let result = fs::File::create(&part).and_then(|mut f| {
+        write(&mut f)?;
+        f.flush()?;
+        f.sync_all()
+    });
+    if let Err(e) = result {
+        let _ = fs::remove_file(&part);
+        return Err(e);
+    }
+    if failpoints::hit("exporter.before_rename") {
+        let _ = fs::remove_file(&part);
+        return Err(io::Error::other("failpoint exporter.before_rename"));
+    }
+    fs::rename(&part, export_dir.join(name)).inspect_err(|_| {
+        let _ = fs::remove_file(&part);
+    })
+}
+
+// doc/programs/exporter.md#export-flow-export_sessions
+pub fn remove_part_files(export_dir: &Path) {
+    let Ok(entries) = fs::read_dir(export_dir) else { return };
+    for e in entries.flatten() {
+        if is_part(&e.file_name().to_string_lossy()) {
+            let _ = fs::remove_file(e.path());
+        }
+    }
+}
+
+// doc/interfaces.md#list_exports
+pub fn list(export_dir: &Path) -> io::Result<Vec<ExportFile>> {
+    let mut files = Vec::new();
+    for name in list_names(export_dir)? {
+        let meta = fs::metadata(export_dir.join(&name))?;
+        let created_ms = meta.modified()?.duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0);
+        files.push(ExportFile { name, size_bytes: meta.len() as i64, created_ms });
+    }
+    files.sort_by(|a, b| b.created_ms.cmp(&a.created_ms).then(b.name.cmp(&a.name)));
+    Ok(files)
+}
+
+// doc/interfaces.md#staging-folder
+pub fn is_plain_name(name: &str) -> bool {
+    !name.is_empty() && !name.contains('/') && !name.contains('\\') && name != "." && name != ".." && !name.contains('\0')
 }

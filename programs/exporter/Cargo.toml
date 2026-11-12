@@ -1,6 +1,6 @@
 [package]
 name = "exporter"
-description = "Exports sessions as CSV, JSON or PNG target plot, optionally as ZIP with images (doc/programs/exporter.md)"
+description = "TargetScope exporter"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
