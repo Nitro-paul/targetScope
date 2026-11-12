@@ -1,7 +1,20 @@
-//! Reads stdout and stderr of every program line by line, prefixes them with the program
-//! name and prints them to the launcher's stdout (doc/programs/launcher.md#logs).
+// doc/programs/launcher.md#logs
 
-pub fn forward_output(name: &str, child: &mut tokio::process::Child) {
-    let _ = (name, child);
-    todo!()
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
+use tokio::process::Child;
+
+pub fn forward_output(name: &str, child: &mut Child) {
+    if let Some(out) = child.stdout.take() {
+        tokio::spawn(forward(name.to_string(), out));
+    }
+    if let Some(err) = child.stderr.take() {
+        tokio::spawn(forward(name.to_string(), err));
+    }
+}
+
+async fn forward<R: AsyncRead + Unpin>(name: String, stream: R) {
+    let mut lines = BufReader::new(stream).lines();
+    while let Ok(Some(line)) = lines.next_line().await {
+        println!("[{name}] {line}");
+    }
 }

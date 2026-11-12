@@ -1,15 +1,15 @@
-//! `launcher.toml` (doc/programs/launcher.md#configuration-launchertoml).
-//! If the file doesn't exist, the default (config/launcher.toml) is written and used.
+// doc/programs/launcher.md#configuration-launchertoml
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
+use targetscope_common::config::expand_home;
 
-/// The default configuration, written when no file exists.
 pub const DEFAULT_CONFIG: &str = include_str!("../../../config/launcher.toml");
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LauncherConfig {
     pub paths: Paths,
     pub redis: RedisConfig,
@@ -22,6 +22,7 @@ pub struct LauncherConfig {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Paths {
     pub data_dir: PathBuf,
     pub log_dir: PathBuf,
@@ -29,28 +30,31 @@ pub struct Paths {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RedisConfig {
     pub binary: String,
     pub port: u16,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LogConfig {
     pub level: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProgramSpec {
     pub name: String,
     #[serde(default)]
     pub depends_on: Vec<String>,
     #[serde(default = "default_true")]
     pub enabled: bool,
-    /// Default: <bin_dir>/<name>
     pub binary: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RestartPolicy {
     pub initial_backoff_s: u64,
     pub max_backoff_s: u64,
@@ -63,21 +67,33 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ConfigError {
-    #[error("cannot read {0}: {1}")]
-    Io(PathBuf, std::io::Error),
-    #[error("invalid configuration: {0}")]
-    Invalid(String),
+impl LauncherConfig {
+    pub fn binary(&self, p: &ProgramSpec) -> PathBuf {
+        p.binary.as_ref().map(|b| expand_home(&b.to_string_lossy())).unwrap_or_else(|| self.paths.bin_dir.join(&p.name))
+    }
+
+    pub fn redis_url(&self) -> String {
+        format!("redis://127.0.0.1:{}/", self.redis.port)
+    }
 }
 
-/// Loads the file (writing the default first if it doesn't exist) and expands "~".
-pub fn load(path: &Path) -> Result<LauncherConfig, ConfigError> {
-    let _ = path;
-    todo!()
+// doc/programs/launcher.md#configuration-launchertoml
+pub fn load(path: &Path) -> Result<LauncherConfig, String> {
+    if !path.exists() {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
+        }
+        std::fs::write(path, DEFAULT_CONFIG).map_err(|e| format!("{}: {e}", path.display()))?;
+    }
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    let mut c: LauncherConfig = toml::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+    for p in [&mut c.paths.data_dir, &mut c.paths.log_dir, &mut c.paths.bin_dir] {
+        *p = expand_home(&p.to_string_lossy());
+    }
+    crate::order::start_order(&c.programs)?;
+    Ok(c)
 }
 
-/// Default path: ~/.config/targetscope/launcher.toml
 pub fn default_path() -> PathBuf {
-    todo!()
+    expand_home("~/.config/targetscope/launcher.toml")
 }

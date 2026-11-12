@@ -1,21 +1,20 @@
-// LA-ENV: Bootstrap environment (integration)
-// Cases: ../../../doc/testing/launcher.md#bootstrap-environment-integration
+// doc/testing/launcher.md#bootstrap-environment-integration
 
-/// LA-ENV-01: Derived values
+// LA-ENV-01
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn la_env_01_derived_values() {
     todo!("LA-ENV-01")
 }
 
-/// LA-ENV-02: Extra variables
+// LA-ENV-02
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn la_env_02_extra_variables() {
     todo!("LA-ENV-02")
 }
 
-/// LA-ENV-03: No overriding
+// LA-ENV-03
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn la_env_03_no_overriding() {

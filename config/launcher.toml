@@ -1,5 +1,4 @@
-# Default launcher configuration (doc/programs/launcher.md#configuration-launchertoml).
-# Written to ~/.config/targetscope/launcher.toml on first start.
+# doc/programs/launcher.md#configuration-launchertoml
 
 [paths]
 data_dir = "~/.local/share/targetscope"

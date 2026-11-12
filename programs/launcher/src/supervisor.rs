@@ -1,21 +1,24 @@
-//! One supervisor task per program: waits for its child to exit and reports to the main loop.
-//! Backoff doubles from initial_backoff_s up to max_backoff_s; resets after stable_after_s;
-//! more than max_restarts within window_s → Failed (doc/programs/launcher.md#supervision).
+// doc/programs/launcher.md#supervision
 
-use std::time::Duration;
+use std::collections::VecDeque;
+use std::time::{Duration, Instant};
 
 use crate::config::RestartPolicy;
 
-#[derive(Debug)]
-pub enum SupervisorMsg {
-    Exited {
-        name: String,
-        status: std::process::ExitStatus,
-    },
+pub fn next_backoff(current: Duration, policy: &RestartPolicy) -> Duration {
+    (current * 2).min(Duration::from_secs(policy.max_backoff_s))
 }
 
-/// Next backoff after a restart.
-pub fn next_backoff(current: Duration, policy: &RestartPolicy) -> Duration {
-    let _ = (current, policy);
-    todo!()
+pub fn initial_backoff(policy: &RestartPolicy) -> Duration {
+    Duration::from_secs(policy.initial_backoff_s)
+}
+
+// doc/programs/launcher.md#supervision
+pub fn too_many_restarts(restarts: &mut VecDeque<Instant>, now: Instant, policy: &RestartPolicy) -> bool {
+    let window = Duration::from_secs(policy.window_s);
+    restarts.push_back(now);
+    while restarts.front().is_some_and(|t| now.duration_since(*t) > window) {
+        restarts.pop_front();
+    }
+    restarts.len() > policy.max_restarts as usize
 }

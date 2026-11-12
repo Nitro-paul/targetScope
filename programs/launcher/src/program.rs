@@ -1,44 +1,52 @@
-//! State of one supervised program (doc/programs/launcher.md#internal-design).
+// doc/programs/launcher.md#internal-design
 
 use std::collections::VecDeque;
 use std::time::{Duration, Instant, SystemTime};
 
-use serde::Serialize;
+use targetscope_common::clock::unix_ms;
+use targetscope_common::messages::launcher::{ProgramState, ProgramStatus};
 
 use crate::config::ProgramSpec;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ProgramState {
-    Starting,
-    Running,
-    Backoff,
-    Failed,
-    Stopped,
-}
 
 pub struct ProgramHandle {
     pub spec: ProgramSpec,
     pub state: ProgramState,
-    pub child: Option<tokio::process::Child>,
-    /// Restart times within window_s
+    pub pid: Option<u32>,
+    pub generation: u64,
     pub restarts: VecDeque<Instant>,
+    pub restart_count: i64,
     pub backoff: Duration,
     pub since: SystemTime,
-}
-
-/// One entry of `launcher_status_response.programs` and payload of `program_state_changed`.
-#[derive(Debug, Clone, Serialize)]
-pub struct ProgramStatus {
-    pub name: String,
-    pub state: ProgramState,
-    pub pid: Option<u32>,
-    pub restarts: u32,
-    pub since_ms: i64,
+    pub started: Option<Instant>,
+    pub restart_requested: bool,
+    pub ever_started: bool,
 }
 
 impl ProgramHandle {
+    pub fn new(spec: ProgramSpec, backoff: Duration) -> Self {
+        ProgramHandle {
+            spec,
+            state: ProgramState::Stopped,
+            pid: None,
+            generation: 0,
+            restarts: VecDeque::new(),
+            restart_count: 0,
+            backoff,
+            since: SystemTime::now(),
+            started: None,
+            restart_requested: false,
+            ever_started: false,
+        }
+    }
+
+    // doc/interfaces.md#launcher_status
     pub fn status(&self) -> ProgramStatus {
-        todo!()
+        ProgramStatus {
+            name: self.spec.name.clone(),
+            state: self.state,
+            pid: self.pid.map(|p| p as i64),
+            restarts: self.restart_count,
+            since_ms: unix_ms(self.since),
+        }
     }
 }

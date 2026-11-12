@@ -1,10 +1,4 @@
-//! `targetscope`: the launcher. Started by hand; starts Redis and all programs.
-//!
-//! ```text
-//! targetscope                       # = launcher with ~/.config/targetscope/launcher.toml
-//! targetscope --config <file>
-//! targetscope --reset-admin-password
-//! ```
+// doc/programs/launcher.md#usage
 
 #[tokio::main]
 async fn main() -> std::process::ExitCode {
