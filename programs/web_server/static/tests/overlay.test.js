@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 
-// WS-JS: Frontend unit tests (unit)
-// Cases: ../../../../doc/testing/web_server.md#frontend-unit-tests-unit
+// doc/testing/web_server.md#frontend-unit-tests-unit
 
-test.todo('WS-JS-03: Click scaling');
+test.todo('WS-JS-03');

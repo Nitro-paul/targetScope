@@ -1,28 +1,27 @@
-// WS-IDK: Idempotency-Key (integration)
-// Cases: ../../../doc/testing/web_server.md#idempotency-key-integration
+// doc/testing/web_server.md#idempotency-key-integration
 
-/// WS-IDK-01: Header given
+// WS-IDK-01
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn ws_idk_01_header_given() {
     todo!("WS-IDK-01")
 }
 
-/// WS-IDK-02: No header
+// WS-IDK-02
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn ws_idk_02_no_header() {
     todo!("WS-IDK-02")
 }
 
-/// WS-IDK-03: Invalid header
+// WS-IDK-03
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn ws_idk_03_invalid_header() {
     todo!("WS-IDK-03")
 }
 
-/// WS-IDK-04: Resend
+// WS-IDK-04
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn ws_idk_04_resend() {

@@ -1,36 +1,72 @@
-//! Error mapping Redis error code -> HTTP status (doc/programs/web_server.md#error-mapping).
-//! The response body is always the error object { code, message, details }.
+// doc/programs/web_server.md#error-mapping
 
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::Json;
+use serde_json::{json, Value};
 use targetscope_common::bus::BusError;
+use targetscope_common::messages::{ErrorCode, ServiceError};
 
 #[derive(Debug)]
 pub struct ApiError {
     pub status: StatusCode,
-    /// Redis error code, or a web-only code: auth_required, wrong_password, too_many_attempts, too_large
     pub code: String,
     pub message: String,
-    pub details: Option<serde_json::Value>,
+    pub details: Option<Value>,
+}
+
+impl ApiError {
+    pub fn new(status: StatusCode, code: &str, message: impl Into<String>) -> Self {
+        ApiError { status, code: code.into(), message: message.into(), details: None }
+    }
+
+    pub fn validation(message: impl Into<String>) -> Self {
+        Self::new(StatusCode::BAD_REQUEST, "validation_failed", message)
+    }
+
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self::new(StatusCode::NOT_FOUND, "not_found", message)
+    }
+
+    pub fn with_details(mut self, details: Value) -> Self {
+        self.details = Some(details);
+        self
+    }
+}
+
+// doc/programs/web_server.md#error-mapping
+pub fn status_for(code: ErrorCode) -> StatusCode {
+    match code {
+        ErrorCode::InvalidMessage | ErrorCode::ValidationFailed => StatusCode::BAD_REQUEST,
+        ErrorCode::NotFound => StatusCode::NOT_FOUND,
+        ErrorCode::InUse | ErrorCode::InvalidState | ErrorCode::SettingNotSet => StatusCode::CONFLICT,
+        ErrorCode::Unavailable => StatusCode::SERVICE_UNAVAILABLE,
+        ErrorCode::ProcessingFailed => StatusCode::UNPROCESSABLE_ENTITY,
+        ErrorCode::Timeout => StatusCode::GATEWAY_TIMEOUT,
+        ErrorCode::IoError | ErrorCode::DatabaseError => StatusCode::INTERNAL_SERVER_ERROR,
+    }
+}
+
+impl From<ServiceError> for ApiError {
+    fn from(e: ServiceError) -> Self {
+        ApiError { status: status_for(e.code), code: e.code.as_str().into(), message: e.message, details: e.details }
+    }
 }
 
 impl From<BusError> for ApiError {
     fn from(e: BusError) -> Self {
-        let _ = e;
-        todo!()
+        e.to_service_error().into()
     }
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        todo!()
+        let mut body = json!({ "code": self.code, "message": self.message });
+        if let Some(d) = self.details {
+            body["details"] = d;
+        }
+        (self.status, Json(body)).into_response()
     }
 }
 
-/// invalid_message, validation_failed → 400; not_found → 404; in_use, invalid_state,
-/// setting_not_set → 409; unavailable → 503; processing_failed → 422; timeout → 504;
-/// io_error, database_error → 500.
-pub fn status_for(code: &str) -> StatusCode {
-    let _ = code;
-    todo!()
-}
+pub type ApiResult<T = Json<Value>> = Result<T, ApiError>;

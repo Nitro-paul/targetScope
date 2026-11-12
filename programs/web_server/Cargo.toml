@@ -1,6 +1,6 @@
 [package]
 name = "web_server"
-description = "Web UI, REST API, live events over WebSocket, live feeds as MJPEG (doc/programs/web_server.md)"
+description = "TargetScope web server"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
@@ -19,6 +19,7 @@ tower-http.workspace = true
 turbojpeg.workspace = true
 fast_image_resize.workspace = true
 argon2.workspace = true
+futures.workspace = true
 
 [dev-dependencies]
 targetscope_testkit.workspace = true
