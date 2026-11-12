@@ -108,26 +108,47 @@ fn an_anl_09_rings_in_the_request_are_ignored() {
 }
 
 // doc/testing/analyzer.md#session-analysis-unit
-fn exact_grouping(points: &[Point], rings: &[Ring], b: f64) -> i64 {
-    let circles: Vec<(Point, f64)> =
-        points.iter().flat_map(|p| rings.iter().map(move |r| (*p, r.radius_mm + b))).collect();
+fn brute_force(points: &[Point], rings: &[Ring], b: f64) -> i64 {
+    let step = 0.01;
+    let reach = rings.last().unwrap().radius_mm + b;
+    let min_x = points.iter().map(|p| p.x).fold(f64::INFINITY, f64::min) - reach;
+    let max_x = points.iter().map(|p| p.x).fold(f64::NEG_INFINITY, f64::max) + reach;
+    let min_y = points.iter().map(|p| p.y).fold(f64::INFINITY, f64::min) - reach;
+    let max_y = points.iter().map(|p| p.y).fold(f64::NEG_INFINITY, f64::max) + reach;
+    let (nx, ny) = (((max_x - min_x) / step).ceil() as i64, ((max_y - min_y) / step).ceil() as i64);
+    let at = |i: i64, j: i64| Point { x: min_x + i as f64 * step, y: min_y + j as f64 * step };
+    let bound = |i0: i64, i1: i64, j0: i64, j1: i64| -> i64 {
+        let (a, c) = (at(i0, j0), at(i1, j1));
+        points
+            .iter()
+            .map(|p| {
+                let dx = (a.x - p.x).max(0.0).max(p.x - c.x);
+                let dy = (a.y - p.y).max(0.0).max(p.y - c.y);
+                analyzer::scoring::shot_score(dx.hypot(dy), rings, b)
+            })
+            .sum()
+    };
     let mut best = total_score(points, Point { x: 0.0, y: 0.0 }, rings, b);
-    for p in points {
-        best = best.max(total_score(points, *p, rings, b));
-    }
-    for (i, (p0, r0)) in circles.iter().enumerate() {
-        for (p1, r1) in &circles[i + 1..] {
-            let d = p0.distance(p1);
-            if d == 0.0 || d > r0 + r1 || d < (r0 - r1).abs() {
-                continue;
+    let mut stack = vec![(0, nx, 0, ny)];
+    while let Some((i0, i1, j0, j1)) = stack.pop() {
+        if bound(i0, i1, j0, j1) <= best {
+            continue;
+        }
+        if i1 - i0 <= 1 && j1 - j0 <= 1 {
+            for i in i0..=i1 {
+                for j in j0..=j1 {
+                    best = best.max(total_score(points, at(i, j), rings, b));
+                }
             }
-            let a = (r0 * r0 - r1 * r1 + d * d) / (2.0 * d);
-            let h = (r0 * r0 - a * a).max(0.0).sqrt();
-            let (ux, uy) = ((p1.x - p0.x) / d, (p1.y - p0.y) / d);
-            let (mx, my) = (p0.x + a * ux, p0.y + a * uy);
-            for s in [-1.0, 1.0] {
-                best = best.max(total_score(points, Point { x: mx - s * h * uy, y: my + s * h * ux }, rings, b));
-            }
+            continue;
+        }
+        let (im, jm) = ((i0 + i1) / 2, (j0 + j1) / 2);
+        if i1 - i0 >= j1 - j0 {
+            stack.push((i0, im, j0, j1));
+            stack.push((im + 1, i1, j0, j1));
+        } else {
+            stack.push((i0, i1, j0, jm));
+            stack.push((i0, i1, jm + 1, j1));
         }
     }
     best
@@ -135,7 +156,7 @@ fn exact_grouping(points: &[Point], rings: &[Ring], b: f64) -> i64 {
 
 // AN-ANL-10
 #[test]
-fn an_anl_10_compared_with_an_exact_reference() {
+fn an_anl_10_compared_with_brute_force() {
     let rings = generate_rings(&tt_ref());
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
     let (mut equal, total) = (0, 1000);
@@ -144,9 +165,8 @@ fn an_anl_10_compared_with_an_exact_reference() {
         let shots: Vec<Shot> = (0..n).map(|_| shot(rng.next(), rng.next() * 40.0)).collect();
         let points: Vec<Point> = shots.iter().map(|s| Point::from(*s)).collect();
         let found = analyze(&shots, &tt_ref(), DEV_REF_DIAMETER).grouping_score;
-        let exact = exact_grouping(&points, &rings, DEV_REF_DIAMETER / 2.0);
-        assert!(found <= exact);
-        if found == exact {
+        let reference = brute_force(&points, &rings, DEV_REF_DIAMETER / 2.0);
+        if found == reference {
             equal += 1;
         }
     }

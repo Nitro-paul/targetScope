@@ -7,6 +7,10 @@ use targetscope_common::targets::generate_rings;
 // doc/programs/analyzer.md#shot-score-edge-rule
 pub const EPSILON_MM: f64 = 1e-9;
 
+// doc/programs/analyzer.md#grouping-algorithm
+const MIN_REFINED: usize = 10;
+const MAX_REFINED: usize = 1000;
+
 // doc/programs/analyzer.md#shot-score-edge-rule
 pub fn shot_score(distance_mm: f64, rings: &[Ring], bullet_radius_mm: f64) -> i64 {
     let edge = distance_mm - bullet_radius_mm - EPSILON_MM;
@@ -84,7 +88,9 @@ pub fn grouping(points: &[Point], rings: &[Ring], b: f64, mean: Point) -> (i64, 
         }
     }
     coarse.sort_by(better);
-    coarse.truncate(10);
+    let top = coarse[0].score;
+    let keep = coarse.iter().take_while(|c| c.score == top).count().clamp(MIN_REFINED, MAX_REFINED);
+    coarse.truncate(keep);
 
     let mut best = coarse[0];
     let fine = h / 10.0;

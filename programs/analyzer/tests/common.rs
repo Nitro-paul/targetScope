@@ -1,5 +1,7 @@
 // doc/testing/overview.md#reference-data
 
+#![allow(dead_code)]
+
 use targetscope_common::model::{Shot, TargetType};
 
 pub fn tt_ref() -> TargetType {
