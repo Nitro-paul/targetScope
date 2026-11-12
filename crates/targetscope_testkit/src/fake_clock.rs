@@ -1,39 +1,53 @@
-//! `FakeClock`: controllable time; it only moves when a test advances it.
+// doc/shared_libraries.md#clock-and-failpoints
 
+use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime};
 
 use async_trait::async_trait;
 use targetscope_common::clock::Clock;
+use tokio::sync::watch;
 
 pub struct FakeClock {
-    // TODO: current wall time, current monotonic offset, sleepers
+    start_wall: SystemTime,
+    start_mono: Instant,
+    offset: Mutex<Duration>,
+    tick: watch::Sender<Duration>,
 }
 
 impl FakeClock {
     pub fn new(start: SystemTime) -> Self {
-        let _ = start;
-        todo!()
+        let (tick, _) = watch::channel(Duration::ZERO);
+        FakeClock { start_wall: start, start_mono: Instant::now(), offset: Mutex::new(Duration::ZERO), tick }
     }
 
-    /// Moves both clocks forward and wakes due sleepers.
     pub fn advance(&self, d: Duration) {
-        let _ = d;
-        todo!()
+        let mut offset = self.offset.lock().unwrap();
+        *offset += d;
+        self.tick.send_replace(*offset);
+    }
+
+    fn offset(&self) -> Duration {
+        *self.offset.lock().unwrap()
     }
 }
 
 #[async_trait]
 impl Clock for FakeClock {
     fn now(&self) -> SystemTime {
-        todo!()
+        self.start_wall + self.offset()
     }
 
     fn monotonic(&self) -> Instant {
-        todo!()
+        self.start_mono + self.offset()
     }
 
     async fn sleep(&self, d: Duration) {
-        let _ = d;
-        todo!()
+        let target = self.offset() + d;
+        let mut rx = self.tick.subscribe();
+        while *rx.borrow_and_update() < target {
+            if rx.changed().await.is_err() {
+                return;
+            }
+        }
     }
 }

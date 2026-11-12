@@ -1,6 +1,5 @@
-//! Switches the named failpoints of doc/testing/overview.md#failpoints on.
-//! In-process failpoints use the `fail` crate; for a program under test they are passed
-//! through the `FAILPOINTS` environment variable.
+// doc/testing/overview.md#failpoints
+// doc/shared_libraries.md#clock-and-failpoints
 
 pub const BUS_BEFORE_RESPONSE: &str = "bus.before_response";
 pub const BUS_BEFORE_ACK: &str = "bus.before_ack";
@@ -13,14 +12,31 @@ pub const SM_AFTER_CREATE_SESSION_SENT: &str = "sm.after_create_session_sent";
 pub const EXPORTER_BEFORE_RENAME: &str = "exporter.before_rename";
 pub const IMPORTER_AFTER_RECORD: &str = "importer.after_record";
 
+#[derive(Debug, Clone)]
 pub enum Action {
     ReturnError,
     Sleep(std::time::Duration),
     Abort,
 }
 
-/// Value of the FAILPOINTS environment variable for a program under test.
+impl Action {
+    fn spec(&self) -> String {
+        match self {
+            Action::ReturnError => "return".into(),
+            Action::Sleep(d) => format!("sleep({})", d.as_millis()),
+            Action::Abort => "return(abort)".into(),
+        }
+    }
+}
+
 pub fn env_value(points: &[(&str, Action)]) -> String {
-    let _ = points;
-    todo!()
+    points.iter().map(|(name, a)| format!("{name}={}", a.spec())).collect::<Vec<_>>().join(";")
+}
+
+pub fn set(name: &str, action: Action) {
+    fail::cfg(name, &action.spec()).expect("failpoint");
+}
+
+pub fn clear(name: &str) {
+    fail::remove(name);
 }

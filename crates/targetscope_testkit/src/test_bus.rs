@@ -1,44 +1,49 @@
-//! `TestBus`: a bus for the test itself; sends requests to the program under test,
-//! with a chosen `request_id` if needed, and returns the full response envelope.
+// doc/testing/overview.md#test-kit
 
-use targetscope_common::messages::ResponseEnvelope;
+use std::time::Duration;
+
+use serde_json::Value;
+use targetscope_common::bus::Bus;
+use targetscope_common::messages::{request_stream, RequestEnvelope, ResponseEnvelope, VERSION};
 use uuid::Uuid;
 
 pub struct TestBus {
-    // TODO: targetscope_common::bus::Bus as program "test"
+    pub bus: Bus,
+    pub timeout: Duration,
 }
 
 impl TestBus {
     pub async fn connect(redis_url: &str) -> Self {
-        let _ = redis_url;
-        todo!()
+        let bus = Bus::connect(redis_url, &format!("test_{}", Uuid::new_v4().simple())).await.expect("redis");
+        TestBus { bus, timeout: Duration::from_secs(10) }
     }
 
-    /// Sends `{type, payload}` to `<program>:requests` and waits for the response envelope.
-    pub async fn send(
-        &self,
-        program: &str,
-        r#type: &str,
-        payload: serde_json::Value,
-    ) -> ResponseEnvelope {
-        self.send_with_id(program, Uuid::new_v4(), r#type, payload)
-            .await
+    pub async fn send(&self, program: &str, r#type: &str, payload: Value) -> ResponseEnvelope {
+        self.send_with_id(program, Uuid::new_v4(), r#type, payload).await
     }
 
-    pub async fn send_with_id(
+    pub async fn send_with_id(&self, program: &str, request_id: Uuid, r#type: &str, payload: Value) -> ResponseEnvelope {
+        self.try_send(program, request_id, r#type, payload, self.timeout).await.expect("response")
+    }
+
+    pub async fn try_send(
         &self,
         program: &str,
         request_id: Uuid,
         r#type: &str,
-        payload: serde_json::Value,
-    ) -> ResponseEnvelope {
-        let _ = (program, request_id, r#type, payload);
-        todo!()
+        payload: Value,
+        timeout: Duration,
+    ) -> Option<ResponseEnvelope> {
+        let env = RequestEnvelope { r#type: r#type.into(), version: VERSION, request_id, reply_to: None, payload };
+        self.bus.send_envelope(&request_stream(program), env, timeout).await.ok()
     }
 
-    /// Sends raw data (for invalid_message tests).
-    pub async fn send_raw(&self, program: &str, data: &str) -> ResponseEnvelope {
-        let _ = (program, data);
-        todo!()
+    pub async fn send_raw(&self, program: &str, data: &str) -> String {
+        let mut c = self.bus.connection();
+        redis::cmd("XADD").arg(request_stream(program)).arg("*").arg("data").arg(data).query_async(&mut c).await.unwrap()
+    }
+
+    pub fn response_stream(&self) -> String {
+        targetscope_common::messages::response_stream(self.bus.program())
     }
 }
