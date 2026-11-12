@@ -14,11 +14,12 @@ pub const CONCURRENT_REQUESTS: usize = 16;
 
 pub async fn run() -> ExitCode {
     let p = program::start(PROGRAM).await;
-    tokio::select! {
-        r = p.bus.serve_concurrent(Arc::new(handler::AnalyzerHandler), CONCURRENT_REQUESTS) => {
-            tracing::error!(error = ?r, "serve loop ended");
+    program::stop_on_signal(&p.bus);
+    match p.bus.serve_concurrent(Arc::new(handler::AnalyzerHandler), CONCURRENT_REQUESTS).await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            tracing::error!(error = %e, "serve loop ended");
             ExitCode::FAILURE
         }
-        _ = program::shutdown_signal() => ExitCode::SUCCESS,
     }
 }
