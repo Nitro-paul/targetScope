@@ -1,0 +1,26 @@
+{
+  "$comment": "SH-REF, DEV-REF and S-REF (doc/testing/overview.md#other-reference-records); target type TT-REF in target_types/tt_ref.json",
+  "shooter": { "name": "Alex", "retired": false },
+  "device": {
+    "name": "Test pistol",
+    "category": "air pistol",
+    "caliber": ".177",
+    "bullet_diameter_mm": 4.0,
+    "retired": false
+  },
+  "session": {
+    "target_type": "TT-REF",
+    "shots": [
+      { "label": "A", "angle_turns": 0, "radius_mm": 0, "paper_no": 1 },
+      { "label": "B", "angle_turns": 0.25, "radius_mm": 12, "paper_no": 1 },
+      { "label": "C", "angle_turns": 0.5, "radius_mm": 22, "paper_no": 1 },
+      { "label": "D", "angle_turns": 0.75, "radius_mm": 42, "paper_no": 1 },
+      { "label": "E", "angle_turns": 0.125, "radius_mm": 95, "paper_no": 1 }
+    ]
+  },
+  "expected": {
+    "shot_scores": [12, 11, 9, 6, 0],
+    "score": 38,
+    "mean_point": { "x_mm": 7.435, "y_mm": 9.035 }
+  }
+}
