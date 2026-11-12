@@ -451,6 +451,8 @@ Validation: at least one shot; `shot_count` must equal the length of `shots`; ev
 
 Response `create_session_response`: `{ "id": <new session id>, "uuid": <uuid>, "images": [ { "paper_no", "image_path" }, ... ] }`
 
+Error `not_found` with `details: { "staged_file": <name> }` if a staged image doesn't exist (also for `set_device_image`, `import_device` and `import_session`).
+
 #### read_sessions
 Returns all sessions that match a filter, each with its shots.
 
