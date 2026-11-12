@@ -130,6 +130,8 @@ impl Bus {
     /// acknowledges. Answers `ping` itself. Parsing errors are answered with invalid_message.
     pub async fn serve<Req, H>(&self, handler: H) -> Result<(), BusError>
     where Req: DeserializeOwned, H: RequestHandler<Req>;
+    /// Same, but handles up to `limit` requests at the same time, for stateless programs.
+    pub async fn serve_concurrent<Req, H>(&self, handler: Arc<H>, limit: usize) -> Result<(), BusError>;
 }
 
 pub enum ReadMode { ConsumerGroup, After(String) }
@@ -148,7 +150,7 @@ pub enum BusError { Redis(redis::RedisError), Timeout, Remote(ErrorBody), Decode
 - Responses are read by the background task with `XREAD BLOCK` on `<program>:responses`, matched by `request_id`, and delivered through a `oneshot` channel; unknown request ids (e.g. late responses after a timeout) are dropped and logged.
 - Blocking reads (`XREAD BLOCK`, `XREADGROUP BLOCK`, 1 s) use their own connections, so they never delay other commands.
 - Reconnects use `redis::aio::ConnectionManager`; read loops retry with exponential backoff (100 ms up to 5 s), timed by the `Clock`.
-- Requests are handled one at a time, in stream order. An entry whose `data` isn't JSON is logged and acknowledged without a response. A request with an unknown `type` or `version` is answered with `invalid_message` (if it has `reply_to`) and acknowledged. Every request is handled inside a `tracing` span with its `request_id`, so all log lines of a request contain it.
+- `serve` handles requests one at a time, in stream order (database_handler, session_manager, launcher, importer). `serve_concurrent` starts a task per request, at most `limit` at once, so `ping` and short requests are answered while long ones run (analyzer: 16, statistics: 4, exporter: 2); each task sends its response and acknowledges its entry. An entry whose `data` isn't JSON is logged and acknowledged without a response. A request with an unknown `type` or `version` is answered with `invalid_message` (if it has `reply_to`) and acknowledged. Every request is handled inside a `tracing` span with its `request_id`, so all log lines of a request contain it.
 - The consumer name is `<hostname>-<pid>`. Because a restarted program has a new pid, `serve` and group-mode event readers first claim all pending entries of the group (`XAUTOCLAIM … 0`) and handle them before new ones (only one instance of each program runs). The consumer group is created with `XGROUP CREATE … $ MKSTREAM`; `BUSYGROUP` is ignored.
 - Event entries whose `type` the reader doesn't know are skipped (and acknowledged in group mode).
 
@@ -254,6 +256,9 @@ pub fn local_midnight(date: LocalDate) -> i64;    // Unix seconds of 00:00 local
 pub fn rfc3339_local(unix_s: i64) -> String;      // e.g. 2026-11-11T14:30:00+01:00
 ```
 They use the C library (`localtime_r`, `mktime`), so they follow the system's time zone, including daylight saving time.
+
+## Program startup
+Every Rust program starts the same way with `program::start(name)`: `failpoints::setup()`, `BootstrapConfig::from_env()`, `logging::init`, then connect the bus, retrying with backoff (100 ms up to 5 s) until Redis answers. `program::shutdown_signal()` resolves on SIGTERM or SIGINT; `main` stops serving then and exits with code 0.
 
 ## Logging
 `logging::init(program, &config)` sets up `tracing` with two outputs, both filtered by `log_level` (`EnvFilter` syntax): stderr (collected by the launcher) and the file `<log_dir>/<program>.log`. The file is rotated daily by the shared `Clock`: at the first line of a new local day, the old file is renamed to `<program>.log.<yyyy-mm-dd>` (its date) and a new `<program>.log` is started; old files are kept. Every log line of a request contains its `request_id` (see [Redis bus](#redis-bus)).
