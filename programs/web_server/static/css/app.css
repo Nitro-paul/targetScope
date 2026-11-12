@@ -1,0 +1,28 @@
+/* TargetScope web UI. Usable on desktop, phones and tablets (doc/programs/web_server.md#frontend). */
+
+:root {
+  /* TODO: colors, spacing */
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+#view {
+  padding: 1rem;
+}
