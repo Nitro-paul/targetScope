@@ -229,20 +229,30 @@ Without `move_images`, only step 2 (save the setting) runs. Only one image folde
 
 ### DbWorker
 ```rust
-pub struct DbCommand {
-    pub request_id: Uuid,
-    pub request: DatabaseRequest,          // from targetscope_common::messages
-    pub reply: oneshot::Sender<Result<DbOutcome, HandlerError>>,
+pub enum DbCommand {
+    /// A request from the stream (reads and writes).
+    Request { request_id: Uuid, request: DatabaseHandlerRequest, reply: oneshot::Sender<Result<DbOutcome, HandlerError>> },
+    /// Duplicate check before a long request (change_image_dir, reset_settings) starts.
+    Processed { request_id: Uuid, reply: oneshot::Sender<Result<Option<Value>, HandlerError>> },
+    /// Current image and staging folders.
+    Folders { reply: oneshot::Sender<(PathBuf, PathBuf)> },
+    /// Step 2 of an image folder change (see above).
+    SwitchImageDir { switch: Switch, reply: oneshot::Sender<Result<DbOutcome, HandlerError>> },
+    /// Records the response of a request finished outside the worker (image folder change with moving).
+    Record { request_id: Uuid, type_name: &'static str, response: Value, reply: oneshot::Sender<Result<(), HandlerError>> },
+    /// Hourly maintenance (see Startup).
+    Maintenance { reply: oneshot::Sender<Result<usize, HandlerError>> },
 }
 
 pub struct DbOutcome {
     pub response: serde_json::Value,
-    pub event: Option<DataChanged>,        // None for reads and duplicates
+    pub events: Vec<DataChanged>,          // empty for reads and duplicates
 }
 
 /// Starts the thread; it owns `db` and `images` and runs until the sender is dropped.
-pub fn spawn_db_worker(db: Database, images: ImageStore) -> mpsc::Sender<DbCommand>;
+pub fn spawn_db_worker(db: Database, images: ImageStore, data_dir: PathBuf, clock: Arc<dyn Clock>) -> mpsc::Sender<DbCommand>;
 ```
+The StreamWorker uses `Bus::serve_concurrent` with up to 8 requests at a time, so that a long `change_image_dir` doesn't hold up other requests; the DbWorker still executes them one at a time. Responses of long requests that wait for others (`change_image_dir`, `reset_settings` with `image_dir`) are only sent when they're done.
 
 ## Startup
 1. Initialize logging and read the bootstrap configuration.
@@ -255,8 +265,8 @@ pub fn spawn_db_worker(db: Database, images: ImageStore) -> mpsc::Sender<DbComma
 
 ## Request processing
 For each request:
-1. Read pending requests of this consumer first (`XREADGROUP ... 0`), then new ones (`XREADGROUP ... BLOCK 5000 ... >`).
-2. Parse the `data` field into a request envelope. On failure: log, send `invalid_message` if `reply_to` can be read, `XACK`.
+1. Read pending requests first, then new ones (request loop of [the shared bus](../shared_libraries.md#redis-bus)).
+2. Parse the `data` field into a request envelope. On failure: log, send `invalid_message` if `reply_to` can be read, `XACK`. A payload that doesn't fit its request type (missing or wrongly typed field, unknown enum value) is answered with `validation_failed`.
 3. Answer `ping` directly.
 4. Validate (`validation.rs`). On failure: respond `validation_failed`, `XACK`.
 5. Send a `DbCommand` to the DbWorker and await the result. For write requests the DbWorker:
