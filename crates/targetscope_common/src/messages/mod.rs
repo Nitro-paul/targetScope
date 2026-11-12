@@ -62,7 +62,8 @@ impl RequestEnvelope {
         }
         decode_tagged(&self.r#type, &self.payload).map_err(|e| {
             let msg = e.to_string();
-            let code = if msg.contains("unknown variant") { ErrorCode::InvalidMessage } else { ErrorCode::ValidationFailed };
+            let unknown_type = msg.contains(&format!("unknown variant `{}`", self.r#type));
+            let code = if unknown_type { ErrorCode::InvalidMessage } else { ErrorCode::ValidationFailed };
             ServiceError::new(code, msg)
         })
     }
