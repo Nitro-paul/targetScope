@@ -50,7 +50,7 @@ impl ImageStore {
         }
         let path = self.staging_dir.join(file);
         if !path.is_file() {
-            return Err(HandlerError::not_found(format!("staged file {file}")));
+            return Err(HandlerError::StagedFileMissing(file.to_string()));
         }
         sniff(&path)?.ok_or_else(|| HandlerError::validation(format!("{file} is not a JPEG or PNG image")))
     }

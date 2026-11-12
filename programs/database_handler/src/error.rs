@@ -10,6 +10,8 @@ pub enum HandlerError {
     ValidationFailed(String),
     #[error("not found: {0}")]
     NotFound(String),
+    #[error("staged file {0} not found")]
+    StagedFileMissing(String),
     #[error("in use: {0}")]
     InUse(String),
     #[error("invalid state: {0}")]
@@ -26,7 +28,7 @@ impl HandlerError {
         match self {
             HandlerError::InvalidMessage(_) => ErrorCode::InvalidMessage,
             HandlerError::ValidationFailed(_) => ErrorCode::ValidationFailed,
-            HandlerError::NotFound(_) => ErrorCode::NotFound,
+            HandlerError::NotFound(_) | HandlerError::StagedFileMissing(_) => ErrorCode::NotFound,
             HandlerError::InUse(_) => ErrorCode::InUse,
             HandlerError::InvalidState(_) => ErrorCode::InvalidState,
             HandlerError::Io(_) => ErrorCode::IoError,
@@ -46,6 +48,10 @@ impl HandlerError {
 
 impl From<HandlerError> for ServiceError {
     fn from(e: HandlerError) -> Self {
+        if let HandlerError::StagedFileMissing(file) = &e {
+            return ServiceError::not_found(format!("staged file {file}"))
+                .with_details(serde_json::json!({ "staged_file": file }));
+        }
         let message = match &e {
             HandlerError::InvalidMessage(m)
             | HandlerError::ValidationFailed(m)
