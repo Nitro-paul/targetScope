@@ -1,36 +1,40 @@
-//! Live analysis (doc/programs/session_manager.md#live-analysis): only one analysis at a time;
-//! if shots change meanwhile, one more runs afterwards with the newest shots.
+// doc/programs/session_manager.md#live-analysis
 
-use targetscope_common::model::{Shot, TargetType};
+use targetscope_common::bus::Bus;
+use targetscope_common::messages::analyzer::AnalyzeShots;
+use tokio::sync::mpsc;
 
+use crate::actor::Input;
+use crate::state::StoredSession;
+
+#[derive(Default)]
 pub struct AnalysisRunner {
-    pub running: Option<u64>,
-    pub pending: Option<u64>,
+    running: Option<u64>,
+    pending: bool,
 }
 
 impl AnalysisRunner {
-    pub fn new() -> Self {
-        Self {
-            running: None,
-            pending: None,
+    pub fn request(&mut self, s: &StoredSession, bus: &Bus, tx: &mpsc::Sender<Input>) {
+        if self.running.is_some() {
+            self.pending = true;
+            return;
         }
+        let (Some(target_type), Some(bullet_diameter_mm)) = (s.target_type.clone(), s.bullet_diameter_mm()) else {
+            return;
+        };
+        let version = s.shots_version;
+        self.running = Some(version);
+        let req = AnalyzeShots { shots: s.session.shots.iter().map(|x| x.shot()).collect(), target_type, bullet_diameter_mm };
+        let (bus, tx) = (bus.clone(), tx.clone());
+        tokio::spawn(async move {
+            let result = bus.request(req).await;
+            let _ = tx.send(Input::Analysis { shots_version: version, result }).await;
+        });
     }
 
-    /// Starts analyze_shots for this shots_version, or marks one as pending.
-    pub fn request(
-        &mut self,
-        shots_version: u64,
-        shots: Vec<Shot>,
-        target: TargetType,
-        bullet_diameter_mm: f64,
-    ) {
-        let _ = (shots_version, shots, target, bullet_diameter_mm);
-        todo!()
-    }
-}
-
-impl Default for AnalysisRunner {
-    fn default() -> Self {
-        Self::new()
+    // doc/programs/session_manager.md#live-analysis
+    pub fn finished(&mut self) -> bool {
+        self.running = None;
+        std::mem::take(&mut self.pending)
     }
 }

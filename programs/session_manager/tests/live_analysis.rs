@@ -1,35 +1,34 @@
-// SM-ANL: Live analysis (integration)
-// Cases: ../../../doc/testing/session_manager.md#live-analysis-integration
+// doc/testing/session_manager.md#live-analysis-integration
 
-/// SM-ANL-01: After every change
+// SM-ANL-01
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn sm_anl_01_after_every_change() {
     todo!("SM-ANL-01")
 }
 
-/// SM-ANL-02: Burst of shots
+// SM-ANL-02
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn sm_anl_02_burst_of_shots() {
     todo!("SM-ANL-02")
 }
 
-/// SM-ANL-03: Outdated result
+// SM-ANL-03
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn sm_anl_03_outdated_result() {
     todo!("SM-ANL-03")
 }
 
-/// SM-ANL-04: Analyzer not answering
+// SM-ANL-04
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn sm_anl_04_analyzer_not_answering() {
     todo!("SM-ANL-04")
 }
 
-/// SM-ANL-05: Published
+// SM-ANL-05
 #[tokio::test]
 #[ignore = "not implemented"]
 async fn sm_anl_05_published() {

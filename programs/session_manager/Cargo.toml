@@ -1,6 +1,6 @@
 [package]
 name = "session_manager"
-description = "State machine of the current session: setup, recording, live scoring, review, saving (doc/programs/session_manager.md)"
+description = "TargetScope session manager"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
