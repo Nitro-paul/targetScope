@@ -1,6 +1,6 @@
 [package]
 name = "statistics"
-description = "Statistics over many saved sessions for the statistics page (doc/programs/statistics.md)"
+description = "TargetScope statistics"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true

@@ -1,65 +1,87 @@
-// ST-CAL: Values per session and group (unit)
-// Cases: ../../../doc/testing/statistics.md#values-per-session-and-group-unit
+// doc/testing/statistics.md#values-per-session-and-group-unit
 
-/// ST-CAL-01: Extreme spread
+use statistics::calc::{aggregate, session_values, SessionSummary, SessionValues};
+use targetscope_common::geometry::Point;
+use targetscope_common::model::Shot;
+
+fn shots(points: &[(f64, f64)]) -> Vec<Shot> {
+    points.iter().map(|(x, y)| Shot::from(Point { x: *x, y: *y })).collect()
+}
+
+fn near(a: f64, b: f64, tol: f64) -> bool {
+    (a - b).abs() <= tol
+}
+
+fn summary(score: i64, grouping: i64, shots: i64, spread: f64, radius: f64, mean: (f64, f64)) -> SessionSummary {
+    SessionSummary {
+        score,
+        grouping_score: grouping,
+        shot_count: shots,
+        values: SessionValues { mean_point: Point { x: mean.0, y: mean.1 }, extreme_spread_mm: spread, mean_radius_mm: radius },
+    }
+}
+
+// ST-CAL-01
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_01_extreme_spread() {
-    todo!("ST-CAL-01")
+    assert!(near(session_values(&shots(&[(0.0, 0.0), (6.0, 8.0), (0.0, 8.0)])).extreme_spread_mm, 10.0, 1e-9));
 }
 
-/// ST-CAL-02: Extreme spread of one shot
+// ST-CAL-02
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_02_extreme_spread_of_one_shot() {
-    todo!("ST-CAL-02")
+    assert_eq!(session_values(&shots(&[(3.0, 4.0)])).extreme_spread_mm, 0.0);
 }
 
-/// ST-CAL-03: Mean radius
+// ST-CAL-03
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_03_mean_radius() {
-    todo!("ST-CAL-03")
+    let v = session_values(&shots(&[(-1.0, 0.0), (1.0, 0.0)]));
+    assert!(near(v.mean_point.x, 0.0, 1e-9) && near(v.mean_point.y, 0.0, 1e-9));
+    assert!(near(v.mean_radius_mm, 1.0, 1e-9));
 }
 
-/// ST-CAL-04: Mean radius, uneven
+// ST-CAL-04
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_04_mean_radius_uneven() {
-    todo!("ST-CAL-04")
+    let v = session_values(&shots(&[(0.0, 0.0), (6.0, 8.0), (0.0, 8.0)]));
+    assert!(near(v.mean_point.x, 2.0, 1e-9) && near(v.mean_point.y, 5.333, 1e-3));
+    assert!(near(v.mean_radius_mm, 4.612, 1e-3), "{}", v.mean_radius_mm);
 }
 
-/// ST-CAL-05: Score values
+// ST-CAL-05
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_05_score_values() {
-    todo!("ST-CAL-05")
+    let v = aggregate(&[summary(50, 0, 5, 0.0, 0.0, (0.0, 0.0)), summary(90, 0, 10, 0.0, 0.0, (0.0, 0.0))]);
+    assert!(near(v.score_avg, 70.0, 1e-9));
+    assert_eq!((v.score_min, v.score_max), (50, 90));
+    assert!(near(v.score_per_shot_avg, 140.0 / 15.0, 1e-9));
 }
 
-/// ST-CAL-06: Grouping per shot
+// ST-CAL-06
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_06_grouping_per_shot() {
-    todo!("ST-CAL-06")
+    let v = aggregate(&[summary(0, 55, 5, 0.0, 0.0, (0.0, 0.0)), summary(0, 100, 10, 0.0, 0.0, (0.0, 0.0))]);
+    assert!(near(v.grouping_score_per_shot_avg, 155.0 / 15.0, 1e-9));
 }
 
-/// ST-CAL-07: Mean point average
+// ST-CAL-07
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_07_mean_point_average() {
-    todo!("ST-CAL-07")
+    let v = aggregate(&[summary(0, 0, 1, 0.0, 0.0, (1.0, 2.0)), summary(0, 0, 1, 0.0, 0.0, (3.0, -2.0))]);
+    assert!(near(v.mean_point_avg.x_mm, 2.0, 1e-9) && near(v.mean_point_avg.y_mm, 0.0, 1e-9));
 }
 
-/// ST-CAL-08: Spread and radius per session
+// ST-CAL-08
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_08_spread_and_radius_per_session() {
-    todo!("ST-CAL-08")
+    let v = aggregate(&[summary(0, 0, 5, 10.0, 3.0, (0.0, 0.0)), summary(0, 0, 10, 20.0, 5.0, (0.0, 0.0))]);
+    assert!(near(v.extreme_spread_mm_avg, 15.0, 1e-9) && near(v.mean_radius_mm_avg, 4.0, 1e-9));
 }
 
-/// ST-CAL-09: Counts
+// ST-CAL-09
 #[test]
-#[ignore = "not implemented"]
 fn st_cal_09_counts() {
-    todo!("ST-CAL-09")
+    let v = aggregate(&[summary(50, 0, 5, 0.0, 0.0, (0.0, 0.0)), summary(90, 0, 10, 0.0, 0.0, (0.0, 0.0))]);
+    assert_eq!((v.session_count, v.shot_count), (2, 15));
 }
