@@ -1,0 +1,18 @@
+# Rust
+/target/
+
+# C++
+/build/
+/build-*/
+compile_commands.json
+
+# temporary files written before a rename (staging and export folders)
+.*.part
+
+# editors
+.vscode/
+.idea/
+*.swp
+
+# frontend tooling (no build step, but node is used for tests)
+node_modules/

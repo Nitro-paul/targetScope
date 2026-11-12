@@ -1,0 +1,68 @@
+# Rust workspace of TargetScope (see doc/software_description.md#code-organization).
+# The C++ programs (camera_reader, image_processor) are built with CMake (CMakeLists.txt).
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/targetscope_common",
+    "crates/targetscope_testkit",
+    "programs/launcher",
+    "programs/database_handler",
+    "programs/session_manager",
+    "programs/analyzer",
+    "programs/statistics",
+    "programs/exporter",
+    "programs/importer",
+    "programs/web_server",
+    "tests/system",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Versions are a starting point; pin them when the first implementation builds.
+[workspace.dependencies]
+# own crates
+targetscope_common = { path = "crates/targetscope_common" }
+targetscope_testkit = { path = "crates/targetscope_testkit" }
+
+# shared library (doc/shared_libraries.md#dependencies)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+redis = { version = "0.32", features = ["tokio-comp", "streams", "connection-manager"] }
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+iceoryx2 = "0.7"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+fail = "0.5"
+jsonschema = "0.33"
+
+# programs
+rusqlite = { version = "0.37", features = ["bundled"] }
+axum = { version = "0.8", features = ["ws", "multipart"] }
+tower-http = { version = "0.6", features = ["fs", "compression-full", "trace"] }
+turbojpeg = "1"
+fast_image_resize = "5"
+csv = "1"
+tiny-skia = "0.11"
+ab_glyph = "0.2"
+time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+zip = "4"
+toml = "0.9"
+nix = { version = "0.30", features = ["signal", "process"] }
+fs4 = "0.13"
+argon2 = "0.5"
+
+# tests
+tempfile = "3"
+reqwest = { version = "0.12", features = ["json", "multipart"] }
+tokio-tungstenite = "0.27"
+
+[profile.release]
+debug = 1
