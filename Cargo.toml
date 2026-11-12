@@ -1,5 +1,4 @@
-# Rust workspace of TargetScope (see doc/software_description.md#code-organization).
-# The C++ programs (camera_reader, image_processor) are built with CMake (CMakeLists.txt).
+# doc/software_description.md#code-organization
 
 [workspace]
 resolver = "2"
@@ -22,47 +21,50 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
-# Versions are a starting point; pin them when the first implementation builds.
 [workspace.dependencies]
-# own crates
 targetscope_common = { path = "crates/targetscope_common" }
 targetscope_testkit = { path = "crates/targetscope_testkit" }
 
-# shared library (doc/shared_libraries.md#dependencies)
+# doc/shared_libraries.md#dependencies
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
-redis = { version = "0.32", features = ["tokio-comp", "streams", "connection-manager"] }
+redis = { version = "1.8", features = ["tokio-comp", "streams", "connection-manager"] }
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"
-iceoryx2 = "0.7"
+iceoryx2 = "0.10"
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 fail = "0.5"
-jsonschema = "0.33"
+jsonschema = { version = "0.61", default-features = false }
 
-# programs
-rusqlite = { version = "0.37", features = ["bundled"] }
+# doc/programs/*.md#technology
+rusqlite = { version = "0.42", features = ["bundled"] }
 axum = { version = "0.8", features = ["ws", "multipart"] }
-tower-http = { version = "0.6", features = ["fs", "compression-full", "trace"] }
-turbojpeg = "1"
-fast_image_resize = "5"
+tower-http = { version = "0.7", features = ["fs", "compression-full", "trace"] }
+turbojpeg = { version = "1.5", features = ["pkg-config"] }
+fast_image_resize = "6"
 csv = "1"
-tiny-skia = "0.11"
+tiny-skia = "0.12"
 ab_glyph = "0.2"
 time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
-zip = "4"
-toml = "0.9"
-nix = { version = "0.30", features = ["signal", "process"] }
-fs4 = "0.13"
-argon2 = "0.5"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+toml = "1"
+nix = { version = "0.31", features = ["signal", "process"] }
+fs4 = "1"
+argon2 = "0.6"
+rand = "0.10"
+hostname = "0.4"
+futures = "0.3"
+libc = "0.2"
+http-body-util = "0.1"
 
-# tests
+# doc/testing/overview.md#test-environment
 tempfile = "3"
-reqwest = { version = "0.12", features = ["json", "multipart"] }
-tokio-tungstenite = "0.27"
+reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "cookies"] }
+tokio-tungstenite = "0.30"
 
 [profile.release]
 debug = 1
