@@ -1,0 +1,6 @@
+//! exporter
+
+#[tokio::main]
+async fn main() -> std::process::ExitCode {
+    exporter::run().await
+}
