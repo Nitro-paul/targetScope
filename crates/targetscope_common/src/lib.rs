@@ -3,6 +3,7 @@
 pub mod bus;
 pub mod clock;
 pub mod config;
+pub mod export;
 pub mod failpoints;
 pub mod frames;
 pub mod geometry;
