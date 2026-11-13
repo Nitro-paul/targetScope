@@ -70,7 +70,7 @@ checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
 name = "analyzer"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "proptest",
@@ -667,7 +667,7 @@ checksum = "4583a4551df46e2792f82ceeac45e850d2e2d5debba0b91f102385cda5b11f06"
 
 [[package]]
 name = "database_handler"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fail",
@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "exporter"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "ab_glyph",
  "async-trait",
@@ -1672,7 +1672,7 @@ dependencies = [
 
 [[package]]
 name = "importer"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fail",
@@ -1796,7 +1796,7 @@ dependencies = [
 
 [[package]]
 name = "launcher"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fs4",
@@ -2735,7 +2735,7 @@ dependencies = [
 
 [[package]]
 name = "session_manager"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fail",
@@ -2867,7 +2867,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "statistics"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "serde",
@@ -2952,7 +2952,7 @@ dependencies = [
 
 [[package]]
 name = "system_tests"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "reqwest",
  "serde",
@@ -2966,7 +2966,7 @@ dependencies = [
 
 [[package]]
 name = "targetscope_common"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fail",
@@ -2988,7 +2988,7 @@ dependencies = [
 
 [[package]]
 name = "targetscope_testkit"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "fail",
@@ -3705,7 +3705,7 @@ dependencies = [
 
 [[package]]
 name = "web_server"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
  "argon2",
  "async-trait",
