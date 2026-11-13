@@ -224,7 +224,7 @@ What is tested: `change_image_dir` and `reset_settings` of `image_dir` ([databas
 | DB-DIR-06 | Second change while one runs | Start a slowed change; send another `change_image_dir` | `invalid_state` |
 | DB-DIR-07 | Other file system than the staging folder | New folder on the second mount | `validation_failed`; nothing changed |
 | DB-DIR-08 | Folder can't be written | New folder below a read-only folder | `validation_failed` |
-| DB-DIR-09 | Crash during the copy | Kill the handler during the copy; restart | Setting still the old folder; every image readable there; partial copies in the new folder do no harm |
+| DB-DIR-09 | Crash during the copy | Kill the handler during the copy; check; restart | After the kill: setting still the old folder, every image readable there. After the restart the unacknowledged `change_image_dir` runs again ([request processing](../programs/database_handler.md#request-processing)) and completes: setting the new folder, every image complete in it, none left in the old folder; the partial copies of the first run do no harm |
 | DB-DIR-10 | Reset with moving | `reset_settings` with `["image_dir"]`, `move_images` true | Like DB-DIR-02, to `<data_dir>/images` |
 
 ## Change events (integration)
@@ -254,7 +254,7 @@ What is tested: every write is done once, even if the request comes twice or the
 | DB-IDM-04 | Duplicate after the image moved | DB-IDM-01 for `create_session` with an image (the staged file is gone at the second request) | Second response identical, no error |
 
 ## Maintenance (integration)
-What is tested: hourly clean-up ([database_handler.md](../programs/database_handler.md#startup)). Uses `FakeClock`.
+What is tested: hourly clean-up ([database_handler.md](../programs/database_handler.md#startup)). The handler's DbWorker and maintenance loop run in the test process (library functions `spawn_db_worker`, `run_periodically`), so `FakeClock` can drive them.
 
 | ID | Case | Steps / input | Expected outcome |
 |---|---|---|---|

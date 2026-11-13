@@ -311,7 +311,7 @@ For each request:
 |---|---|---|
 | Unparseable message, validation error, not found, in use | error response | yes, retrying cannot succeed |
 | Database or file error (e.g. disk full, database locked after timeout) | `database_error` / `io_error` | yes, after logging |
-| Redis connection lost | none | no; reconnect with backoff, send `data_changed` `all`/`reload` (events of writes done just before may be lost), reprocess pending requests |
+| Redis connection lost | none | no; reconnect with backoff, send `data_changed` `all`/`reload` (events of writes done just before may be lost), reprocess pending requests. The reload event is retried up to 10 times (100 ms doubling up to 2 s), because the connection for writes can come back a moment later than the read loop's |
 | Handler crashes while processing | none | no; the request is pending and is reprocessed on restart |
 
 Duplicates are safe: if the handler crashes after committing but before `XACK`, the request is reprocessed, its `request_id` is found in `processed_requests`, and the stored response is sent again without a second write. Only successful writes are recorded. Failed requests leave no record, so a resend is validated and executed again; deterministic errors (`validation_failed`, `not_found`, `in_use`) then give the same result, and a transient `database_error` may now succeed.
