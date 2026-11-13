@@ -37,7 +37,7 @@ The full design is in [doc/software_description.md](doc/software_description.md)
 | `web_server` | Rust | [doc/programs/web_server.md](doc/programs/web_server.md) |
 
 ## Building
-Requirements: Rust (stable), a C++20 compiler, CMake ≥ 3.24, OpenCV 4, `redis-server`.
+Requirements and how to install them: [doc/development.md](doc/development.md).
 
 ```sh
 cargo build --workspace            # Rust programs and libraries

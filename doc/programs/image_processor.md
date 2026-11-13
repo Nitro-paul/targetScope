@@ -18,7 +18,7 @@ It doesn't score shots (analyzer) and doesn't decide which shots belong to a ses
 ## Technology
 | Purpose | Library |
 |---|---|
-| Image processing | OpenCV 4 (imgproc, calib3d, imgcodecs) |
+| Image processing | OpenCV 4 or 5 (imgproc, calib3d, imgcodecs) |
 | Frames | iceoryx2 C++ bindings, `TargetScopeFrameHeader` from `schemas/frames/frame_header.h` |
 | Redis, messages, settings, logging | `targetscope_common_cpp` ([shared_libraries.md](../shared_libraries.md#c-library-targetscope_common_cpp)) |
 | Build | CMake, C++20 |
