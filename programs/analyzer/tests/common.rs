@@ -38,7 +38,7 @@ pub const DEV_REF_DIAMETER: f64 = 4.0;
 pub struct Rng(pub u64);
 
 impl Rng {
-    pub fn next(&mut self) -> f64 {
+    pub fn next_f64(&mut self) -> f64 {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
