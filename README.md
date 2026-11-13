@@ -9,8 +9,9 @@ The full design is in [doc/software_description.md](doc/software_description.md)
 ## Repository layout
 | Path | Content |
 |---|---|
-| `Cargo.toml` | Rust workspace |
+| `Cargo.toml`, `Cargo.lock` | Rust workspace |
 | `CMakeLists.txt` | C++ projects |
+| `rustfmt.toml`, `.clang-format`, `.editorconfig` | code style ([doc/development.md](doc/development.md#code-style)) |
 | `schemas/` | language-neutral contract: JSON Schemas, examples, `frame_header.h` |
 | `crates/targetscope_common/` | Rust shared library |
 | `crates/targetscope_testkit/` | Rust test tools |
@@ -20,6 +21,8 @@ The full design is in [doc/software_description.md](doc/software_description.md)
 | `tests/system/` | system tests (all programs together) |
 | `testdata/` | reference data, photos, videos, golden files |
 | `config/launcher.toml` | default launcher configuration |
+| `tools/` | `install_deps.sh` (dependencies without root), `check_docs.py` (links and comments) |
+| `release/`, `VERSION` | building, installing and running a release ([doc/releases.md](doc/releases.md)) |
 | `doc/` | design and test documentation |
 
 ## Programs
@@ -65,11 +68,11 @@ The web UI is then served by `web_server` in the local network.
 All test cases are documented in [doc/testing/overview.md](doc/testing/overview.md).
 
 ## Branches
-Each part is developed on its own branch and merged into `main`:
+Each part is developed on its own branch. `main` is the common starting point of all of them; `releases` merges the current state of all branches and adds the release tools ([doc/releases.md](doc/releases.md#the-branch-releases)). A change is always made on the branch of its part and then merged into `releases`.
 
 | Branch | Part |
 |---|---|
-| `workspace` | root build files (`Cargo.toml`, `CMakeLists.txt`, `.gitignore`) |
+| `workspace` | root build files (`Cargo.toml`, `Cargo.lock`, `CMakeLists.txt`, formatter configuration, `.gitignore`) and `tools/` |
 | `documentation` | `README.md`, `doc/` |
 | `schemas` | `schemas/` |
 | `common_rust` | `crates/targetscope_common/` |
@@ -77,5 +80,6 @@ Each part is developed on its own branch and merged into `main`:
 | `testkit` | `crates/targetscope_testkit/`, `cpp/targetscope_testkit/`, `testdata/` |
 | `<program>` | `programs/<program>/` (`launcher` also has `config/`) |
 | `system_tests` | `tests/system/` |
+| `releases` | all of the above merged, plus `release/` and `VERSION` |
 
-A branch builds once the branches it depends on (`workspace`, `schemas`, the shared libraries and `testkit`) are merged.
+A single branch builds only together with the branches it depends on (`workspace`, `schemas`, the shared libraries and `testkit`); `releases` always builds.
