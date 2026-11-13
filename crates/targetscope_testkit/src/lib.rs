@@ -13,7 +13,7 @@ pub mod test_bus;
 
 pub use event_probe::EventProbe;
 pub use fake_clock::FakeClock;
-pub use fake_program::{Answer, FakeProgram};
+pub use fake_program::{Answer, FakeProgram, Responder};
 pub use process::ProgramUnderTest;
 pub use redis_server::RedisTestServer;
 pub use temp_data_dir::TempDataDir;

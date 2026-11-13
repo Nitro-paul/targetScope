@@ -86,3 +86,25 @@ pub async fn wait_ready(redis_url: &str, program: &str, timeout: Duration) {
         assert!(Instant::now() < deadline, "{program} not ready");
     }
 }
+
+// doc/testing/overview.md#test-kit
+pub fn program_binary(name: &str) -> std::path::PathBuf {
+    static BUILT: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+    let exe = std::env::current_exe().expect("test executable");
+    let profile_dir = exe.parent().and_then(Path::parent).expect("target/<profile>/deps").to_path_buf();
+    let target_dir = profile_dir.parent().expect("target dir").to_path_buf();
+    let release = profile_dir.file_name().is_some_and(|n| n == "release");
+    let mut built = BUILT.lock().unwrap();
+    if !built.iter().any(|b| b == name) {
+        let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".into());
+        let mut cmd = Command::new(cargo);
+        cmd.args(["build", "--quiet", "-p", name, "--bin", name]).arg("--target-dir").arg(&target_dir);
+        if release {
+            cmd.arg("--release");
+        }
+        let status = cmd.status().unwrap_or_else(|e| panic!("cargo build -p {name}: {e}"));
+        assert!(status.success(), "cargo build -p {name} failed");
+        built.push(name.to_string());
+    }
+    profile_dir.join(name)
+}

@@ -17,6 +17,23 @@ pub enum Answer {
     Error(ErrorCode, String),
     Delayed(Duration, Box<Answer>),
     NoAnswer,
+    Computed(Responder),
+}
+
+// doc/testing/overview.md#test-kit
+#[derive(Clone)]
+pub struct Responder(pub Arc<dyn Fn(&Value) -> Answer + Send + Sync>);
+
+impl Responder {
+    pub fn new(f: impl Fn(&Value) -> Answer + Send + Sync + 'static) -> Answer {
+        Answer::Computed(Responder(Arc::new(f)))
+    }
+}
+
+impl std::fmt::Debug for Responder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Responder")
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -51,6 +68,7 @@ impl RequestHandler<RawRequest> for Handler {
                     answer = *inner;
                 }
                 Answer::NoAnswer => std::future::pending::<()>().await,
+                Answer::Computed(Responder(f)) => answer = f(&req.payload),
             }
         }
     }
