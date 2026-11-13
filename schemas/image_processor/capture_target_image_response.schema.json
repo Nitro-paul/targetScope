@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/capture_target_image_response.schema.json",
   "title": "capture_target_image_response",
-  "description": "response of image_processor; doc/interfaces.md#capture_target_image",
+  "description": "doc/interfaces.md#capture_target_image",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,15 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#capture_target_image"
+      "required": [
+        "staged_file"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

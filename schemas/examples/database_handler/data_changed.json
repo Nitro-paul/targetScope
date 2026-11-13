@@ -4,5 +4,9 @@
   "event_id": "9f0c1c9e-6a43-4d3a-9a51-0c3f7d1f2b11",
   "source": "database_handler",
   "timestamp_ms": 1794393600123,
-  "payload": {}
+  "payload": {
+    "table": "sessions",
+    "key": 7,
+    "action": "created"
+  }
 }

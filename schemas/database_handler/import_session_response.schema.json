@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/import_session_response.schema.json",
   "title": "import_session_response",
-  "description": "response of database_handler; doc/interfaces.md#import_session",
+  "description": "doc/interfaces.md#import_session",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,19 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#import_session"
+      "required": [
+        "id",
+        "created"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "created": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

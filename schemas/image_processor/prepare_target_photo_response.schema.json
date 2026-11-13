@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/prepare_target_photo_response.schema.json",
   "title": "prepare_target_photo_response",
-  "description": "response of image_processor; doc/interfaces.md#prepare_target_photo",
+  "description": "doc/interfaces.md#prepare_target_photo",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,57 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#prepare_target_photo"
+      "required": [
+        "staged_file",
+        "px_per_mm",
+        "proposal"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        },
+        "px_per_mm": {
+          "type": "number"
+        },
+        "proposal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "center_x_mm": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "center_y_mm": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "inner_white_radius_mm": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "black_radius_mm": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "outer_radius_mm": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

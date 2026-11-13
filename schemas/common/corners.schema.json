@@ -4,7 +4,25 @@
   "title": "Corners",
   "description": "doc/interfaces.md#corners",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#corners"
+  "required": [
+    "top_left",
+    "top_right",
+    "bottom_right",
+    "bottom_left"
+  ],
+  "properties": {
+    "top_left": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "top_right": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "bottom_right": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "bottom_left": {
+      "$ref": "pixel_point.schema.json"
+    }
+  },
+  "additionalProperties": false
 }

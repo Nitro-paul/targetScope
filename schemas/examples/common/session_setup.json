@@ -1,0 +1,9 @@
+{
+  "input_mode": "camera",
+  "shooter_id": 2,
+  "device_id": 3,
+  "distance_m": 10,
+  "target_type_id": 1,
+  "single_handed": true,
+  "supported": false
+}

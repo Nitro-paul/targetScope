@@ -4,7 +4,25 @@
   "title": "SessionShot",
   "description": "doc/interfaces.md#sessionshot",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#sessionshot"
+  "required": [
+    "angle_turns",
+    "radius_mm",
+    "paper_no"
+  ],
+  "properties": {
+    "angle_turns": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "radius_mm": {
+      "type": "number",
+      "minimum": 0
+    },
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
 }

@@ -1,8 +1,12 @@
 {
   "type": "export_sessions_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "files": [
+      "2026-11-11_143000_7c9e6679_json.zip"
+    ]
+  }
 }

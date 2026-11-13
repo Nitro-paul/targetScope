@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/condition.schema.json",
+  "title": "Condition",
+  "description": "doc/interfaces.md#filter",
+  "type": "object",
+  "required": [
+    "field",
+    "op",
+    "value"
+  ],
+  "properties": {
+    "field": {
+      "type": "string"
+    },
+    "op": {
+      "enum": [
+        "eq",
+        "ne",
+        "lt",
+        "le",
+        "gt",
+        "ge",
+        "like",
+        "in"
+      ]
+    },
+    "value": {}
+  },
+  "additionalProperties": false
+}

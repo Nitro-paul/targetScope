@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/session_manager/session_add_shot.schema.json",
   "title": "session_add_shot",
-  "description": "request of session_manager; doc/interfaces.md#session_add_shot",
+  "description": "doc/interfaces.md#session_manager",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,9 +19,26 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#session_add_shot"
+      "required": [
+        "angle_turns",
+        "radius_mm"
+      ],
+      "properties": {
+        "angle_turns": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "radius_mm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "paper_no": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

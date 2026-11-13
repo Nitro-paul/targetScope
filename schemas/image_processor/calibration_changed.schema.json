@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/calibration_changed.schema.json",
   "title": "calibration_changed",
-  "description": "event of image_processor; doc/interfaces.md#calibration_changed",
+  "description": "doc/interfaces.md#calibration_changed",
   "allOf": [
     {
       "$ref": "../common/event_envelope.schema.json"
@@ -21,10 +21,7 @@
   },
   "$defs": {
     "payload": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#calibration_changed"
+      "$ref": "../common/calibration_status.schema.json"
     }
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/create_session_response.schema.json",
   "title": "create_session_response",
-  "description": "response of database_handler; doc/interfaces.md#create_session",
+  "description": "doc/interfaces.md#create_session",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,27 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#create_session"
+      "required": [
+        "id",
+        "uuid",
+        "images"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/paper_image.schema.json"
+          }
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

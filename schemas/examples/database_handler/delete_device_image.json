@@ -1,7 +1,9 @@
 {
   "type": "delete_device_image",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "reply_to": "web_server:responses",
-  "payload": {}
+  "payload": {
+    "device_id": 3
+  }
 }

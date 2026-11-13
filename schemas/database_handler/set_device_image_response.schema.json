@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/set_device_image_response.schema.json",
   "title": "set_device_image_response",
-  "description": "response of database_handler; doc/interfaces.md#set_device_image",
+  "description": "doc/interfaces.md#set_device_image",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,15 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#set_device_image"
+      "required": [
+        "image_path"
+      ],
+      "properties": {
+        "image_path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

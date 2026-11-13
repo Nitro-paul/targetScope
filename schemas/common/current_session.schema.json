@@ -4,7 +4,101 @@
   "title": "CurrentSession",
   "description": "doc/interfaces.md#currentsession",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#currentsession"
+  "required": [
+    "state",
+    "setup",
+    "shots",
+    "paper_no",
+    "paper_images",
+    "analysis_outdated",
+    "duration_s"
+  ],
+  "properties": {
+    "state": {
+      "enum": [
+        "idle",
+        "setup",
+        "running",
+        "paused",
+        "review",
+        "recovered"
+      ]
+    },
+    "recovered_from": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "enum": [
+            "idle",
+            "setup",
+            "running",
+            "paused",
+            "review",
+            "recovered"
+          ]
+        }
+      ]
+    },
+    "setup": {
+      "$ref": "session_setup.schema.json"
+    },
+    "shots": {
+      "type": "array",
+      "items": {
+        "$ref": "current_shot.schema.json"
+      }
+    },
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "paper_images": {
+      "type": "array",
+      "items": {
+        "$ref": "staged_paper_image.schema.json"
+      }
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "analysis": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "analysis_result.schema.json"
+        }
+      ]
+    },
+    "analysis_outdated": {
+      "type": "boolean"
+    },
+    "started_at": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "duration_s": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "calibration": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "calibration_status.schema.json"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
 }

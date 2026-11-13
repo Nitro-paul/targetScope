@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/time_range.schema.json",
+  "title": "TimeRange",
+  "description": "doc/interfaces.md#sessionfilter",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "from": {
+      "type": "integer"
+    },
+    "to": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}

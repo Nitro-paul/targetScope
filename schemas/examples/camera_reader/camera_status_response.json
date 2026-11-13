@@ -1,8 +1,17 @@
 {
   "type": "camera_status_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "state": "connected",
+    "camera_source": "v4l2",
+    "device": "/dev/video0",
+    "camera_key": "usb-0000:00:14.0-2",
+    "width_px": 1920,
+    "height_px": 1080,
+    "fps": 30.5,
+    "frames_published": 123456
+  }
 }

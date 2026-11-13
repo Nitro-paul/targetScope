@@ -1,8 +1,17 @@
 {
   "type": "read_shooters_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "shooters": [
+      {
+        "id": 2,
+        "uuid": "0b3f1c2e-6c1a-4a8e-9d55-2f6b1d6c7a10",
+        "name": "Alex",
+        "retired": false
+      }
+    ]
+  }
 }

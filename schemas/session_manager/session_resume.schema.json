@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/session_manager/session_resume.schema.json",
   "title": "session_resume",
-  "description": "request of session_manager; doc/interfaces.md#session_resume",
+  "description": "doc/interfaces.md#session_manager",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,6 +19,7 @@
   "$defs": {
     "payload": {
       "type": "object",
+      "required": [],
       "properties": {},
       "additionalProperties": false
     }

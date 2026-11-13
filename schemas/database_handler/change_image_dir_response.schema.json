@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/change_image_dir_response.schema.json",
   "title": "change_image_dir_response",
-  "description": "response of database_handler; doc/interfaces.md#change_image_dir",
+  "description": "doc/interfaces.md#change_image_dir",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,42 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#change_image_dir"
+      "required": [
+        "path",
+        "images"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "images": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "moved",
+                "failed"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "moved": {
+                  "type": "integer"
+                },
+                "failed": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/new_session.schema.json",
+  "title": "NewSession",
+  "description": "doc/interfaces.md#create_session",
+  "type": "object",
+  "required": [
+    "score",
+    "grouping_score",
+    "target_type_id",
+    "device_id",
+    "single_handed",
+    "supported",
+    "shot_count",
+    "paper_count",
+    "shots"
+  ],
+  "properties": {
+    "score": {
+      "type": "integer"
+    },
+    "grouping_score": {
+      "type": "integer"
+    },
+    "distance_m": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "target_type_id": {
+      "type": "integer"
+    },
+    "shooter_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "device_id": {
+      "type": "integer"
+    },
+    "single_handed": {
+      "type": "boolean"
+    },
+    "supported": {
+      "type": "boolean"
+    },
+    "shot_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "duration_s": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 10000
+    },
+    "paper_count": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "shots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "session_shot.schema.json"
+      }
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "$ref": "staged_paper_image.schema.json"
+      }
+    }
+  },
+  "additionalProperties": false
+}

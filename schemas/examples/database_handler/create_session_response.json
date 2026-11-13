@@ -1,8 +1,17 @@
 {
   "type": "create_session_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "id": 7,
+    "uuid": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "images": [
+      {
+        "paper_no": 1,
+        "image_path": "sessions/7c9e6679-7425-40de-944b-e07fc1f90ae7_1.jpg"
+      }
+    ]
+  }
 }

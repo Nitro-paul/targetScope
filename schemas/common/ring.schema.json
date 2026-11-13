@@ -4,7 +4,17 @@
   "title": "Ring",
   "description": "doc/interfaces.md#ring",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#ring"
+  "required": [
+    "score",
+    "radius_mm"
+  ],
+  "properties": {
+    "score": {
+      "type": "integer"
+    },
+    "radius_mm": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": false
 }

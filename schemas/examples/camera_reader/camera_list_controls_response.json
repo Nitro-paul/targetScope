@@ -1,8 +1,28 @@
 {
   "type": "camera_list_controls_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "controls": [
+      {
+        "id": 10094849,
+        "name": "Auto Exposure",
+        "kind": "menu",
+        "min": 0,
+        "max": 3,
+        "step": 1,
+        "default": 3,
+        "value": 1,
+        "menu": [
+          {
+            "value": 1,
+            "label": "Manual Mode"
+          }
+        ],
+        "inactive": false
+      }
+    ]
+  }
 }

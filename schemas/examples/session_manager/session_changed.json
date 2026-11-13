@@ -4,5 +4,80 @@
   "event_id": "9f0c1c9e-6a43-4d3a-9a51-0c3f7d1f2b11",
   "source": "session_manager",
   "timestamp_ms": 1794393600123,
-  "payload": {}
+  "payload": {
+    "session": {
+      "state": "running",
+      "recovered_from": null,
+      "setup": {
+        "input_mode": "camera",
+        "shooter_id": 2,
+        "device_id": 3,
+        "distance_m": 10,
+        "target_type_id": 1,
+        "single_handed": true,
+        "supported": false
+      },
+      "shots": [
+        {
+          "angle_turns": 0.25,
+          "radius_mm": 12.5,
+          "origin": "camera",
+          "confidence": 0.9,
+          "hole_id": 3,
+          "paper_no": 1
+        }
+      ],
+      "paper_no": 1,
+      "paper_images": [],
+      "notes": null,
+      "analysis": {
+        "shot_scores": [
+          12,
+          11,
+          9,
+          6,
+          0
+        ],
+        "score": 38,
+        "grouping_score": 40,
+        "grouping_shift": {
+          "x_mm": 1.25,
+          "y_mm": -0.5
+        },
+        "mean_point": {
+          "x_mm": 7.435,
+          "y_mm": 9.035
+        }
+      },
+      "analysis_outdated": false,
+      "started_at": 1794393600,
+      "duration_s": 60,
+      "calibration": {
+        "state": "calibrated",
+        "method": "auto",
+        "target_type_id": 1,
+        "corners": {
+          "top_left": {
+            "x": 410.5,
+            "y": 95.5
+          },
+          "top_right": {
+            "x": 1490.5,
+            "y": 120.5
+          },
+          "bottom_right": {
+            "x": 1460.5,
+            "y": 1010.5
+          },
+          "bottom_left": {
+            "x": 430.5,
+            "y": 985.5
+          }
+        },
+        "px_per_mm": 6.5,
+        "message": null,
+        "updated_ms": 1794393600123
+      }
+    }
+  }
 }

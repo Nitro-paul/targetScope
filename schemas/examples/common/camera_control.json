@@ -1,0 +1,17 @@
+{
+  "id": 10094849,
+  "name": "Auto Exposure",
+  "kind": "menu",
+  "min": 0,
+  "max": 3,
+  "step": 1,
+  "default": 3,
+  "value": 1,
+  "menu": [
+    {
+      "value": 1,
+      "label": "Manual Mode"
+    }
+  ],
+  "inactive": false
+}

@@ -1,7 +1,35 @@
 {
   "type": "import_session",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "reply_to": "web_server:responses",
-  "payload": {}
+  "payload": {
+    "score": 38,
+    "grouping_score": 40,
+    "distance_m": 10,
+    "target_type_id": 1,
+    "shooter_id": null,
+    "device_id": 3,
+    "single_handed": true,
+    "supported": false,
+    "shot_count": 1,
+    "duration_s": 120,
+    "notes": "windy",
+    "paper_count": 1,
+    "shots": [
+      {
+        "angle_turns": 0.25,
+        "radius_mm": 12.5,
+        "paper_no": 1
+      }
+    ],
+    "images": [
+      {
+        "paper_no": 1,
+        "staged_file": "target_6f1c2d3e-0000-4000-8000-000000000001.jpg"
+      }
+    ],
+    "uuid": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "saved_at": 1794403800
+  }
 }

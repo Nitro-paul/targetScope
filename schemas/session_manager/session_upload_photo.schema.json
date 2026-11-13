@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/session_manager/session_upload_photo.schema.json",
   "title": "session_upload_photo",
-  "description": "request of session_manager; doc/interfaces.md#session_upload_photo",
+  "description": "doc/interfaces.md#session_manager",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,9 +19,18 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#session_upload_photo"
+      "required": [
+        "staged_file"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        },
+        "corners": {
+          "$ref": "../common/corners.schema.json"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

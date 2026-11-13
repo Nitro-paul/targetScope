@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/trend_entry.schema.json",
+  "title": "TrendEntry",
+  "description": "doc/interfaces.md#statisticsgroup",
+  "type": "object",
+  "required": [
+    "period_start",
+    "values"
+  ],
+  "properties": {
+    "period_start": {
+      "type": "integer"
+    },
+    "values": {
+      "$ref": "statistics_values.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

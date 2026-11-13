@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/order_by.schema.json",
+  "title": "OrderBy",
+  "description": "doc/interfaces.md#filter",
+  "type": "object",
+  "required": [
+    "field",
+    "direction"
+  ],
+  "properties": {
+    "field": {
+      "type": "string"
+    },
+    "direction": {
+      "enum": [
+        "asc",
+        "desc"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

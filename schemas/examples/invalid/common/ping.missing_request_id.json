@@ -1,4 +1,9 @@
 {
-  "expected_error": "missing required field request_id",
-  "message": { "type": "ping", "version": 1, "reply_to": "launcher:responses", "payload": {} }
+  "expected_error": "request_id: missing",
+  "message": {
+    "type": "ping",
+    "version": 1,
+    "reply_to": "web_server:responses",
+    "payload": {}
+  }
 }

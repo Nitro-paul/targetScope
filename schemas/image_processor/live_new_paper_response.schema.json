@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/live_new_paper_response.schema.json",
   "title": "live_new_paper_response",
-  "description": "response of image_processor; doc/interfaces.md#live_new_paper",
+  "description": "doc/interfaces.md#live_new_paper",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,25 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#live_new_paper"
+      "required": [
+        "changed",
+        "live_paper"
+      ],
+      "properties": {
+        "changed": {
+          "type": "boolean"
+        },
+        "live_paper": {
+          "type": "integer"
+        },
+        "previous_paper_staged_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -4,7 +4,56 @@
   "title": "CameraControl",
   "description": "doc/interfaces.md#cameracontrol",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#cameracontrol"
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "min",
+    "max",
+    "step",
+    "default",
+    "value",
+    "inactive"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "integer",
+        "boolean",
+        "menu",
+        "button"
+      ]
+    },
+    "min": {
+      "type": "integer"
+    },
+    "max": {
+      "type": "integer"
+    },
+    "step": {
+      "type": "integer"
+    },
+    "default": {
+      "type": "integer"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "menu": {
+      "type": "array",
+      "items": {
+        "$ref": "menu_entry.schema.json"
+      }
+    },
+    "inactive": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
 }

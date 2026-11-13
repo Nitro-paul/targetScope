@@ -16,4 +16,5 @@ schemas/
 
 - JSON Schema draft 2020-12. `$id`s use the reserved host `targetscope.invalid`; references between schemas are relative.
 - Message schemas combine an envelope (`common/*_envelope.schema.json`) with the message's `type` and its payload in `$defs/payload`.
-- Payloads marked with a `$comment` "TODO" are skeletons; their fields are described in the linked section of `doc/interfaces.md`. The generated examples in `examples/` have empty payloads and must be completed together with their schema.
+- Every schema sets `additionalProperties: false` and the value ranges of its fields; `description` links the section of `doc/interfaces.md` that explains it.
+- `examples/common/` has one example per shared type and per envelope. Number fields that are floats in the types use values with a fraction (e.g. `200.5`), so the round trip can't turn `200` into `200.0` unnoticed.

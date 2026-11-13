@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/int_range.schema.json",
+  "title": "IntRange",
+  "description": "doc/interfaces.md#sessionfilter",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "min": {
+      "type": "integer"
+    },
+    "max": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/create_session.schema.json",
   "title": "create_session",
-  "description": "request of database_handler; doc/interfaces.md#create_session",
+  "description": "doc/interfaces.md#create_session",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -18,10 +18,7 @@
   },
   "$defs": {
     "payload": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#create_session"
+      "$ref": "../common/new_session.schema.json"
     }
   }
 }

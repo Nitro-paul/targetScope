@@ -1,8 +1,26 @@
 {
   "type": "camera_list_devices_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "devices": [
+      {
+        "path": "/dev/video0",
+        "name": "HD Pro Webcam C920",
+        "bus_info": "usb-0000:00:14.0-2",
+        "formats": [
+          {
+            "width_px": 1920,
+            "height_px": 1080,
+            "fps": [
+              30.5,
+              15.5
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }

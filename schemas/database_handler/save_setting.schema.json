@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/save_setting.schema.json",
   "title": "save_setting",
-  "description": "request of database_handler; doc/interfaces.md#save_setting",
+  "description": "doc/interfaces.md#save_setting",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -18,10 +18,7 @@
   },
   "$defs": {
     "payload": {
-      "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#save_setting"
+      "$ref": "../common/setting.schema.json"
     }
   }
 }

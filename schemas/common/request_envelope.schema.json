@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/common/request_envelope.schema.json",
-  "title": "Request envelope",
+  "title": "RequestEnvelope",
   "description": "doc/interfaces.md#request-envelope",
   "type": "object",
   "required": [
@@ -10,29 +10,28 @@
     "request_id",
     "payload"
   ],
+  "additionalProperties": false,
   "properties": {
     "type": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "version": {
-      "type": "integer",
-      "minimum": 1
+      "const": 1
     },
     "request_id": {
       "type": "string",
-      "format": "uuid"
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "reply_to": {
       "type": [
         "string",
         "null"
       ],
-      "pattern": "^[a-z_]+:responses$"
+      "pattern": "^[a-z][a-z0-9_]*:responses$"
     },
     "payload": {
       "type": "object"
     }
-  },
-  "additionalProperties": false
+  }
 }

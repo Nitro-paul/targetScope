@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/common/ping_response.schema.json",
   "title": "ping_response",
-  "description": "response of common; doc/interfaces.md#ping",
+  "description": "doc/interfaces.md#ping",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,27 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#ping"
+      "required": [
+        "program",
+        "program_version",
+        "language",
+        "started_at"
+      ],
+      "properties": {
+        "program": {
+          "type": "string"
+        },
+        "program_version": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "started_at": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

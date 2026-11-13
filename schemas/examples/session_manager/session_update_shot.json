@@ -1,7 +1,11 @@
 {
   "type": "session_update_shot",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "reply_to": "web_server:responses",
-  "payload": {}
+  "payload": {
+    "index": 0,
+    "angle_turns": 0.5,
+    "radius_mm": 20.5
+  }
 }

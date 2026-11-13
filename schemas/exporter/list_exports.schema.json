@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/exporter/list_exports.schema.json",
   "title": "list_exports",
-  "description": "request of exporter; doc/interfaces.md#list_exports",
+  "description": "doc/interfaces.md#list_exports",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,6 +19,7 @@
   "$defs": {
     "payload": {
       "type": "object",
+      "required": [],
       "properties": {},
       "additionalProperties": false
     }

@@ -1,0 +1,16 @@
+{
+  "expected_error": "input_mode: can't be changed after session_setup",
+  "message": {
+    "type": "session_update_setup",
+    "version": 1,
+    "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+    "reply_to": "web_server:responses",
+    "payload": {
+      "device_id": 3,
+      "distance_m": 10,
+      "target_type_id": 1,
+      "single_handed": true,
+      "input_mode": "manual"
+    }
+  }
+}

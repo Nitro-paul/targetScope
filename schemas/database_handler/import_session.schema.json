@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/import_session.schema.json",
   "title": "import_session",
-  "description": "request of database_handler; doc/interfaces.md#import_session",
+  "description": "doc/interfaces.md#import_session",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,9 +19,95 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#import_session"
+      "required": [
+        "score",
+        "grouping_score",
+        "target_type_id",
+        "device_id",
+        "single_handed",
+        "supported",
+        "shot_count",
+        "paper_count",
+        "shots",
+        "uuid",
+        "saved_at"
+      ],
+      "properties": {
+        "score": {
+          "type": "integer"
+        },
+        "grouping_score": {
+          "type": "integer"
+        },
+        "distance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "target_type_id": {
+          "type": "integer"
+        },
+        "shooter_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "device_id": {
+          "type": "integer"
+        },
+        "single_handed": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        },
+        "shot_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "duration_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10000
+        },
+        "paper_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "shots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "../common/session_shot.schema.json"
+          }
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/staged_paper_image.schema.json"
+          }
+        },
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "saved_at": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

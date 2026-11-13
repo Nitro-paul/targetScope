@@ -4,7 +4,47 @@
   "title": "CurrentShot",
   "description": "doc/interfaces.md#currentshot",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#currentshot"
+  "required": [
+    "angle_turns",
+    "radius_mm",
+    "origin",
+    "paper_no"
+  ],
+  "properties": {
+    "angle_turns": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "radius_mm": {
+      "type": "number",
+      "minimum": 0
+    },
+    "origin": {
+      "enum": [
+        "camera",
+        "manual",
+        "photo"
+      ]
+    },
+    "confidence": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "hole_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
 }

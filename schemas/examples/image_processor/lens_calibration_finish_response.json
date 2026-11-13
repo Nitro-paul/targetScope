@@ -1,8 +1,11 @@
 {
   "type": "lens_calibration_finish_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "rms_px": 0.35,
+    "views": 12
+  }
 }

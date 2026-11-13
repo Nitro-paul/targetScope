@@ -4,7 +4,37 @@
   "title": "StatisticsGroup",
   "description": "doc/interfaces.md#statisticsgroup",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#statisticsgroup"
+  "required": [
+    "target_type_id",
+    "summary",
+    "trend",
+    "shots"
+  ],
+  "properties": {
+    "target_type_id": {
+      "type": "integer"
+    },
+    "group_key": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "summary": {
+      "$ref": "statistics_values.schema.json"
+    },
+    "trend": {
+      "type": "array",
+      "items": {
+        "$ref": "trend_entry.schema.json"
+      }
+    },
+    "shots": {
+      "type": "array",
+      "items": {
+        "$ref": "shot.schema.json"
+      }
+    }
+  },
+  "additionalProperties": false
 }

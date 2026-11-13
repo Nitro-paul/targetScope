@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/database_handler/read_target_types.schema.json",
   "title": "read_target_types",
-  "description": "request of database_handler; doc/interfaces.md#read_target_types",
+  "description": "doc/interfaces.md#read_target_types",
   "allOf": [
     {
       "$ref": "../common/request_envelope.schema.json"
@@ -19,9 +19,13 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#read_target_types"
+      "required": [],
+      "properties": {
+        "filter": {
+          "$ref": "../common/filter.schema.json"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

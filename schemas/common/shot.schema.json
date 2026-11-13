@@ -4,7 +4,20 @@
   "title": "Shot",
   "description": "doc/interfaces.md#shot",
   "type": "object",
-  "properties": {},
-  "additionalProperties": false,
-  "$comment": "TODO: fields from doc/interfaces.md#shot"
+  "required": [
+    "angle_turns",
+    "radius_mm"
+  ],
+  "properties": {
+    "angle_turns": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "radius_mm": {
+      "type": "number",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
 }

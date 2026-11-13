@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/lens_calibration_status_response.schema.json",
   "title": "lens_calibration_status_response",
-  "description": "response of image_processor; doc/interfaces.md#lens_calibration_status",
+  "description": "doc/interfaces.md#lens-calibration",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,9 +26,49 @@
   "$defs": {
     "payload": {
       "type": "object",
-      "properties": {},
-      "additionalProperties": false,
-      "$comment": "TODO: fields from doc/interfaces.md#lens_calibration_status"
+      "required": [
+        "calibrated",
+        "applied"
+      ],
+      "properties": {
+        "camera_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "calibrated": {
+          "type": "boolean"
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "rms_px": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "width_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "height_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "collecting_views": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

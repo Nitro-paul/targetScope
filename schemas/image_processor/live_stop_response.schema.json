@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://targetscope.invalid/schemas/image_processor/live_stop_response.schema.json",
   "title": "live_stop_response",
-  "description": "response of image_processor; doc/interfaces.md#live_stop",
+  "description": "doc/interfaces.md#live_stop",
   "allOf": [
     {
       "$ref": "../common/response_envelope.schema.json"
@@ -26,6 +26,7 @@
   "$defs": {
     "payload": {
       "type": "object",
+      "required": [],
       "properties": {},
       "additionalProperties": false
     }

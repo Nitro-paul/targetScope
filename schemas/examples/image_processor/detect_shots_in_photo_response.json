@@ -1,8 +1,18 @@
 {
   "type": "detect_shots_in_photo_response",
   "version": 1,
-  "request_id": "1b4e28ba-2fa1-11d2-883f-0016d3cca427",
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
   "status": "ok",
   "error": null,
-  "payload": {}
+  "payload": {
+    "shots": [
+      {
+        "angle_turns": 0.25,
+        "radius_mm": 12.5,
+        "confidence": 0.9
+      }
+    ],
+    "staged_file": "photo_6f1c2d3e-0000-4000-8000-000000000001.jpg",
+    "warnings": []
+  }
 }
