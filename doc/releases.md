@@ -2,6 +2,16 @@
 
 How a TargetScope release is numbered, built, installed and run. The tools are on the branch `releases` (folder `release/` and the file `VERSION`); the build dependencies are those of [development.md](development.md).
 
+## The branch `releases`
+Every part of TargetScope is developed on its own branch. The branch `releases` contains the merged state of all of them, plus the release tools and `Cargo.lock`, so a release always builds with the same dependency versions. Before a release, the current state of all branches is merged into it:
+```
+git checkout releases
+git merge workspace documentation schemas common_rust common_cpp testkit launcher database_handler \
+          camera_reader image_processor session_manager analyzer statistics exporter importer web_server system_tests
+release/build.sh ...
+```
+A fix found while building a release is made on the branch of its part and merged again, never only on `releases`.
+
 ## Version numbers
 Every release has the number `<release>.<majorfix>.<minorfix>`, e.g. `1.2.3`:
 
