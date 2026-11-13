@@ -1,10 +1,10 @@
 // doc/programs/web_server.md#rest-api
 
 use axum::body::Bytes;
+use axum::extract::DefaultBodyLimit;
 use axum::extract::{Multipart, Path, State};
 use axum::http::HeaderMap;
 use axum::routing::{get, put};
-use axum::extract::DefaultBodyLimit;
 use axum::Router;
 use targetscope_common::messages::database_handler::{DeleteDevice, DeleteDeviceImage, ReadDevices, SaveDevice, SetDeviceImage};
 use targetscope_common::model::Device;

@@ -11,10 +11,7 @@ use crate::errors::ApiError;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new()
-        .route("/images/{sub}/{file}", get(image))
-        .route("/staging/{file}", get(staged))
-        .route("/exports/{file}", get(export))
+    Router::new().route("/images/{sub}/{file}", get(image)).route("/staging/{file}", get(staged)).route("/exports/{file}", get(export))
 }
 
 pub fn is_plain_file_name(name: &str) -> bool {
@@ -70,10 +67,7 @@ async fn image(State(st): State<AppState>, Path((sub, file)): Path<(String, Stri
 // doc/programs/web_server.md#files-and-streams
 pub fn staged_visible(name: &str) -> bool {
     let image = name.ends_with(".jpg") || name.ends_with(".png");
-    (name.starts_with("upload_") && image)
-        || name.starts_with("raw_")
-        || name.starts_with("paper_")
-        || name.starts_with("photo_")
+    (name.starts_with("upload_") && image) || name.starts_with("raw_") || name.starts_with("paper_") || name.starts_with("photo_")
 }
 
 async fn staged(State(st): State<AppState>, Path(file): Path<String>) -> Result<Response, ApiError> {

@@ -74,9 +74,7 @@ pub async fn run() -> ExitCode {
             static_dir: static_dir(),
         }),
     };
-    let address: SocketAddr = settings
-        .get_parsed("web_bind_address")
-        .unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 8080)));
+    let address: SocketAddr = settings.get_parsed("web_bind_address").unwrap_or_else(|| SocketAddr::from(([0, 0, 0, 0], 8080)));
     let listener = match tokio::net::TcpListener::bind(address).await {
         Ok(l) => l,
         Err(e) => {
@@ -104,7 +102,11 @@ struct NoRequests;
 
 #[async_trait::async_trait]
 impl targetscope_common::bus::RequestHandler<serde_json::Value> for NoRequests {
-    async fn handle(&self, _id: uuid::Uuid, _req: serde_json::Value) -> Result<serde_json::Value, targetscope_common::messages::ServiceError> {
+    async fn handle(
+        &self,
+        _id: uuid::Uuid,
+        _req: serde_json::Value,
+    ) -> Result<serde_json::Value, targetscope_common::messages::ServiceError> {
         Err(targetscope_common::messages::ServiceError::new(
             targetscope_common::messages::ErrorCode::InvalidMessage,
             "web_server only answers ping",

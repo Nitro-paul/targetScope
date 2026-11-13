@@ -42,9 +42,8 @@ pub struct Feeds {
 
 impl Feeds {
     pub fn new() -> Self {
-        let feed = |kind| {
-            Arc::new(Feed { kind, jpeg: watch::channel(None).0, viewers: AtomicUsize::new(0), running: AtomicBool::new(false) })
-        };
+        let feed =
+            |kind| Arc::new(Feed { kind, jpeg: watch::channel(None).0, viewers: AtomicUsize::new(0), running: AtomicBool::new(false) });
         Feeds { live: feed(Kind::Live), raw: feed(Kind::Raw) }
     }
 }
@@ -96,10 +95,7 @@ fn stream(feed: Arc<Feed>, settings: SettingsCache) -> Response {
             }
         }
     });
-    (
-        [(header::CONTENT_TYPE, "multipart/x-mixed-replace; boundary=frame"), (header::CACHE_CONTROL, "no-cache")],
-        Body::from_stream(body),
-    )
+    ([(header::CONTENT_TYPE, "multipart/x-mixed-replace; boundary=frame"), (header::CACHE_CONTROL, "no-cache")], Body::from_stream(body))
         .into_response()
 }
 
