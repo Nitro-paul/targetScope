@@ -9,20 +9,16 @@ use targetscope_common::bus::{Bus, BusError};
 use targetscope_common::clock::{unix_ms, unix_s, Clock};
 use targetscope_common::idempotency::RedisIdempotencyStore;
 use targetscope_common::messages::analyzer::AnalyzeShots;
-use targetscope_common::messages::database_handler::{
-    ChangeAction, DataChanged, ReadDevices, ReadShooters, ReadTargetTypes, Table,
-};
+use targetscope_common::messages::database_handler::{ChangeAction, DataChanged, ReadDevices, ReadShooters, ReadTargetTypes, Table};
 use targetscope_common::messages::image_processor::{
-    CaptureTargetImage, DetectShotsInPhoto, ImageProcessorEvent, LiveCalibrate, LiveNewPaper, LiveSetCounting, LiveStart,
-    LiveStop, LiveUncountHole, PaperReplaced, ShotDetected,
+    CaptureTargetImage, DetectShotsInPhoto, ImageProcessorEvent, LiveCalibrate, LiveNewPaper, LiveSetCounting, LiveStart, LiveStop,
+    LiveUncountHole, PaperReplaced, ShotDetected,
 };
 use targetscope_common::messages::session_manager::{
     SessionManagerEvent, SessionManagerRequest as R, SessionResponse, SessionSaveResponse, SessionSaved,
 };
 use targetscope_common::messages::ServiceError;
-use targetscope_common::model::{
-    AnalysisResult, CalibrationState, CurrentShot, Device, Filter, InputMode, SessionState, Shot, TargetType,
-};
+use targetscope_common::model::{AnalysisResult, CalibrationState, CurrentShot, Device, Filter, InputMode, SessionState, Shot, TargetType};
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
 
@@ -32,7 +28,7 @@ use crate::saving;
 use crate::state::StoredSession;
 use crate::transitions::{changes_state, is_allowed};
 
-// doc/interfaces.md#session_set_notes
+// doc/interfaces.md#session_manager
 pub const MAX_NOTES: usize = 10_000;
 // doc/programs/session_manager.md#persistence-and-recovery
 pub const ANALYSIS_RETRY: Duration = Duration::from_secs(5);
@@ -458,14 +454,7 @@ impl SessionActor {
     }
 
     pub async fn read_target(&self, id: i64) -> Result<Option<TargetType>, ServiceError> {
-        Ok(self
-            .bus
-            .request(ReadTargetTypes { filter: Filter::eq("id", id) })
-            .await
-            .map_err(err)?
-            .target_types
-            .into_iter()
-            .next())
+        Ok(self.bus.request(ReadTargetTypes { filter: Filter::eq("id", id) }).await.map_err(err)?.target_types.into_iter().next())
     }
 
     async fn read_shooter(&self, id: i64) -> Result<Option<targetscope_common::model::Shooter>, ServiceError> {
