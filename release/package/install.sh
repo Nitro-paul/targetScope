@@ -49,7 +49,16 @@ else
     fi
 fi
 
-command -v redis-server >/dev/null || echo "warning: redis-server isn't in the PATH; install Redis or Valkey (doc/development.md)" >&2
+# doc/programs/launcher.md#redis
+redis_found=""
+for dir in $(echo "$PATH" | tr ':' ' ') "${TARGETSCOPE_DEPS:-/nonexistent}/bin" "$home/.local/opt/targetscope-deps/bin"; do
+    [ -x "$dir/redis-server" ] && { redis_found="$dir/redis-server"; break; }
+done
+if [ -n "$redis_found" ]; then
+    echo "redis-server: $redis_found"
+else
+    echo "warning: redis-server not found (PATH, \$TARGETSCOPE_DEPS/bin, ~/.local/opt/targetscope-deps/bin); install Redis or Valkey (doc/development.md)" >&2
+fi
 case ":$PATH:" in
     *":$prefix/bin:"*) ;;
     *) echo "note: $prefix/bin isn't in the PATH" >&2 ;;
