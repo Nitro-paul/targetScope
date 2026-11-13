@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/session_filter.schema.json",
+  "title": "SessionFilter",
+  "description": "doc/interfaces.md#sessionfilter",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "session_ids": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "shooter_ids": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "device_ids": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "device_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "calibers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_type_ids": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "distance_m": {
+      "$ref": "int_range.schema.json"
+    },
+    "saved_at": {
+      "$ref": "time_range.schema.json"
+    },
+    "single_handed": {
+      "type": "boolean"
+    },
+    "supported": {
+      "type": "boolean"
+    },
+    "shot_count": {
+      "$ref": "int_range.schema.json"
+    },
+    "include_retired": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

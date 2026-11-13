@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/error.schema.json",
+  "title": "ErrorBody",
+  "description": "doc/interfaces.md#response-envelope",
+  "type": "object",
+  "required": [
+    "code",
+    "message"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "$ref": "error_code.schema.json"
+    },
+    "message": {
+      "type": "string"
+    },
+    "details": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "type": "calibration_changed",
+  "version": 1,
+  "event_id": "9f0c1c9e-6a43-4d3a-9a51-0c3f7d1f2b11",
+  "source": "image_processor",
+  "timestamp_ms": 1794393600123,
+  "payload": {
+    "state": "calibrated",
+    "method": "auto",
+    "target_type_id": 1,
+    "corners": {
+      "top_left": {
+        "x": 410.5,
+        "y": 95.5
+      },
+      "top_right": {
+        "x": 1490.5,
+        "y": 120.5
+      },
+      "bottom_right": {
+        "x": 1460.5,
+        "y": 1010.5
+      },
+      "bottom_left": {
+        "x": 430.5,
+        "y": 985.5
+      }
+    },
+    "px_per_mm": 6.5,
+    "message": null,
+    "updated_ms": 1794393600123
+  }
+}

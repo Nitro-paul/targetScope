@@ -1,0 +1,27 @@
+[package]
+name = "database_handler"
+description = "TargetScope database handler"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[features]
+failpoints = ["targetscope_common/failpoints", "fail/failpoints"]
+
+[dependencies]
+targetscope_common.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+rusqlite.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+fail.workspace = true
+
+[dev-dependencies]
+redis.workspace = true
+tempfile.workspace = true
+targetscope_testkit.workspace = true
+tokio.workspace = true

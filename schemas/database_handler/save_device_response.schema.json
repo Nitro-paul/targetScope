@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/save_device_response.schema.json",
+  "title": "save_device_response",
+  "description": "doc/interfaces.md#save_device",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "save_device_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

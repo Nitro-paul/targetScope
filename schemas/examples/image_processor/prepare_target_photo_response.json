@@ -1,0 +1,18 @@
+{
+  "type": "prepare_target_photo_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "staged_file": "paper_6f1c2d3e-0000-4000-8000-000000000001.jpg",
+    "px_per_mm": 6.5,
+    "proposal": {
+      "center_x_mm": 85.5,
+      "center_y_mm": 85.5,
+      "inner_white_radius_mm": 2.5,
+      "black_radius_mm": 29.75,
+      "outer_radius_mm": null
+    }
+  }
+}

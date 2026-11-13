@@ -1,0 +1,34 @@
+{
+  "session_ids": [
+    7
+  ],
+  "shooter_ids": [
+    2
+  ],
+  "device_ids": [
+    3
+  ],
+  "device_categories": [
+    "air pistol"
+  ],
+  "calibers": [
+    ".177"
+  ],
+  "target_type_ids": [
+    1
+  ],
+  "distance_m": {
+    "min": 10,
+    "max": 25
+  },
+  "saved_at": {
+    "from": 1767225600,
+    "to": 1794403800
+  },
+  "single_handed": true,
+  "supported": false,
+  "shot_count": {
+    "min": 5
+  },
+  "include_retired": false
+}

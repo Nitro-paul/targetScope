@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/camera_reader/camera_status_response.schema.json",
+  "title": "camera_status_response",
+  "description": "doc/interfaces.md#camera_status",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "camera_status_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "state",
+        "camera_source",
+        "frames_published"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "connected",
+            "disconnected",
+            "disabled"
+          ]
+        },
+        "camera_source": {
+          "enum": [
+            "v4l2",
+            "rtsp",
+            "none"
+          ]
+        },
+        "device": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "camera_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "width_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "height_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "fps": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "frames_published": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

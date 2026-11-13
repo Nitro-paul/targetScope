@@ -1,0 +1,29 @@
+{
+  "type": "import_file_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "shooters": {
+      "created": 1,
+      "existing": 0
+    },
+    "target_types": {
+      "created": 1,
+      "existing": 0
+    },
+    "devices": {
+      "created": 1,
+      "existing": 0
+    },
+    "sessions": {
+      "created": 1,
+      "existing": 0
+    },
+    "images": {
+      "restored": 4
+    },
+    "warnings": []
+  }
+}

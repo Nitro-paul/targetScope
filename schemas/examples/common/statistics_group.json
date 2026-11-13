@@ -1,0 +1,47 @@
+{
+  "target_type_id": 1,
+  "group_key": {
+    "shooter_id": 2
+  },
+  "summary": {
+    "session_count": 2,
+    "shot_count": 15,
+    "score_avg": 70.5,
+    "score_min": 50,
+    "score_max": 90,
+    "score_per_shot_avg": 9.25,
+    "grouping_score_per_shot_avg": 10.25,
+    "extreme_spread_mm_avg": 15.5,
+    "mean_radius_mm_avg": 4.5,
+    "mean_point_avg": {
+      "x_mm": 1.25,
+      "y_mm": -0.5
+    }
+  },
+  "trend": [
+    {
+      "period_start": 1767225600,
+      "values": {
+        "session_count": 2,
+        "shot_count": 15,
+        "score_avg": 70.5,
+        "score_min": 50,
+        "score_max": 90,
+        "score_per_shot_avg": 9.25,
+        "grouping_score_per_shot_avg": 10.25,
+        "extreme_spread_mm_avg": 15.5,
+        "mean_radius_mm_avg": 4.5,
+        "mean_point_avg": {
+          "x_mm": 1.25,
+          "y_mm": -0.5
+        }
+      }
+    }
+  ],
+  "shots": [
+    {
+      "angle_turns": 0.25,
+      "radius_mm": 12.5
+    }
+  ]
+}

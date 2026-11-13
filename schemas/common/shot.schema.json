@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/shot.schema.json",
+  "title": "Shot",
+  "description": "doc/interfaces.md#shot",
+  "type": "object",
+  "required": [
+    "angle_turns",
+    "radius_mm"
+  ],
+  "properties": {
+    "angle_turns": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "radius_mm": {
+      "type": "number",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

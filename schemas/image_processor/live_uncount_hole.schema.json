@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/live_uncount_hole.schema.json",
+  "title": "live_uncount_hole",
+  "description": "doc/interfaces.md#live_uncount_hole",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "live_uncount_hole"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "hole_id"
+      ],
+      "properties": {
+        "hole_id": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

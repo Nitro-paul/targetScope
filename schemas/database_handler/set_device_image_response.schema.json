@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/set_device_image_response.schema.json",
+  "title": "set_device_image_response",
+  "description": "doc/interfaces.md#set_device_image",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "set_device_image_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "image_path"
+      ],
+      "properties": {
+        "image_path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

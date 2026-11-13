@@ -1,0 +1,13 @@
+{
+  "type": "ping_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "program": "analyzer",
+    "program_version": "0.1.0",
+    "language": "rust",
+    "started_at": 1794393600
+  }
+}

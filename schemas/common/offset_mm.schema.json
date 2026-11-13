@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/offset_mm.schema.json",
+  "title": "OffsetMm",
+  "description": "doc/interfaces.md#analysisresult",
+  "type": "object",
+  "required": [
+    "x_mm",
+    "y_mm"
+  ],
+  "properties": {
+    "x_mm": {
+      "type": "number"
+    },
+    "y_mm": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/statistics_values.schema.json",
+  "title": "StatisticsValues",
+  "description": "doc/interfaces.md#statisticsvalues",
+  "type": "object",
+  "required": [
+    "session_count",
+    "shot_count",
+    "score_avg",
+    "score_min",
+    "score_max",
+    "score_per_shot_avg",
+    "grouping_score_per_shot_avg",
+    "extreme_spread_mm_avg",
+    "mean_radius_mm_avg",
+    "mean_point_avg"
+  ],
+  "properties": {
+    "session_count": {
+      "type": "integer"
+    },
+    "shot_count": {
+      "type": "integer"
+    },
+    "score_avg": {
+      "type": "number"
+    },
+    "score_min": {
+      "type": "integer"
+    },
+    "score_max": {
+      "type": "integer"
+    },
+    "score_per_shot_avg": {
+      "type": "number"
+    },
+    "grouping_score_per_shot_avg": {
+      "type": "number"
+    },
+    "extreme_spread_mm_avg": {
+      "type": "number"
+    },
+    "mean_radius_mm_avg": {
+      "type": "number"
+    },
+    "mean_point_avg": {
+      "$ref": "offset_mm.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

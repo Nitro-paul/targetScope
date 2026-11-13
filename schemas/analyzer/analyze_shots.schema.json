@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/analyzer/analyze_shots.schema.json",
+  "title": "analyze_shots",
+  "description": "doc/interfaces.md#analyze_shots",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "analyze_shots"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "shots",
+        "target_type",
+        "bullet_diameter_mm"
+      ],
+      "properties": {
+        "shots": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/shot.schema.json"
+          }
+        },
+        "target_type": {
+          "$ref": "../common/target_type.schema.json"
+        },
+        "bullet_diameter_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

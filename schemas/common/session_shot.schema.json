@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/session_shot.schema.json",
+  "title": "SessionShot",
+  "description": "doc/interfaces.md#sessionshot",
+  "type": "object",
+  "required": [
+    "angle_turns",
+    "radius_mm",
+    "paper_no"
+  ],
+  "properties": {
+    "angle_turns": {
+      "type": "number",
+      "minimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "radius_mm": {
+      "type": "number",
+      "minimum": 0
+    },
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "additionalProperties": false
+}

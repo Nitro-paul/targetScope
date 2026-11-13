@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/paper_replaced.schema.json",
+  "title": "paper_replaced",
+  "description": "doc/interfaces.md#paper_replaced",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "paper_replaced"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "image_processor"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "live_paper"
+      ],
+      "properties": {
+        "live_paper": {
+          "type": "integer"
+        },
+        "previous_paper_staged_file": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

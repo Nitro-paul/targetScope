@@ -1,0 +1,15 @@
+{
+  "type": "shot_detected",
+  "version": 1,
+  "event_id": "9f0c1c9e-6a43-4d3a-9a51-0c3f7d1f2b11",
+  "source": "image_processor",
+  "timestamp_ms": 1794393600123,
+  "payload": {
+    "hole_id": 3,
+    "live_paper": 1,
+    "angle_turns": 0.25,
+    "radius_mm": 12.5,
+    "confidence": 0.9,
+    "frame_seq": 4242
+  }
+}

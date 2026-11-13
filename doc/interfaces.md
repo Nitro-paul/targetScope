@@ -82,6 +82,8 @@ Naming conventions for all fields:
 
 Optional fields may be missing or `null`; both mean "not set".
 
+Messages must match their schema exactly: a field the schema doesn't define, or a value outside the range the schema allows (e.g. `angle_turns` 1.0, `paper_no` 0, an empty `name`), makes the message invalid. A request like that is answered with `validation_failed`; a listener skips such an event.
+
 ### Request envelope
 ```json
 {
@@ -125,6 +127,7 @@ Optional fields may be missing or `null`; both mean "not set".
   "payload": { }
 }
 ```
+- `version`: as in the request envelope; listeners skip events with another version
 - `event_id`: UUID v4; listeners use it to ignore an event they already processed
 - `source`: name of the program that sent the event
 - `timestamp_ms`: Unix time in milliseconds when the event happened
@@ -450,6 +453,8 @@ Payload: all Session fields except `id`, `uuid`, `saved_at` and `images`, plus:
 Validation: at least one shot; `shot_count` must equal the length of `shots`; every `paper_no` (of shots and images) is within `1 ..= paper_count`, at most one image per paper; `notes` at most 10 000 characters; `device_id`, `target_type_id` and (if given) `shooter_id` must reference existing records; every Shot must be within its ranges; `distance_m` and `duration_s` are `>= 0` if given.
 
 Response `create_session_response`: `{ "id": <new session id>, "uuid": <uuid>, "images": [ { "paper_no", "image_path" }, ... ] }`
+
+Error `not_found` with `details: { "staged_file": <name> }` if a staged image doesn't exist (also for `set_device_image`, `import_device` and `import_session`).
 
 #### read_sessions
 Returns all sessions that match a filter, each with its shots.
@@ -811,6 +816,8 @@ Every successful response has the payload `{ "session": CurrentSession }`, the s
 | `session_stop` | `{}` | running, paused | → review; camera: the last paper's image is taken, live mode ends |
 | `session_save` | `{}` | review, recovered | saved as record, → idle; response also has `"session_id"` and `"warnings"` (e.g. saved without target image) |
 | `session_cancel` | `{}` | setup, running, paused, review, recovered | discarded, → idle |
+
+In `session_update_setup`, a field that is present sets the value, also to `null` (e.g. `"shooter_id": null` removes the shooter); a missing field keeps its value.
 
 `index` counts from 0 in the `shots` list. A request that's allowed in the state but whose guard fails answers `validation_failed` if a value is missing or invalid (e.g. `session_start` without device, `session_save` without shots) and `unavailable` if a resource isn't ready (e.g. `session_start` in input mode `camera` before calibration). `session_update_setup` rejects retired shooters, devices and target types (`validation_failed`). Shot changes are only possible before saving. A saved session can't be changed.
 

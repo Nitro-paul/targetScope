@@ -1,0 +1,72 @@
+# doc/software_description.md#code-organization
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/targetscope_common",
+    "crates/targetscope_testkit",
+    "programs/launcher",
+    "programs/database_handler",
+    "programs/session_manager",
+    "programs/analyzer",
+    "programs/statistics",
+    "programs/exporter",
+    "programs/importer",
+    "programs/web_server",
+    "tests/system",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace.dependencies]
+targetscope_common = { path = "crates/targetscope_common" }
+targetscope_testkit = { path = "crates/targetscope_testkit" }
+
+# doc/shared_libraries.md#dependencies
+serde = { version = "1", features = ["derive"] }
+# doc/shared_libraries.md#messages
+serde_json = { version = "1", features = ["float_roundtrip"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+redis = { version = "1.8", features = ["tokio-comp", "streams", "connection-manager"] }
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+iceoryx2 = "0.10"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+fail = "0.5"
+jsonschema = { version = "0.61", default-features = false }
+
+# doc/programs/*.md#technology
+rusqlite = { version = "0.42", features = ["bundled"] }
+axum = { version = "0.8", features = ["ws", "multipart"] }
+tower-http = { version = "0.7", features = ["fs", "compression-full", "trace"] }
+turbojpeg = { version = "1.5", features = ["pkg-config"] }
+fast_image_resize = "6"
+csv = "1"
+tiny-skia = "0.12"
+ab_glyph = "0.2"
+time = { version = "0.3", features = ["formatting", "local-offset", "macros"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
+toml = "1"
+nix = { version = "0.31", features = ["signal", "process"] }
+fs4 = "1"
+argon2 = "0.6"
+rand = "0.10"
+hostname = "0.4"
+futures = "0.3"
+libc = "0.2"
+http-body-util = "0.1"
+
+# doc/testing/overview.md#test-environment
+tempfile = "3"
+proptest = "1.12"
+reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "cookies"] }
+tokio-tungstenite = "0.30"
+
+[profile.release]
+debug = 1

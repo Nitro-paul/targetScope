@@ -1,0 +1,23 @@
+{
+  "type": "read_devices",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "reply_to": "web_server:responses",
+  "payload": {
+    "filter": {
+      "conditions": [
+        {
+          "field": "name",
+          "op": "like",
+          "value": "Al%"
+        }
+      ],
+      "order_by": {
+        "field": "name",
+        "direction": "asc"
+      },
+      "limit": 50,
+      "offset": 0
+    }
+  }
+}

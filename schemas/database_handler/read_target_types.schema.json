@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/read_target_types.schema.json",
+  "title": "read_target_types",
+  "description": "doc/interfaces.md#read_target_types",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "read_target_types"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "filter": {
+          "$ref": "../common/filter.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

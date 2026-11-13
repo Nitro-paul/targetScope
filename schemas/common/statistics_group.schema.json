@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/statistics_group.schema.json",
+  "title": "StatisticsGroup",
+  "description": "doc/interfaces.md#statisticsgroup",
+  "type": "object",
+  "required": [
+    "target_type_id",
+    "summary",
+    "trend",
+    "shots"
+  ],
+  "properties": {
+    "target_type_id": {
+      "type": "integer"
+    },
+    "group_key": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "summary": {
+      "$ref": "statistics_values.schema.json"
+    },
+    "trend": {
+      "type": "array",
+      "items": {
+        "$ref": "trend_entry.schema.json"
+      }
+    },
+    "shots": {
+      "type": "array",
+      "items": {
+        "$ref": "shot.schema.json"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+{
+  "expected_error": "radius_mm: -1.5 is below 0",
+  "message": {
+    "type": "session_add_shot",
+    "version": 1,
+    "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+    "reply_to": "web_server:responses",
+    "payload": {
+      "angle_turns": 0.25,
+      "radius_mm": -1.5,
+      "paper_no": 1
+    }
+  }
+}

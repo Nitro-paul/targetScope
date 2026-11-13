@@ -1,0 +1,19 @@
+[package]
+name = "system_tests"
+description = "End-to-end tests of all programs started by the launcher (doc/testing/system.md)"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+# Needs the built programs, redis-server, v4l2loopback, ffmpeg and mediamtx:
+#   cargo test -p system_tests -- --include-ignored
+
+[dependencies]
+targetscope_testkit.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+tempfile.workspace = true
+reqwest.workspace = true
+tokio-tungstenite.workspace = true

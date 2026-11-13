@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/staged_paper_image.schema.json",
+  "title": "StagedPaperImage",
+  "description": "doc/interfaces.md#create_session",
+  "type": "object",
+  "required": [
+    "paper_no",
+    "staged_file"
+  ],
+  "properties": {
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "staged_file": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

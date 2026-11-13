@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/calibration_status.schema.json",
+  "title": "CalibrationStatus",
+  "description": "doc/interfaces.md#calibrationstatus",
+  "type": "object",
+  "required": [
+    "state",
+    "updated_ms"
+  ],
+  "properties": {
+    "state": {
+      "enum": [
+        "not_calibrated",
+        "calibrated",
+        "lost"
+      ]
+    },
+    "method": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "enum": [
+            "auto",
+            "manual"
+          ]
+        }
+      ]
+    },
+    "target_type_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "corners": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "corners.schema.json"
+        }
+      ]
+    },
+    "px_per_mm": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "message": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updated_ms": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}

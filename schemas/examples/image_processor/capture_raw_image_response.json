@@ -1,0 +1,11 @@
+{
+  "type": "capture_raw_image_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "staged_file": "raw_6f1c2d3e-0000-4000-8000-000000000001.jpg",
+    "lens_corrected": false
+  }
+}

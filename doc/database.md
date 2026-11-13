@@ -357,30 +357,30 @@ A future migration that has to restructure `sessions`, `shots` or `session_image
 ## Known settings
 The database handler inserts these settings with their default value and default `active` state on first start (`INSERT ... ON CONFLICT(name) DO NOTHING`), so user changes are kept. Known settings can be changed and reset (`reset_settings`), but not deleted. `save_setting` rejects values that don't match the column *Values* (`validation_failed`), so no program ever reads an unusable value. Paths may start with `~`, which is replaced by the user's home folder; `<data_dir>` is the data folder from the launcher configuration (`TARGETSCOPE_DATA_DIR`).
 
-| name | Default | Optional (default `active`) | Values | Used by | Meaning |
-|---|---|---|---|---|---|
-| `image_dir` | `<data_dir>/images` | no | folder | database_handler, web_server, exporter | Image folder; changed with `change_image_dir` |
-| `staging_dir` | `<data_dir>/staging` | no | folder, same file system as `image_dir` | all programs that pass files | [Staging folder](interfaces.md#staging-folder) |
-| `export_dir` | `~/TargetScope/exports` | yes (`false`) | folder | exporter, web_server | Export folder; must be set before the first export |
-| `processed_requests_retention_days` | `30` | no | integer 1..=3650 | database_handler | Retention of `processed_requests` |
-| `staging_max_age_hours` | `24` | no | integer 1..=8760 | database_handler | Files older than this are deleted from the staging folder |
-| `camera_source` | `v4l2` | no | one of `v4l2`, `rtsp`, `none` | camera_reader | Kind of camera |
-| `camera_device` | empty | no | text | camera_reader | USB camera, identified by its `bus_info` (from `camera_list_devices`), so it's found again when its device number `/dev/videoN` changes; empty = the first camera found |
-| `camera_rtsp_url` | empty | yes (`false`) | URL starting with `rtsp://` | camera_reader | RTSP URL of a network camera; must be set for `camera_source = rtsp` |
-| `camera_width_px` | `1920` | no | integer 160..=7680 | camera_reader | Requested frame width |
-| `camera_height_px` | `1080` | no | integer 120..=4320 | camera_reader | Requested frame height |
-| `camera_fps` | `30` | no | integer 1..=120 | camera_reader | Requested frame rate |
-| `camera_controls` | `{}` | no | JSON object | camera_reader | Stored control values per camera: `{ "<camera_key>": { "<control id>": value } }`; written by camera_reader itself; after a reset to `{}`, camera_reader sets every control to the camera's own default |
-| `lens_calibrations` | `{}` | no | JSON object | image_processor | Lens calibration per camera: `{ "<camera_key>": { "width_px", "height_px", "camera_matrix": [9 floats], "dist_coeffs": [5 floats], "rms_px" } }`; written by image_processor itself; not reset by "restore all defaults" |
-| `live_long_side_px` | `1200` | no | integer 400..=4000 | image_processor | Long side of the transformed live image |
-| `capture_long_side_px` | `2400` | no | integer 400..=8000 | image_processor | Long side of stored target images |
-| `detection_confirm_frames` | `5` | no | integer 1..=60 | image_processor | Frames a new hole must be visible before it counts as a hole |
-| `live_feed_fps` | `15` | no | integer 1..=60 | web_server | Maximum frame rate of the MJPEG feeds |
-| `live_feed_quality` | `80` | no | integer 1..=100 | web_server | JPEG quality of the MJPEG feeds |
-| `web_bind_address` | `0.0.0.0:8080` | no | `<IPv4 address>:<port>` | web_server | Address and port of the web UI; `0.0.0.0` makes it reachable in the LAN. Takes effect when `web_server` restarts |
-| `admin_password_hash` | empty | yes (`false`) | Argon2id hash (PHC string) | web_server | Admin password. Active: destructive actions in the web UI need the password ([web_server](programs/web_server.md#admin-password)). Inactive: everything is open. Never sent to the browser; only changed through the web server's password endpoints; not reset by "restore all defaults" |
+| name | Display name | Default | Optional (default `active`) | Values | Used by | Meaning |
+|---|---|---|---|---|---|---|
+| `image_dir` | Image folder | `<data_dir>/images` | no | folder | database_handler, web_server, exporter | Image folder; changed with `change_image_dir` |
+| `staging_dir` | Staging folder | `<data_dir>/staging` | no | folder, same file system as `image_dir` | all programs that pass files | [Staging folder](interfaces.md#staging-folder) |
+| `export_dir` | Export folder | `~/TargetScope/exports` | yes (`false`) | folder | exporter, web_server | Export folder; must be set before the first export |
+| `processed_requests_retention_days` | Keep processed requests (days) | `30` | no | integer 1..=3650 | database_handler | Retention of `processed_requests` |
+| `staging_max_age_hours` | Delete staged files after (hours) | `24` | no | integer 1..=8760 | database_handler | Files older than this are deleted from the staging folder |
+| `camera_source` | Camera source | `v4l2` | no | one of `v4l2`, `rtsp`, `none` | camera_reader | Kind of camera |
+| `camera_device` | USB camera | empty | no | text | camera_reader | USB camera, identified by its `bus_info` (from `camera_list_devices`), so it's found again when its device number `/dev/videoN` changes; empty = the first camera found |
+| `camera_rtsp_url` | Network camera URL | empty | yes (`false`) | URL starting with `rtsp://` | camera_reader | RTSP URL of a network camera; must be set for `camera_source = rtsp` |
+| `camera_width_px` | Frame width (px) | `1920` | no | integer 160..=7680 | camera_reader | Requested frame width |
+| `camera_height_px` | Frame height (px) | `1080` | no | integer 120..=4320 | camera_reader | Requested frame height |
+| `camera_fps` | Frame rate (fps) | `30` | no | integer 1..=120 | camera_reader | Requested frame rate |
+| `camera_controls` | Camera controls | `{}` | no | JSON object | camera_reader | Stored control values per camera: `{ "<camera_key>": { "<control id>": value } }`; written by camera_reader itself; after a reset to `{}`, camera_reader sets every control to the camera's own default |
+| `lens_calibrations` | Lens calibrations | `{}` | no | JSON object | image_processor | Lens calibration per camera: `{ "<camera_key>": { "width_px", "height_px", "camera_matrix": [9 floats], "dist_coeffs": [5 floats], "rms_px" } }`; written by image_processor itself; not reset by "restore all defaults" |
+| `live_long_side_px` | Live image size (px) | `1200` | no | integer 400..=4000 | image_processor | Long side of the transformed live image |
+| `capture_long_side_px` | Stored image size (px) | `2400` | no | integer 400..=8000 | image_processor | Long side of stored target images |
+| `detection_confirm_frames` | Frames to confirm a hole | `5` | no | integer 1..=60 | image_processor | Frames a new hole must be visible before it counts as a hole |
+| `live_feed_fps` | Live feed frame rate (fps) | `15` | no | integer 1..=60 | web_server | Maximum frame rate of the MJPEG feeds |
+| `live_feed_quality` | Live feed JPEG quality | `80` | no | integer 1..=100 | web_server | JPEG quality of the MJPEG feeds |
+| `web_bind_address` | Web UI address | `0.0.0.0:8080` | no | `<IPv4 address>:<port>` | web_server | Address and port of the web UI; `0.0.0.0` makes it reachable in the LAN. Takes effect when `web_server` restarts |
+| `admin_password_hash` | Admin password | empty | yes (`false`) | Argon2id hash (PHC string) | web_server | Admin password. Active: destructive actions in the web UI need the password ([web_server](programs/web_server.md#admin-password)). Inactive: everything is open. Never sent to the browser; only changed through the web server's password endpoints; not reset by "restore all defaults" |
 
-The *Values* text is also returned as `value_rule` with every setting, so the UI can show it.
+The *Values* text is also returned as `value_rule` with every setting, so the UI can show it. Settings created with `save_setting` that aren't in this table are not optional, have the value rule `text`, and the default value empty with `active` true.
 
 All other settings take effect immediately: the programs listen to `data_changed` for the settings table.
 

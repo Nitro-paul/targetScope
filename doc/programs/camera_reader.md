@@ -18,7 +18,7 @@ It doesn't analyze images; that is the image_processor's job.
 ## Technology
 | Purpose | Library |
 |---|---|
-| Reading frames | OpenCV 4 `cv::VideoCapture` (backend V4L2 for USB, FFmpeg for RTSP) |
+| Reading frames | OpenCV 4 or 5 `cv::VideoCapture` (backend V4L2 for USB, FFmpeg for RTSP) |
 | Camera controls, device and format lists | V4L2 `ioctl`s (`linux/videodev2.h`) |
 | Frame publishing | iceoryx2 C++ bindings |
 | Redis, messages, settings, logging | `targetscope_common_cpp` |

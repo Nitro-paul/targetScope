@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/importer/import_file.schema.json",
+  "title": "import_file",
+  "description": "doc/interfaces.md#import_file",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "import_file"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "staged_file"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "expected_error": "request_id: missing",
+  "message": {
+    "type": "ping",
+    "version": 1,
+    "reply_to": "web_server:responses",
+    "payload": {}
+  }
+}

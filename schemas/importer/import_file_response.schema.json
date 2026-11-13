@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/importer/import_file_response.schema.json",
+  "title": "import_file_response",
+  "description": "doc/interfaces.md#import_file",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "import_file_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "shooters",
+        "target_types",
+        "devices",
+        "sessions",
+        "images",
+        "warnings"
+      ],
+      "properties": {
+        "shooters": {
+          "type": "object",
+          "required": [
+            "created",
+            "existing"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "created": {
+              "type": "integer"
+            },
+            "existing": {
+              "type": "integer"
+            }
+          }
+        },
+        "target_types": {
+          "type": "object",
+          "required": [
+            "created",
+            "existing"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "created": {
+              "type": "integer"
+            },
+            "existing": {
+              "type": "integer"
+            }
+          }
+        },
+        "devices": {
+          "type": "object",
+          "required": [
+            "created",
+            "existing"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "created": {
+              "type": "integer"
+            },
+            "existing": {
+              "type": "integer"
+            }
+          }
+        },
+        "sessions": {
+          "type": "object",
+          "required": [
+            "created",
+            "existing"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "created": {
+              "type": "integer"
+            },
+            "existing": {
+              "type": "integer"
+            }
+          }
+        },
+        "images": {
+          "type": "object",
+          "required": [
+            "restored"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "restored": {
+              "type": "integer"
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

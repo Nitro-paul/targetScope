@@ -1,0 +1,12 @@
+{
+  "type": "live_new_paper_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "changed": true,
+    "live_paper": 2,
+    "previous_paper_staged_file": "target_6f1c2d3e-0000-4000-8000-000000000001.jpg"
+  }
+}

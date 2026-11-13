@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/live_new_paper.schema.json",
+  "title": "live_new_paper",
+  "description": "doc/interfaces.md#live_new_paper",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "live_new_paper"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "from_live_paper"
+      ],
+      "properties": {
+        "from_live_paper": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

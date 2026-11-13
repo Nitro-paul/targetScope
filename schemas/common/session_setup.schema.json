@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/session_setup.schema.json",
+  "title": "SessionSetup",
+  "description": "doc/interfaces.md#sessionsetup",
+  "type": "object",
+  "required": [
+    "input_mode",
+    "single_handed",
+    "supported"
+  ],
+  "properties": {
+    "input_mode": {
+      "enum": [
+        "camera",
+        "manual",
+        "photo"
+      ]
+    },
+    "shooter_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "device_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "distance_m": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "target_type_id": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "single_handed": {
+      "type": "boolean"
+    },
+    "supported": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

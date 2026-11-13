@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/setting.schema.json",
+  "title": "Setting",
+  "description": "doc/interfaces.md#setting",
+  "type": "object",
+  "required": [
+    "name",
+    "display_name",
+    "active",
+    "value"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "value": {
+      "type": "string"
+    },
+    "optional": {
+      "type": "boolean"
+    },
+    "default_value": {
+      "type": "string"
+    },
+    "default_active": {
+      "type": "boolean"
+    },
+    "value_rule": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

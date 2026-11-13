@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/statistics/compute_statistics_response.schema.json",
+  "title": "compute_statistics_response",
+  "description": "doc/interfaces.md#compute_statistics",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "compute_statistics_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "groups",
+        "session_count"
+      ],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "../common/statistics_group.schema.json"
+          }
+        },
+        "session_count": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

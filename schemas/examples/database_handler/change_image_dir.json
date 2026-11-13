@@ -1,0 +1,10 @@
+{
+  "type": "change_image_dir",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "reply_to": "web_server:responses",
+  "payload": {
+    "path": "/srv/images",
+    "move_images": true
+  }
+}

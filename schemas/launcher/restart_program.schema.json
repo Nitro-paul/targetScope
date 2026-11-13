@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/launcher/restart_program.schema.json",
+  "title": "restart_program",
+  "description": "doc/interfaces.md#restart_program",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "restart_program"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "program_status": {
+      "type": "object",
+      "required": [
+        "name",
+        "state",
+        "restarts",
+        "since_ms"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "starting",
+            "running",
+            "backoff",
+            "failed",
+            "stopped"
+          ]
+        },
+        "pid": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "restarts": {
+          "type": "integer"
+        },
+        "since_ms": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

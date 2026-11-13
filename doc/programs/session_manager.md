@@ -32,7 +32,7 @@ A session can use several target papers (e.g. air rifle: one shot per card; air 
 
   Live mode numbers its papers itself (`live_paper`, see [live_new_paper](../interfaces.md#live_new_paper)). session_manager maps them with an offset set at every `live_start` (`paper_no = live_paper + live_paper_offset`), and assigns every shot by the `live_paper` in its `shot_detected` event, not by the order in which events arrive. This way a shot that was detected on the old paper but arrives after the paper change still gets the old paper's number, and a paper change that was requested and detected at the same time counts once (`from_live_paper`).
 - **manual:** `session_new_paper` only increases `paper_no`.
-- **photo:** every `session_upload_photo` adds the photo's shots as a new paper, with the transformed photo as its image.
+- **photo:** every `session_upload_photo` adds the photo's shots as a new paper, with the transformed photo as its image. The first photo of a session is paper 1; every further photo gets `paper_no + 1`. Warnings of `detect_shots_in_photo` are kept and returned at saving.
 
 A paper without shots is allowed (e.g. a sighting card).
 
@@ -57,7 +57,7 @@ A paper without shots is allowed (e.g. a sighting card).
 
 | State | Meaning | Allowed requests |
 |---|---|---|
-| `idle` | No session | `session_get`, `session_setup` |
+| `idle` | No session; the snapshot has empty values and `input_mode` `manual` | `session_get`, `session_setup` |
 | `setup` | Choosing shooter, device, distance, target type; camera: live view and calibration | `session_update_setup`, `session_calibrate`, `session_start`, `session_upload_photo`, `session_cancel` |
 | `running` | Shots are collected and scored live; running time counts | `session_pause`, `session_stop`, `session_new_paper`, `session_add_shot`/`session_update_shot` (manual), `session_delete_shot`, `session_cancel` |
 | `paused` | New holes aren't counted; running time stops | `session_resume`, `session_stop`, `session_new_paper`, `session_delete_shot`, `session_calibrate`, `session_cancel` |
@@ -125,7 +125,7 @@ Score and grouping score are shown while shooting:
 8. On any other failure: stay in the current state and return the error. The user can retry or cancel.
 
 ## Persistence and recovery
-The whole `CurrentSession` plus internal fields (`save_request_id`, `running_since_ms`, cached device and target type, `shots_version`, `live_paper_offset`, last known `live_paper`, warnings for saving) is stored as JSON under the Redis key `session_manager:current`. Every change is written in one `MULTI`/`EXEC` together with the idempotency record of the request or event that caused it. Redis persists it with AOF (see [launcher.md](launcher.md#redis)).
+The whole `CurrentSession` plus internal fields (`save_request_id`, `running_since_ms`, `last_change_ms` (time of the last persisted change, for the running time after a crash), cached device and target type, `shots_version`, `live_paper_offset`, last known `live_paper`, `live_active` (live mode was started and not stopped), warnings for saving) is stored as JSON under the Redis key `session_manager:current`. Every change is written in one `MULTI`/`EXEC` together with the idempotency record of the request or event that caused it. Redis persists it with AOF (see [launcher.md](launcher.md#redis)).
 
 On startup:
 1. Read `session_manager:current`. If it's missing or `idle`: start in `idle`.
@@ -149,6 +149,7 @@ enum Input {
     ShotEvent   { id: Uuid, event: ImageProcessorEvent, ack: oneshot::Sender<()> },
     DataChanged { event: DataChanged },
     Analysis    { shots_version: u64, result: Result<AnalysisResult, BusError> },
+    RetryAnalysis,                     // 5 s after a failed analysis in state recovered
 }
 
 impl SessionActor {

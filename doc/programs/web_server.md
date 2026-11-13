@@ -21,6 +21,8 @@ Program `web_server` (Rust): serves the web UI in the local network. It translat
 
 Frontend: plain HTML, CSS and JavaScript (ES modules), no build step, no framework. Targets are drawn as SVG. All texts are in English.
 
+The frontend files are served from the folder `static` next to the `web_server` binary (installed into `bin_dir`); if there is none, from `programs/web_server/static` of the source tree. JSON request bodies are limited to 4 MB; uploads have their own limits (see [Uploads](#uploads)).
+
 ## Access
 Listens on the setting `web_bind_address` (default `0.0.0.0:8080`), so phones and tablets in the local network can be used at the range. The UI shows the URL to open on other devices (`http://<PC IP>:8080`).
 
@@ -151,10 +153,12 @@ The response body is always the error object `{ "code": "...", "message": "...",
 ```
 programs/web_server/static/
 ├── index.html          # shell with navigation
+├── calibration/checkerboard_9x6.pdf  # lens calibration board, 10 × 7 squares of 25 mm on A4
 ├── css/app.css
 └── js/
     ├── main.js         # router (hash-based), navigation
     ├── api.js          # fetch wrapper (JSON, Idempotency-Key, error handling)
+    ├── ui.js           # DOM helpers, dialogs, messages
     ├── events.js       # WebSocket with reconnect, event dispatch
     ├── target.js       # SVG target: paper, black area, rings; click → paper mm → polar
     ├── overlay.js      # draggable handles (corners, center, radii) over an image
@@ -169,6 +173,7 @@ programs/web_server/static/
         ├── statistics.js # statistics over many sessions (own page, see below)
         ├── data.js     # export (format, "include images" for CSV/JSON, list, download, delete) and import (.json/.zip)
         ├── settings.js # general settings, restore defaults, image folder popup
+        ├── settings_rules.js # client-side check of a value against its value_rule
         └── system.js   # program status, restart
 ```
 
@@ -216,7 +221,7 @@ Own page `#/statistics` in the navigation, separate from the session history.
 - Resolution and frame rate: choices from the formats of the selected camera.
 - Controls: built from `camera_list_controls`. Integer controls as sliders with min/max/step and a "default" button, booleans as switches, menus as drop-downs; inactive controls are greyed out. Every change is sent immediately (`camera_set_control`, rate-limited to 5 per second while dragging) and the raw image next to the controls shows the effect. Network cameras show "No controls available".
 - Changes of source, resolution and frame rate are saved as settings; the camera reopens.
-- **Lens calibration** (USB cameras): shows the status (calibrated, RMS error, applies to the current resolution). "Calibrate lens" offers the checkerboard to print (`/static/calibration/checkerboard_9x6.pdf`), then shows the raw feed with a "Capture view" button and the number of views found (at least 10; hint to cover the image corners and use different angles). "Finish" shows the RMS error with a rating. "Delete calibration" removes it. Not possible while live mode is active (a camera session in setup, running or paused).
+- **Lens calibration** (USB cameras): shows the status (calibrated, RMS error, applies to the current resolution). "Calibrate lens" offers the checkerboard to print (`/calibration/checkerboard_9x6.pdf`, from `static/calibration/`), then shows the raw feed with a "Capture view" button and the number of views found (at least 10; hint to cover the image corners and use different angles). "Finish" shows the RMS error with a rating. "Delete calibration" removes it. Not possible while live mode is active (a camera session in setup, running or paused).
 
 ### Coordinate conversion in the UI
 - SVG target: `viewBox` in paper millimeters (`0 0 paper_width_mm paper_height_mm`), so a click converts directly to paper mm, then to ring-center coordinates (`x = px - center_x_mm`, `y = center_y_mm - py`) and to polar with the formulas in [interfaces.md](../interfaces.md#shot).

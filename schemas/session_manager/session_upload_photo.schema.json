@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/session_manager/session_upload_photo.schema.json",
+  "title": "session_upload_photo",
+  "description": "doc/interfaces.md#session_manager",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "session_upload_photo"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "staged_file"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        },
+        "corners": {
+          "$ref": "../common/corners.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

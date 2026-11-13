@@ -16,14 +16,14 @@ What is tested: first start, migrations, default settings, ready signal ([databa
 | ID | Case | Steps / input | Expected outcome |
 |---|---|---|---|
 | DB-INI-01 | First start | Start with an empty data folder | Database file and parent folder created; `PRAGMA user_version` = number of migrations; 8 tables (`settings`, `shooters`, `devices`, `target_types`, `sessions`, `shots`, `session_images`, `processed_requests`), 6 indexes and 6 triggers as in [database.md](../database.md#schema-sql); image folder with `devices/` and `sessions/`; staging folder |
-| DB-INI-02 | Connection settings | Query the pragmas on the handler's connection (test hook) | `foreign_keys` 1, `journal_mode` `wal`, `busy_timeout` 5000 |
+| DB-INI-02 | Connection settings | Open the database with the handler's `Database::open` in the test process; query the pragmas on its connection | `foreign_keys` 1, `journal_mode` `wal`, `busy_timeout` 5000 |
 | DB-INI-03 | Default settings | `read_settings` with an empty filter after the first start | All 20 known settings with their default value and default `active`; `image_dir` = `<TARGETSCOPE_DATA_DIR>/images`, `staging_dir` = `<TARGETSCOPE_DATA_DIR>/staging`; `export_dir` and `camera_rtsp_url` inactive |
 | DB-INI-04 | User changes kept | Set `camera_fps` to 15; restart | `camera_fps` is still 15 |
 | DB-INI-05 | No target types | `read_target_types` after the first start | `[]` |
-| DB-INI-06 | Migration of an older database | Database at `user_version` 1; a test build with an extra migration 2 | Only migration 2 runs; `user_version` 2; data kept |
-| DB-INI-07 | Failing migration | Test migration 2 contains an SQL error | Its transaction is rolled back; `user_version` stays 1; the program exits with an error |
+| DB-INI-06 | Migration of an older database | Database at `user_version` 1 with data; `schema::migrate` in the test process with the real migrations plus a test migration 2 | Only migration 2 runs; `user_version` 2; data kept |
+| DB-INI-07 | Failing migration | As DB-INI-06, but test migration 2 creates a table and then contains an SQL error; then start the program on a database file it can't open (not a database) | Migration 2 is rolled back (no new table); `user_version` stays 1; `schema::migrate` returns the error; the program exits with an error code |
 | DB-INI-08 | Orphan files | A file in `sessions/` without a record; start | A warning with the file's path is logged; the file is still there |
-| DB-INI-09 | Ready only when started | Slow migration (test hook waits 3 s); send `ping` during it | No `ping_response` until startup is complete; then answered |
+| DB-INI-09 | Ready only when started | Slow migration (failpoint `db.migrate` waits 3 s); send `ping` during it | No `ping_response` until startup is complete; then answered |
 | DB-INI-10 | Reload event after start | Start; read `database_handler:events` | One `data_changed` with `table: "all"`, `action: "reload"` |
 
 ## Schema rules (unit, SQL)
@@ -224,7 +224,7 @@ What is tested: `change_image_dir` and `reset_settings` of `image_dir` ([databas
 | DB-DIR-06 | Second change while one runs | Start a slowed change; send another `change_image_dir` | `invalid_state` |
 | DB-DIR-07 | Other file system than the staging folder | New folder on the second mount | `validation_failed`; nothing changed |
 | DB-DIR-08 | Folder can't be written | New folder below a read-only folder | `validation_failed` |
-| DB-DIR-09 | Crash during the copy | Kill the handler during the copy; restart | Setting still the old folder; every image readable there; partial copies in the new folder do no harm |
+| DB-DIR-09 | Crash during the copy | Kill the handler during the copy; check; restart | After the kill: setting still the old folder, every image readable there. After the restart the unacknowledged `change_image_dir` runs again ([request processing](../programs/database_handler.md#request-processing)) and completes: setting the new folder, every image complete in it, none left in the old folder; the partial copies of the first run do no harm |
 | DB-DIR-10 | Reset with moving | `reset_settings` with `["image_dir"]`, `move_images` true | Like DB-DIR-02, to `<data_dir>/images` |
 
 ## Change events (integration)
@@ -254,7 +254,7 @@ What is tested: every write is done once, even if the request comes twice or the
 | DB-IDM-04 | Duplicate after the image moved | DB-IDM-01 for `create_session` with an image (the staged file is gone at the second request) | Second response identical, no error |
 
 ## Maintenance (integration)
-What is tested: hourly clean-up ([database_handler.md](../programs/database_handler.md#startup)). Uses `FakeClock`.
+What is tested: hourly clean-up ([database_handler.md](../programs/database_handler.md#startup)). The handler's DbWorker and maintenance loop run in the test process (library functions `spawn_db_worker`, `run_periodically`), so `FakeClock` can drive them.
 
 | ID | Case | Steps / input | Expected outcome |
 |---|---|---|---|

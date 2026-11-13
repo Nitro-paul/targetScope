@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/target_type.schema.json",
+  "title": "TargetType",
+  "description": "doc/interfaces.md#targettype",
+  "type": "object",
+  "required": [
+    "name",
+    "paper_width_mm",
+    "paper_height_mm",
+    "center_x_mm",
+    "center_y_mm",
+    "inner_white_radius_mm",
+    "inner_white_score",
+    "black_radius_mm",
+    "black_score",
+    "outer_radius_mm",
+    "outer_score"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "paper_width_mm": {
+      "type": "number"
+    },
+    "paper_height_mm": {
+      "type": "number"
+    },
+    "center_x_mm": {
+      "type": "number"
+    },
+    "center_y_mm": {
+      "type": "number"
+    },
+    "inner_white_radius_mm": {
+      "type": "number"
+    },
+    "inner_white_score": {
+      "type": "integer"
+    },
+    "black_radius_mm": {
+      "type": "number"
+    },
+    "black_score": {
+      "type": "integer"
+    },
+    "outer_radius_mm": {
+      "type": "number"
+    },
+    "outer_score": {
+      "type": "integer"
+    },
+    "rings": {
+      "type": "array",
+      "items": {
+        "$ref": "ring.schema.json"
+      }
+    },
+    "locked": {
+      "type": "boolean"
+    },
+    "retired": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

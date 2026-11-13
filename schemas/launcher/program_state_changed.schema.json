@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/launcher/program_state_changed.schema.json",
+  "title": "program_state_changed",
+  "description": "doc/interfaces.md#program_state_changed",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "program_state_changed"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "launcher"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "$ref": "#/$defs/program_status"
+    },
+    "program_status": {
+      "type": "object",
+      "required": [
+        "name",
+        "state",
+        "restarts",
+        "since_ms"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "starting",
+            "running",
+            "backoff",
+            "failed",
+            "stopped"
+          ]
+        },
+        "pid": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "restarts": {
+          "type": "integer"
+        },
+        "since_ms": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

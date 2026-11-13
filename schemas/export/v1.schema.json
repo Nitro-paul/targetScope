@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/export/v1.schema.json",
+  "title": "TargetScope export file, format version 1",
+  "description": "doc/programs/exporter.md#json",
+  "type": "object",
+  "required": [
+    "format",
+    "format_version",
+    "exported_at",
+    "shooters",
+    "target_types",
+    "devices",
+    "sessions"
+  ],
+  "properties": {
+    "format": {
+      "const": "targetscope-export"
+    },
+    "format_version": {
+      "const": 1
+    },
+    "exported_at": {
+      "type": "string"
+    },
+    "shooters": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/shooter"
+      }
+    },
+    "target_types": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/target_type"
+      }
+    },
+    "devices": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/device"
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/session"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "shooter": {
+      "type": "object",
+      "required": [
+        "uuid",
+        "name",
+        "retired"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retired": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "target_type": {
+      "type": "object",
+      "required": [
+        "uuid",
+        "name",
+        "paper_width_mm",
+        "paper_height_mm",
+        "center_x_mm",
+        "center_y_mm",
+        "inner_white_radius_mm",
+        "inner_white_score",
+        "black_radius_mm",
+        "black_score",
+        "outer_radius_mm",
+        "outer_score",
+        "retired"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paper_width_mm": {
+          "type": "number"
+        },
+        "paper_height_mm": {
+          "type": "number"
+        },
+        "center_x_mm": {
+          "type": "number"
+        },
+        "center_y_mm": {
+          "type": "number"
+        },
+        "inner_white_radius_mm": {
+          "type": "number"
+        },
+        "inner_white_score": {
+          "type": "integer"
+        },
+        "black_radius_mm": {
+          "type": "number"
+        },
+        "black_score": {
+          "type": "integer"
+        },
+        "outer_radius_mm": {
+          "type": "number"
+        },
+        "outer_score": {
+          "type": "integer"
+        },
+        "retired": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "device": {
+      "type": "object",
+      "required": [
+        "uuid",
+        "name",
+        "category",
+        "description",
+        "caliber",
+        "bullet_diameter_mm",
+        "shot_count",
+        "retired"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caliber": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "bullet_diameter_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "shot_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "retired": {
+          "type": "boolean"
+        },
+        "image_entry": {
+          "type": "string",
+          "pattern": "^images/devices/[0-9a-fA-F-]{36}\\.(jpg|png)$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "shot": {
+      "type": "object",
+      "required": [
+        "angle_turns",
+        "radius_mm",
+        "paper_no"
+      ],
+      "properties": {
+        "angle_turns": {
+          "type": "number",
+          "minimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "radius_mm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "paper_no": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "image": {
+      "type": "object",
+      "required": [
+        "paper_no",
+        "image_entry"
+      ],
+      "properties": {
+        "paper_no": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "image_entry": {
+          "type": "string",
+          "pattern": "^images/sessions/[0-9a-fA-F-]{36}_[1-9][0-9]*\\.(jpg|png)$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "session": {
+      "type": "object",
+      "required": [
+        "uuid",
+        "saved_at",
+        "score",
+        "grouping_score",
+        "distance_m",
+        "shooter_uuid",
+        "device_uuid",
+        "target_type_uuid",
+        "single_handed",
+        "supported",
+        "shot_count",
+        "duration_s",
+        "notes",
+        "paper_count",
+        "shots",
+        "shot_scores"
+      ],
+      "properties": {
+        "uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "saved_at": {
+          "type": "integer"
+        },
+        "score": {
+          "type": "integer"
+        },
+        "grouping_score": {
+          "type": "integer"
+        },
+        "distance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "shooter_uuid": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            }
+          ]
+        },
+        "device_uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "target_type_uuid": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+        },
+        "single_handed": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        },
+        "shot_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "duration_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10000
+        },
+        "paper_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "shots": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/shot"
+          }
+        },
+        "shot_scores": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/image"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

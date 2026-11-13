@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/statistics/compute_statistics.schema.json",
+  "title": "compute_statistics",
+  "description": "doc/interfaces.md#compute_statistics",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "compute_statistics"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "group_by",
+        "period"
+      ],
+      "properties": {
+        "filter": {
+          "$ref": "../common/session_filter.schema.json"
+        },
+        "group_by": {
+          "enum": [
+            "none",
+            "shooter",
+            "device",
+            "device_category",
+            "distance",
+            "single_handed",
+            "supported"
+          ]
+        },
+        "period": {
+          "enum": [
+            "session",
+            "day",
+            "week",
+            "month"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

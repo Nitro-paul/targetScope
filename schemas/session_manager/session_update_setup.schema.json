@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/session_manager/session_update_setup.schema.json",
+  "title": "session_update_setup",
+  "description": "doc/interfaces.md#session_manager",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "session_update_setup"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "shooter_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "device_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "distance_m": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "target_type_id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "single_handed": {
+          "type": "boolean"
+        },
+        "supported": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

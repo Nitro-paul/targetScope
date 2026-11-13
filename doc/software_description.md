@@ -34,7 +34,7 @@ All interfaces are language-neutral: messages are JSON defined by JSON Schema fi
 | Messaging between programs | Redis Streams, JSON messages defined by JSON Schema; Redis persisted with AOF |
 | Video between programs | iceoryx2 zero-copy shared memory (Rust and C++ APIs) |
 | Storage | SQLite via rusqlite, image files in a folder (see [database.md](database.md)) |
-| Image processing | OpenCV 4 (C++) |
+| Image processing | OpenCV 4 or 5 (C++) |
 | Camera | V4L2 (USB) or RTSP (network camera), configurable |
 | Web | axum, plain HTML/JS/CSS frontend, MJPEG live feed, WebSocket events |
 | Process supervision | Own program `launcher`, started by hand |
@@ -118,6 +118,8 @@ targetscope/
 ├── testdata/               # reference data, photos, videos, golden files
 ├── config/
 │   └── launcher.toml
+├── release/                # release tools: build.sh, bump.sh, install/run scripts of the bundle (branch releases)
+├── VERSION                 # version number <release>.<majorfix>.<minorfix> (see releases.md)
 └── doc/
 ```
 
@@ -145,3 +147,5 @@ The staging and image folders must be on the same file system, so that moving a 
 - [shared_libraries.md](shared_libraries.md): the Rust and C++ libraries that implement the contract
 - [programs/](programs/): one design document per program, same names as the program folders in the code
 - [testing/](testing/overview.md): the complete test suite: test levels, tools, reference data and every test case per part
+- [development.md](development.md): installing the build, runtime and test dependencies
+- [releases.md](releases.md): version numbers, building a release, installing, running and uninstalling it

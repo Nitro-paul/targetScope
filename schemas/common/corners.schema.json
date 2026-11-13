@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/corners.schema.json",
+  "title": "Corners",
+  "description": "doc/interfaces.md#corners",
+  "type": "object",
+  "required": [
+    "top_left",
+    "top_right",
+    "bottom_right",
+    "bottom_left"
+  ],
+  "properties": {
+    "top_left": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "top_right": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "bottom_right": {
+      "$ref": "pixel_point.schema.json"
+    },
+    "bottom_left": {
+      "$ref": "pixel_point.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

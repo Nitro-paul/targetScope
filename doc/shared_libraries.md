@@ -32,6 +32,7 @@ crates/targetscope_common/
 └── src/
     ├── lib.rs
     ├── model.rs        # model types (serde)
+    ├── check.rs        # value checks used while deserializing (see Value checks)
     ├── messages/
     │   ├── mod.rs      # RequestEnvelope, ResponseEnvelope, EventEnvelope, ErrorCode, ErrorBody
     │   ├── database_handler.rs
@@ -43,96 +44,112 @@ crates/targetscope_common/
     │   ├── exporter.rs
     │   ├── importer.rs
     │   └── launcher.rs
-    ├── bus.rs          # Bus, RequestServer, EventReader
+    ├── bus.rs          # Bus, RequestHandler, EventReader
     ├── idempotency.rs  # RedisIdempotencyStore
+    ├── failpoints.rs   # failpoint setup and evaluation
     ├── frames.rs       # iceoryx2 services, FrameHeader, PixelFormat
     ├── geometry.rs     # Polar, Point, conversions
     ├── targets.rs      # ring generation, target type validation
     ├── settings.rs     # SettingsCache
     ├── config.rs       # BootstrapConfig
-    ├── clock.rs        # Clock, SystemClock
-    └── logging.rs      # tracing setup
+    ├── export.rs       # export file format v1 (exporter, importer)
+    ├── program.rs      # program startup, shutdown signal
+    ├── clock.rs        # Clock, SystemClock, local time
+    └── logging.rs      # tracing setup, daily log file
 ```
 
 ## Messages
-Every program has a request enum and, if it sends events, an event enum. Example:
+Every program has a request enum and, if it sends events, an event enum, in `messages/<program>.rs`. The enums are adjacently tagged (`type` + `payload`), so they match the JSON of the envelopes. Example:
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum AnalyzerRequest {
-    Ping {},
-    AnalyzeShots { shots: Vec<Shot>, target_type: TargetType, bullet_diameter_mm: f64 },
+    Ping(Ping),
+    AnalyzeShots(AnalyzeShots),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum ImageProcessorEvent {
     CalibrationChanged(CalibrationStatus),
-    PaperReplaced { live_paper: u32, previous_paper_staged_file: Option<String> },
-    ShotDetected { hole_id: u32, live_paper: u32, angle_turns: f64, radius_mm: f64, confidence: f32, frame_seq: u64 },
-}
-
-pub struct RequestEnvelope<R> {
-    pub version: u32,
-    pub request_id: Uuid,
-    pub reply_to: Option<String>,
-    pub request: R,                // flattened: "type" + "payload"
-}
-
-pub struct ResponseEnvelope {
-    pub r#type: String,
-    pub version: u32,
-    pub request_id: Uuid,
-    pub status: Status,            // Ok | Error
-    pub error: Option<ErrorBody>,  // { code: ErrorCode, message: String, details: Option<Value> }
-    pub payload: Option<serde_json::Value>,
-}
-
-pub struct EventEnvelope<E> {
-    pub version: u32,
-    pub event_id: Uuid,
-    pub source: String,
-    pub timestamp_ms: i64,
-    pub event: E,                  // flattened: "type" + "payload"
+    PaperReplaced(PaperReplaced),
+    ShotDetected(ShotDetected),
 }
 ```
-Each response payload has its own struct (e.g. `CreateSessionResponse { id, uuid, images }`). The trait `Request` links a request to its response type, so `Bus::request` returns the right type:
+Every request is a struct (its payload) that implements `Request`, which links it to its type name, the receiver's stream, its response type and its timeout:
 ```rust
 pub trait Request: Serialize {
     type Response: DeserializeOwned;
+    const TYPE: &'static str;      // e.g. "analyze_shots"
     const STREAM: &'static str;    // e.g. "analyzer:requests"
     const TIMEOUT: Duration;       // per request type, see interfaces.md#timeouts
 }
 ```
-Message structs implement `Request` and are wrapped into the program's enum when sent.
+Each response payload has its own struct (e.g. `CreateSessionResponse { id, uuid, images }`); requests whose response is a shared type use it directly (`analyze_shots` → `AnalysisResult`), empty responses use `Empty {}`.
+
+The envelopes keep the payload as a JSON value, so they can be read before the request type is known:
+```rust
+pub struct RequestEnvelope { r#type: String, version: u32, request_id: Uuid, reply_to: Option<String>, payload: Value }
+pub struct ResponseEnvelope { r#type: String, version: u32, request_id: Uuid, status: Status, error: Option<ErrorBody>, payload: Option<Value> }
+pub struct EventEnvelope { r#type: String, version: u32, event_id: Uuid, source: String, timestamp_ms: i64, payload: Value }
+```
+- `RequestEnvelope::decode::<R>()` turns `type` + `payload` into the program's request enum. An unknown `type` or a `version` other than 1 gives `invalid_message`; a payload that doesn't fit its type gives `validation_failed`.
+- `ok_response(payload)` and `error_response(&ServiceError)` build the response with `type` = request type + `_response` and the same `request_id` and `version`.
+- `EventEnvelope::new(source, timestamp_ms, &event)` sets a new `event_id`; `decode::<E>()` gives the event enum (error for a `version` other than 1).
+
+### Value checks
+The types reject everything their schema rejects, so a program never sees a message that doesn't match the contract:
+- every struct has `#[serde(deny_unknown_fields)]`; the two payloads that flatten a shared type (`import_device`, `import_session`) take their own fields out and deserialize the rest into the strict type
+- fields with a range in the schema use a checking deserializer from `check.rs` (crate-private): `angle_turns` in `0 ≤ x < 1`; `radius_mm` `≥ 0`; `bullet_diameter_mm` and paper sizes `> 0`; `confidence` in `0..1`; `paper_no`, `paper_count` and the `shot_count` of a session `≥ 1`; `distance_m`, `duration_s`, `limit`, `offset` and the `shot_count` of a device `≥ 0`; names not empty; `notes` at most 10 000 characters; the `shots` of `create_session` not empty
+
+A failed check is a deserialization error, so `decode` answers it with `validation_failed`. Programs still check the rules that depend on more than one value or on stored data (e.g. `shot_count == shots.len()`).
+
+**Floats:** `serde_json` is built with the feature `float_roundtrip`, so a float read from JSON is bit-equal to the one that was written. A value passed through several programs (e.g. shot positions from `session_manager` to `analyzer`) gives the same result as in the sender.
+
+**Optional fields:** a missing field and `null` both deserialize to `None`. Fields that are always part of a type (e.g. `Session.notes`) are written as `null` when not set; optional request fields (e.g. `reply_to`, `corners` of `detect_shots_in_photo`, the SessionFilter fields) are left out when not set.
 
 ## Redis bus
 ```rust
-pub struct Bus { /* redis::aio::ConnectionManager, program name, pending-response map */ }
+#[derive(Clone)]
+pub struct Bus { /* shared: command connection, program name, consumer name, clock, pending-response map */ }
 
 impl Bus {
-    /// Connects and starts a background task that reads `<program>:responses`
-    /// and completes waiting requests by request_id.
+    /// Connects and starts a background task that reads `<program>:responses` (starting after its
+    /// newest entry) and completes waiting requests by request_id.
     pub async fn connect(url: &str, program: &str) -> Result<Self, BusError>;
+    pub async fn connect_with_clock(url: &str, program: &str, clock: Arc<dyn Clock>) -> Result<Self, BusError>;
 
     /// Sends a request with a new request_id and waits for the response (Request::TIMEOUT).
     pub async fn request<R: Request>(&self, req: R) -> Result<R::Response, BusError>;
-
     /// Same, but with a given request_id, for resending.
     pub async fn request_with_id<R: Request>(&self, id: Uuid, req: R) -> Result<R::Response, BusError>;
+    /// Sends `ping` to any program (used by the launcher).
+    pub async fn ping(&self, program: &str, timeout: Duration) -> Result<PingResponse, BusError>;
+    /// Sends a prepared envelope and returns the full response envelope (used by web_server
+    /// and the test kit, which forward requests they don't decode).
+    pub async fn send_envelope(&self, stream: &str, env: RequestEnvelope, timeout: Duration)
+        -> Result<ResponseEnvelope, BusError>;
 
     /// Sends an event to <program>:events.
-    pub async fn publish<E: Serialize>(&self, event: E) -> Result<(), BusError>;
-
-    /// Reads <source>:events, with a consumer group (no event lost) or as a plain reader
-    /// (starting after a given id, see interfaces.md#who-listens-to-which-events).
+    pub async fn publish<E: Serialize>(&self, event: &E) -> Result<EventEnvelope, BusError>;
+    /// Id of the newest entry of <source>:events ("0-0" if empty), noted before loading state.
+    pub async fn newest_event_id(&self, source: &str) -> Result<String, BusError>;
+    /// Reads <source>:events, with a consumer group named after this program (no event lost)
+    /// or as a plain reader after a given id (see interfaces.md#who-listens-to-which-events).
     pub fn events<E: DeserializeOwned>(&self, source: &str, mode: ReadMode) -> EventReader<E>;
 
     /// Request loop: reads pending, then new requests; calls the handler; sends the response;
     /// acknowledges. Answers `ping` itself. Parsing errors are answered with invalid_message.
     pub async fn serve<Req, H>(&self, handler: H) -> Result<(), BusError>
     where Req: DeserializeOwned, H: RequestHandler<Req>;
+    /// Same, but handles up to `limit` requests at the same time, for stateless programs.
+    pub async fn serve_concurrent<Req, H>(&self, handler: Arc<H>, limit: usize) -> Result<(), BusError>;
 }
+
+pub enum ReadMode { ConsumerGroup, After(String) }
+
+/// EventReader::next() returns the next event; ack(entry_id) acknowledges it in group mode.
+pub struct Event<E> { pub entry_id: String, pub envelope: EventEnvelope, pub event: E }
 
 #[async_trait]
 pub trait RequestHandler<Req> {
@@ -141,9 +158,15 @@ pub trait RequestHandler<Req> {
 
 pub enum BusError { Redis(redis::RedisError), Timeout, Remote(ErrorBody), Decode(String) }
 ```
-- Responses are read by the background task with `XREAD BLOCK` on `<program>:responses`, matched by `request_id`, and delivered through a `oneshot` channel; unknown request ids (e.g. late responses after a timeout) are dropped.
-- Reconnects use `redis::aio::ConnectionManager` with exponential backoff.
-- The consumer name is `<hostname>-<pid>`.
+- Every stream entry has one field `data` with the envelope as JSON. Writes use `XADD … MAXLEN ~ n` with the caps of [interfaces.md](interfaces.md#streams-and-keys).
+- Responses are read by the background task with `XREAD BLOCK` on `<program>:responses`, matched by `request_id`, and delivered through a `oneshot` channel; unknown request ids (e.g. late responses after a timeout) are dropped and logged.
+- Blocking reads (`XREAD BLOCK`, `XREADGROUP BLOCK`, 1 s) use their own connections, so they never delay other commands.
+- Reconnects use `redis::aio::ConnectionManager`; read loops retry with exponential backoff (100 ms up to 5 s), timed by the `Clock`.
+- `serve` handles requests one at a time, in stream order (session_manager, launcher, importer). `serve_concurrent` starts a task per request, at most `limit` at once, so `ping` and short requests are answered while long ones run (analyzer: 16, database_handler: 8, statistics: 4, exporter: 2); each task sends its response and acknowledges its entry on the shared command connection (the read loop's connection is blocked in `XREADGROUP BLOCK`). After a (re)connect, `serve_concurrent` reads its pending entries in batches, each batch after the last entry of the one before, because entries handed to a task stay pending until that task acknowledges them; when no pending entry is left it reads new ones (`>`).
+- `Bus::stop()` ends `serve` and `serve_concurrent` after the requests being handled are answered (used on SIGTERM); `Bus::reconnects()` is a `watch` channel that changes every time the request loop had to reconnect to Redis (database_handler then sends `data_changed` `all`/`reload`).
+- `RequestEnvelope::decode` answers a request whose `type` the program doesn't know, or whose `version` isn't 1, with `invalid_message`; a known type whose payload doesn't fit (missing or wrongly typed field, unknown enum value) with `validation_failed`. An entry whose `data` isn't JSON is logged and acknowledged without a response. A request with an unknown `type` or `version` is answered with `invalid_message` (if it has `reply_to`) and acknowledged. Every request is handled inside a `tracing` span with its `request_id`, so all log lines of a request contain it.
+- The consumer name is `<hostname>-<pid>`. Because a restarted program has a new pid, `serve` and group-mode event readers first claim all pending entries of the group (`XAUTOCLAIM … 0`) and handle them before new ones (only one instance of each program runs). The consumer group of a request stream is created with `XGROUP CREATE … 0 MKSTREAM`, so requests written before the program first started are handled too; the consumer group of an event reader starts at `$` (only events after its creation). `BUSYGROUP` is ignored.
+- Event entries whose `type` the reader doesn't know are skipped (and acknowledged in group mode).
 
 ### Idempotency
 ```rust
@@ -170,7 +193,10 @@ pub fn frame_subscriber(node: &Node<ipc::Service>, service: &str) -> Result<Fram
 /// Removes resources of crashed iceoryx2 nodes.
 pub fn cleanup_dead_nodes() -> Result<(), FrameError>;
 ```
-`FramePublisher::publish(header, |buf: &mut [u8]| ...)` loans a slice, lets the caller fill it, sends it and notifies the matching `/notify` event service. `FrameSubscriber::wait(timeout)` blocks on the event service and returns the newest sample. Details in [frame_transport.md](frame_transport.md).
+`FramePublisher::publish(header, |buf: &mut [u8]| ...)` loans a slice, lets the caller fill it, sends it and notifies the matching `/notify` event service. `FrameSubscriber::wait(timeout)` blocks on the event service and returns the newest sample; if the subscriber already holds the maximum number of samples (2), it returns the newest one it could take. iceoryx2 `ipc` ports can't move between threads, so a subscriber is created in the thread that uses it. Details in [frame_transport.md](frame_transport.md).
+
+## Export file
+`export.rs` holds the types of the export file format version 1 (`ExportFile`, `ExportShooter`, `ExportTargetType`, `ExportDevice`, `ExportSession`, `ExportImage`), written by `exporter` and read by `importer`, so both always agree. The format is defined by `schemas/export/v1.schema.json` (see [exporter.md](programs/exporter.md#json)); `session_image_entry` and `device_image_entry` build the image paths inside a ZIP.
 
 ## Geometry
 ```rust
@@ -193,6 +219,8 @@ The same two functions exist in `targetscope_common_cpp`; both are tested with t
 
 ## Contract tests
 `tests/contract.rs` runs, for every schema in `schemas/`: validate its examples (`jsonschema` crate), deserialize them into the Rust type, serialize back and compare as JSON values, and validate the serialized output; every invalid example in `schemas/examples/invalid/` must be rejected. A message type without a schema, or a schema without a Rust type, fails the test. All cases: [testing/shared_libraries.md](testing/shared_libraries.md).
+
+The test keeps a table from schema name to Rust type. Messages are built with the library's own constructors (`RequestEnvelope::new`, `ok_response`, `error_response`, `EventEnvelope::new`), so the envelopes are checked too. Variants for LIB-CON-05 and LIB-CON-10 are derived from each example and its schema: every optional field once left out and once `null`, every enum value and both booleans once. The variant names of the request and event enums are read from serde's "unknown variant" error, and the shared structs from `src/model.rs`.
 
 ## Bootstrap configuration
 Values needed before the database can be read. The launcher sets them as environment variables for every program (see [launcher](programs/launcher.md#bootstrap-environment)).
@@ -236,13 +264,28 @@ pub struct SystemClock;                       // the real clock, used in product
 ```
 The test kit (`crates/targetscope_testkit`, see [testing/overview.md](testing/overview.md#test-kit)) adds `FakeClock`, whose time only moves when a test advances it.
 
-**Failpoints:** test builds contain named failpoints (`fail` crate) at the places listed in [testing/overview.md](testing/overview.md#failpoints); a test can make them return an error, wait or abort the process. Release builds don't contain them.
+**Test clock of a program:** a program gets its clock from `clock::program_clock()` (used by `program::connect` for the `Bus`). In test builds (cargo feature `failpoints`) the variable `TARGETSCOPE_TEST_NOW` (Unix milliseconds) makes it a `FrozenWallClock`: the wall clock stands still at that time, while monotonic time and `sleep` are real. Process tests use it where timestamps must be fixed (e.g. the exporter's file names); release builds ignore the variable.
+
+**Failpoints:** test builds contain named failpoints (`fail` crate, enabled by the cargo feature `failpoints`) at the places listed in [testing/overview.md](testing/overview.md#failpoints). A program calls `failpoints::setup()` at startup, which reads the `FAILPOINTS` environment variable (e.g. `FAILPOINTS="db.before_commit=return"`). `failpoints::hit(name)` evaluates a failpoint: `sleep(<ms>)` waits, `return` makes the code at that place fail, and `return(abort)` aborts the process. Release builds don't contain them; `hit` is then always `false`.
+
+### Local time
+Periods, log file dates and exported timestamps use the local time zone of the PC:
+```rust
+pub fn unix_s(t: SystemTime) -> i64;              // and unix_ms
+pub fn local(unix_s: i64) -> LocalDateTime;       // date, time, weekday (Monday = 0), UTC offset
+pub fn local_midnight(date: LocalDate) -> i64;    // Unix seconds of 00:00 local time on that day
+pub fn rfc3339_local(unix_s: i64) -> String;      // e.g. 2026-11-11T14:30:00+01:00
+```
+They use the C library (`localtime_r`, `mktime`), so they follow the system's time zone, including daylight saving time.
+
+## Program startup
+Every Rust program starts the same way with `program::start(name)`: `failpoints::setup()`, `BootstrapConfig::from_env()`, `logging::init`, then connect the bus, retrying with backoff (100 ms up to 5 s) until Redis answers. `program::shutdown_signal()` resolves on SIGTERM or SIGINT; `program::stop_on_signal(&bus)` calls `bus.stop()` then, so the program finishes the requests it is handling, answers them and exits with code 0.
 
 ## Logging
-`logging::init(program)` sets up `tracing` with two outputs: stderr (collected by the launcher) and a daily rotated file `<log_dir>/<program>.log` (`tracing-appender`). Every log line of a request contains its `request_id`.
+`logging::init(program, &config)` sets up `tracing` with two outputs, both filtered by `log_level` (`EnvFilter` syntax): stderr (collected by the launcher) and the file `<log_dir>/<program>.log`. The file is rotated daily by the shared `Clock`: at the first line of a new local day, the old file is renamed to `<program>.log.<yyyy-mm-dd>` (its date) and a new `<program>.log` is started; old files are kept. Every log line of a request contains its `request_id` (see [Redis bus](#redis-bus)).
 
 ## Dependencies
-`serde`, `serde_json`, `uuid`, `redis` (features `tokio-comp`, `streams`, `connection-manager`), `tokio`, `async-trait`, `iceoryx2`, `thiserror`, `tracing`, `tracing-subscriber`, `tracing-appender`; for tests `jsonschema`.
+`serde`, `serde_json`, `uuid`, `redis` (features `tokio-comp`, `streams`, `connection-manager`), `tokio`, `async-trait`, `iceoryx2`, `thiserror`, `tracing`, `tracing-subscriber`, `fail`, `hostname`, `libc`; for tests `jsonschema`.
 
 # C++ library (targetscope_common_cpp)
 
@@ -291,7 +334,7 @@ Handlers report errors by throwing `ServiceError{ErrorCode, message}`; the serve
 |---|---|
 | Redis | redis-plus-plus (on hiredis) |
 | JSON | nlohmann/json |
-| UUIDs | stduuid |
+| UUIDs | own UUID v4 generator (`new_uuid()` in `messages.hpp`), no library needed |
 | Frames | iceoryx2 C++ bindings |
 | Logging | spdlog |
 | Tests | GoogleTest, json-schema-validator (pboettch) for contract tests |

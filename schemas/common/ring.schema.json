@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/ring.schema.json",
+  "title": "Ring",
+  "description": "doc/interfaces.md#ring",
+  "type": "object",
+  "required": [
+    "score",
+    "radius_mm"
+  ],
+  "properties": {
+    "score": {
+      "type": "integer"
+    },
+    "radius_mm": {
+      "type": "number"
+    }
+  },
+  "additionalProperties": false
+}

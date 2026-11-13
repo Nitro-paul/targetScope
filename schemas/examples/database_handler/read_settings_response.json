@@ -1,0 +1,21 @@
+{
+  "type": "read_settings_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "settings": [
+      {
+        "name": "camera_fps",
+        "display_name": "Frame rate (fps)",
+        "active": true,
+        "value": "30",
+        "optional": false,
+        "default_value": "30",
+        "default_active": true,
+        "value_rule": "integer 1..=120"
+      }
+    ]
+  }
+}

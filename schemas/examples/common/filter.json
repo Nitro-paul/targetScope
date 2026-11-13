@@ -1,0 +1,15 @@
+{
+  "conditions": [
+    {
+      "field": "name",
+      "op": "like",
+      "value": "Al%"
+    }
+  ],
+  "order_by": {
+    "field": "name",
+    "direction": "asc"
+  },
+  "limit": 50,
+  "offset": 0
+}

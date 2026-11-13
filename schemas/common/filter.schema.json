@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/filter.schema.json",
+  "title": "Filter",
+  "description": "doc/interfaces.md#filter",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "conditions": {
+      "type": "array",
+      "items": {
+        "$ref": "condition.schema.json"
+      }
+    },
+    "order_by": {
+      "$ref": "order_by.schema.json"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "offset": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

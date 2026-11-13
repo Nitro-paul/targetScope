@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/database_handler/read_sessions.schema.json",
+  "title": "read_sessions",
+  "description": "doc/interfaces.md#read_sessions",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "read_sessions"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "filter": {
+          "$ref": "../common/session_filter.schema.json"
+        },
+        "order_by": {
+          "type": "object",
+          "required": [
+            "field",
+            "direction"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "field": {
+              "enum": [
+                "saved_at",
+                "score",
+                "shot_count",
+                "id"
+              ]
+            },
+            "direction": {
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            }
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "include_shots": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

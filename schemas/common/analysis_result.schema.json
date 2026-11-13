@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/analysis_result.schema.json",
+  "title": "AnalysisResult",
+  "description": "doc/interfaces.md#analysisresult",
+  "type": "object",
+  "required": [
+    "shot_scores",
+    "score",
+    "grouping_score",
+    "grouping_shift"
+  ],
+  "properties": {
+    "shot_scores": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "score": {
+      "type": "integer"
+    },
+    "grouping_score": {
+      "type": "integer"
+    },
+    "grouping_shift": {
+      "$ref": "offset_mm.schema.json"
+    },
+    "mean_point": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "offset_mm.schema.json"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

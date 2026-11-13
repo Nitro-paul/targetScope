@@ -1,0 +1,51 @@
+{
+  "type": "detect_shots_in_photo",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "reply_to": "web_server:responses",
+  "payload": {
+    "staged_file": "upload_1b4e28ba-2fa1-41d2-883f-0016d3cca427.jpg",
+    "target_type": {
+      "id": 1,
+      "uuid": "5d0c7a9e-1b2f-4c3d-8e4f-6a7b8c9d0e1f",
+      "name": "TT-REF",
+      "paper_width_mm": 200.5,
+      "paper_height_mm": 200.5,
+      "center_x_mm": 100.5,
+      "center_y_mm": 100.5,
+      "inner_white_radius_mm": 5.5,
+      "inner_white_score": 12,
+      "black_radius_mm": 30.5,
+      "black_score": 7,
+      "outer_radius_mm": 90.5,
+      "outer_score": 1,
+      "rings": [
+        {
+          "score": 12,
+          "radius_mm": 5.5
+        }
+      ],
+      "locked": false,
+      "retired": false
+    },
+    "bullet_diameter_mm": 4.5,
+    "corners": {
+      "top_left": {
+        "x": 410.5,
+        "y": 95.5
+      },
+      "top_right": {
+        "x": 1490.5,
+        "y": 120.5
+      },
+      "bottom_right": {
+        "x": 1460.5,
+        "y": 1010.5
+      },
+      "bottom_left": {
+        "x": 430.5,
+        "y": 985.5
+      }
+    }
+  }
+}

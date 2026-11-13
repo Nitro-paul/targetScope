@@ -1,0 +1,8 @@
+{
+  "angle_turns": 0.25,
+  "radius_mm": 12.5,
+  "origin": "camera",
+  "confidence": 0.9,
+  "hole_id": 3,
+  "paper_no": 1
+}

@@ -1,0 +1,16 @@
+{
+  "type": "lens_calibration_status_response",
+  "version": 1,
+  "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+  "status": "ok",
+  "error": null,
+  "payload": {
+    "camera_key": "usb-0000:00:14.0-2",
+    "calibrated": true,
+    "applied": true,
+    "rms_px": 0.35,
+    "width_px": 1920,
+    "height_px": 1080,
+    "collecting_views": null
+  }
+}

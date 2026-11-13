@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/camera_reader/camera_state_changed.schema.json",
+  "title": "camera_state_changed",
+  "description": "doc/interfaces.md#camera_state_changed",
+  "allOf": [
+    {
+      "$ref": "../common/event_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "camera_state_changed"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    },
+    "source": {
+      "const": "camera_reader"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "state",
+        "message"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "connected",
+            "disconnected",
+            "disabled"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "camera_key": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "width_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "height_px": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "expected_error": "input_mode: \"video\" is not camera, manual or photo",
+  "message": {
+    "type": "session_setup",
+    "version": 1,
+    "request_id": "1b4e28ba-2fa1-41d2-883f-0016d3cca427",
+    "reply_to": "web_server:responses",
+    "payload": {
+      "input_mode": "video"
+    }
+  }
+}

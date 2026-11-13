@@ -82,7 +82,7 @@ For each stream:
 3. The JPEG is put into a `tokio::sync::watch` channel, which always holds only the newest frame.
 4. Each HTTP connection waits on the channel and writes every new JPEG as one multipart part. A slow client skips frames instead of falling behind.
 
-**Fallback:** if live mode is active but `image_processor` sends no live frames for 2 seconds (e.g. it's restarting), `/stream/live.mjpg` shows the raw frames until live frames arrive again. The UI marks the feed as "not transformed".
+**Fallback:** if no live frames arrive for 2 seconds (live mode not active, not calibrated, or `image_processor` restarting), `/stream/live.mjpg` shows the raw frames (downscaled like the raw feed) until live frames arrive again. The UI shows the calibration status next to the feed, so the user can tell an untransformed image.
 
 ## Stale shared memory
 If a program crashes, its iceoryx2 resources stay in shared memory. On startup, the launcher (and every iceoryx2 program) lists the iceoryx2 nodes and removes the resources of dead nodes.

@@ -1,0 +1,21 @@
+[package]
+name = "analyzer"
+description = "TargetScope analyzer"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+targetscope_common.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+targetscope_testkit.workspace = true
+tokio.workspace = true

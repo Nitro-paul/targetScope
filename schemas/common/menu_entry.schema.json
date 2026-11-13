@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/menu_entry.schema.json",
+  "title": "MenuEntry",
+  "description": "doc/interfaces.md#cameracontrol",
+  "type": "object",
+  "required": [
+    "value",
+    "label"
+  ],
+  "properties": {
+    "value": {
+      "type": "integer"
+    },
+    "label": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

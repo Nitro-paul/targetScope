@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/prepare_target_photo.schema.json",
+  "title": "prepare_target_photo",
+  "description": "doc/interfaces.md#prepare_target_photo",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "prepare_target_photo"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "staged_file",
+        "corners",
+        "paper_width_mm",
+        "paper_height_mm"
+      ],
+      "properties": {
+        "staged_file": {
+          "type": "string"
+        },
+        "corners": {
+          "$ref": "../common/corners.schema.json"
+        },
+        "paper_width_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "paper_height_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

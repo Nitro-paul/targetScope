@@ -1,0 +1,31 @@
+[package]
+name = "targetscope_common"
+description = "Shared Rust library of TargetScope"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[features]
+# doc/testing/overview.md#failpoints
+failpoints = ["fail/failpoints"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+redis.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+iceoryx2.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+fail.workspace = true
+hostname.workspace = true
+libc.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+jsonschema.workspace = true
+targetscope_testkit.workspace = true
+tokio.workspace = true

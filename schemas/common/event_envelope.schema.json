@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/event_envelope.schema.json",
+  "title": "EventEnvelope",
+  "description": "doc/interfaces.md#event-envelope",
+  "type": "object",
+  "required": [
+    "type",
+    "version",
+    "event_id",
+    "source",
+    "timestamp_ms",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+    },
+    "source": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "timestamp_ms": {
+      "type": "integer"
+    },
+    "payload": {
+      "type": "object"
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "format": "targetscope-export",
+  "format_version": 1,
+  "exported_at": "2026-11-11T14:30:00+01:00",
+  "shooters": [
+    {
+      "uuid": "0b3f1c2e-6c1a-4a8e-9d55-2f6b1d6c7a10",
+      "name": "Alex",
+      "retired": false
+    }
+  ],
+  "target_types": [
+    {
+      "uuid": "5d0c7a9e-1b2f-4c3d-8e4f-6a7b8c9d0e1f",
+      "name": "TT-REF",
+      "paper_width_mm": 200,
+      "paper_height_mm": 200,
+      "center_x_mm": 100,
+      "center_y_mm": 100,
+      "inner_white_radius_mm": 5,
+      "inner_white_score": 12,
+      "black_radius_mm": 30,
+      "black_score": 7,
+      "outer_radius_mm": 90,
+      "outer_score": 1,
+      "retired": false
+    }
+  ],
+  "devices": [
+    {
+      "uuid": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+      "name": "Test pistol",
+      "category": "air pistol",
+      "description": null,
+      "caliber": ".177",
+      "bullet_diameter_mm": 4.0,
+      "shot_count": 5,
+      "retired": false
+    }
+  ],
+  "sessions": [
+    {
+      "uuid": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "saved_at": 1794403800,
+      "score": 38,
+      "grouping_score": 40,
+      "distance_m": 10,
+      "shooter_uuid": "0b3f1c2e-6c1a-4a8e-9d55-2f6b1d6c7a10",
+      "device_uuid": "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+      "target_type_uuid": "5d0c7a9e-1b2f-4c3d-8e4f-6a7b8c9d0e1f",
+      "single_handed": true,
+      "supported": false,
+      "shot_count": 5,
+      "duration_s": 120,
+      "notes": null,
+      "paper_count": 1,
+      "shots": [
+        {
+          "angle_turns": 0,
+          "radius_mm": 0,
+          "paper_no": 1
+        },
+        {
+          "angle_turns": 0.25,
+          "radius_mm": 12,
+          "paper_no": 1
+        },
+        {
+          "angle_turns": 0.5,
+          "radius_mm": 22,
+          "paper_no": 1
+        },
+        {
+          "angle_turns": 0.75,
+          "radius_mm": 42,
+          "paper_no": 1
+        },
+        {
+          "angle_turns": 0.125,
+          "radius_mm": 95,
+          "paper_no": 1
+        }
+      ],
+      "shot_scores": [
+        12,
+        11,
+        9,
+        6,
+        0
+      ]
+    }
+  ]
+}

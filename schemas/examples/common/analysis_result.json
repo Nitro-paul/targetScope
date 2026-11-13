@@ -1,0 +1,19 @@
+{
+  "shot_scores": [
+    12,
+    11,
+    9,
+    6,
+    0
+  ],
+  "score": 38,
+  "grouping_score": 40,
+  "grouping_shift": {
+    "x_mm": 1.25,
+    "y_mm": -0.5
+  },
+  "mean_point": {
+    "x_mm": 7.435,
+    "y_mm": 9.035
+  }
+}

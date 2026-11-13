@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/camera_control.schema.json",
+  "title": "CameraControl",
+  "description": "doc/interfaces.md#cameracontrol",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "min",
+    "max",
+    "step",
+    "default",
+    "value",
+    "inactive"
+  ],
+  "properties": {
+    "id": {
+      "type": "integer"
+    },
+    "name": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "integer",
+        "boolean",
+        "menu",
+        "button"
+      ]
+    },
+    "min": {
+      "type": "integer"
+    },
+    "max": {
+      "type": "integer"
+    },
+    "step": {
+      "type": "integer"
+    },
+    "default": {
+      "type": "integer"
+    },
+    "value": {
+      "type": "integer"
+    },
+    "menu": {
+      "type": "array",
+      "items": {
+        "$ref": "menu_entry.schema.json"
+      }
+    },
+    "inactive": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

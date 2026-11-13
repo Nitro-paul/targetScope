@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/exporter/export_sessions.schema.json",
+  "title": "export_sessions",
+  "description": "doc/interfaces.md#export_sessions",
+  "allOf": [
+    {
+      "$ref": "../common/request_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "export_sessions"
+    },
+    "payload": {
+      "$ref": "#/$defs/payload"
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "format"
+      ],
+      "properties": {
+        "filter": {
+          "$ref": "../common/session_filter.schema.json"
+        },
+        "format": {
+          "enum": [
+            "csv",
+            "json",
+            "png"
+          ]
+        },
+        "include_images": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

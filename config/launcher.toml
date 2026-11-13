@@ -1,0 +1,56 @@
+# doc/programs/launcher.md#configuration-launchertoml
+
+[paths]
+data_dir = "~/.local/share/targetscope"
+log_dir  = "~/.local/state/targetscope/logs"
+bin_dir  = "/usr/local/lib/targetscope"     # where the program binaries are
+
+[redis]
+binary = "redis-server"
+port   = 6379
+
+[log]
+level = "info"                               # tracing EnvFilter / spdlog level
+
+[env]                                        # optional extra environment variables for every program
+
+[[program]]
+name = "database_handler"
+
+[[program]]
+name = "camera_reader"
+depends_on = ["database_handler"]
+
+[[program]]
+name = "analyzer"
+
+[[program]]
+name = "image_processor"
+depends_on = ["database_handler", "camera_reader"]
+
+[[program]]
+name = "session_manager"
+depends_on = ["database_handler", "image_processor", "analyzer"]
+
+[[program]]
+name = "exporter"
+depends_on = ["database_handler", "analyzer"]
+
+[[program]]
+name = "importer"
+depends_on = ["database_handler"]
+
+[[program]]
+name = "statistics"
+depends_on = ["database_handler"]
+
+[[program]]
+name = "web_server"
+depends_on = ["database_handler", "session_manager"]
+
+[restart]
+initial_backoff_s = 1
+max_backoff_s     = 60
+stable_after_s    = 60      # backoff resets after running this long
+max_restarts      = 10      # within window_s; then state "failed"
+window_s          = 600

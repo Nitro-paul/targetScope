@@ -1,0 +1,7 @@
+{
+  "code": "setting_not_set",
+  "message": "setting export_dir is not set",
+  "details": {
+    "setting": "export_dir"
+  }
+}

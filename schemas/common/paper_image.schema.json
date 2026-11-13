@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/common/paper_image.schema.json",
+  "title": "PaperImage",
+  "description": "doc/interfaces.md#session",
+  "type": "object",
+  "required": [
+    "paper_no",
+    "image_path"
+  ],
+  "properties": {
+    "paper_no": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image_path": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

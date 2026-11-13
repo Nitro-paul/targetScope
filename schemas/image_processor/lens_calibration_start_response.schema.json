@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://targetscope.invalid/schemas/image_processor/lens_calibration_start_response.schema.json",
+  "title": "lens_calibration_start_response",
+  "description": "doc/interfaces.md#lens-calibration",
+  "allOf": [
+    {
+      "$ref": "../common/response_envelope.schema.json"
+    }
+  ],
+  "properties": {
+    "type": {
+      "const": "lens_calibration_start_response"
+    },
+    "payload": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/payload"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "payload": {
+      "type": "object",
+      "required": [
+        "views"
+      ],
+      "properties": {
+        "views": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

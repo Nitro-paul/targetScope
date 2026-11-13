@@ -13,7 +13,7 @@ What is tested: every message and shared type has a schema, the examples are rig
 |---|---|---|---|
 | LIB-CON-01 | Every schema has an example | List the schemas in `schemas/` and the files in `schemas/examples/` | Every schema (requests, responses, events, shared types, `export/v1`) has at least one valid example |
 | LIB-CON-02 | Valid examples are valid | Validate every file in `schemas/examples/` (JSON Schema draft 2020-12) | All pass |
-| LIB-CON-03 | Invalid examples are invalid | Validate every file in `schemas/examples/invalid/`; each file names its expected error in `$comment` | Every file fails, with the named error (e.g. missing `request_id`, `angle_turns: 1.0`, `status: "maybe"`, `paper_no: 0`) |
+| LIB-CON-03 | Invalid examples are invalid | Validate the `message` of every file in `schemas/examples/invalid/`; each file names its expected error in `expected_error`, starting with the field (`"<field>: <reason>"`) | Every file fails, with an error about the named field (e.g. missing `request_id`, `angle_turns: 1.0`, `status: "maybe"`, `paper_no: 0`) |
 | LIB-CON-04 | Round trip | Deserialize every valid example into its type, serialize again | Equal JSON value (field order ignored) |
 | LIB-CON-05 | Produced messages are valid | Build every message type in code, with every enum variant and every optional field once set and once unset; serialize | Valid against its schema |
 | LIB-CON-06 | Invalid input is rejected | Deserialize every invalid example | Error; no panic, no escaping exception, no half-filled object |
@@ -106,6 +106,8 @@ What is tested: sending requests, serving requests and reading events ([shared_l
 | LIB-BUS-19 | Plain reader continuity | 1 000 events published in bursts while the plain reader runs | Each delivered exactly once, in order |
 | LIB-BUS-20 | Redis restart | Stop the Redis test server for 3 s, then start it again on the same folder | The bus reconnects with backoff; requests during the outage fail with a Redis error or a timeout; afterwards requests and the serve loop work again |
 | LIB-BUS-21 | `ping` is answered by the serve loop | Send `ping` to a program whose handler records calls | `ping_response`; the handler isn't called |
+| LIB-BUS-22 | `serve_concurrent` answers at once | One request at a time to an idle `serve_concurrent` loop, 5 times, 1.5 s apart (its read loop waits in `XREADGROUP BLOCK`) | Every response within 200 ms |
+| LIB-BUS-23 | Many pending requests at start | 250 requests delivered to a consumer that never acknowledged them; then `serve_concurrent` starts | All 250 handled once and answered; nothing pending afterwards |
 
 ## Idempotency store (integration, Rust)
 What is tested: the Redis record of processed requests used by `session_manager` and `launcher`.
