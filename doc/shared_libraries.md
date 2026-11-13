@@ -320,7 +320,7 @@ Handlers report errors by throwing `ServiceError{ErrorCode, message}`; the serve
 |---|---|
 | Redis | redis-plus-plus (on hiredis) |
 | JSON | nlohmann/json |
-| UUIDs | stduuid |
+| UUIDs | own UUID v4 generator (`new_uuid()` in `messages.hpp`), no library needed |
 | Frames | iceoryx2 C++ bindings |
 | Logging | spdlog |
 | Tests | GoogleTest, json-schema-validator (pboettch) for contract tests |
