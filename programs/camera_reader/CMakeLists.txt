@@ -1,6 +1,8 @@
-# camera_reader (C++): reads frames from a USB or network camera and publishes them
-# on targetscope/frames/raw; camera controls (doc/programs/camera_reader.md).
-find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc videoio)
+# doc/programs/camera_reader.md#technology
+find_package(OpenCV REQUIRED COMPONENTS core imgproc videoio)
+if(OpenCV_VERSION VERSION_LESS 4 OR NOT OpenCV_VERSION VERSION_LESS 6)
+    message(FATAL_ERROR "OpenCV 4 or 5 is needed, found ${OpenCV_VERSION}")
+endif()
 
 # Everything except main(), so the tests can link it.
 add_library(camera_reader_core STATIC

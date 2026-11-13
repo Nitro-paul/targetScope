@@ -12,6 +12,8 @@ release/build.sh ...
 ```
 A fix found while building a release is made on the branch of its part and merged again, never only on `releases`.
 
+Build output is never committed: `.gitignore` (on every branch) excludes `target/`, `build/`, `build-*/` and `dist/`. Release bundles are attached to the GitHub release of their tag `v<version>`.
+
 ## Version numbers
 Every release has the number `<release>.<majorfix>.<minorfix>`, e.g. `1.2.3`:
 

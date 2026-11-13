@@ -1,6 +1,15 @@
-# image_processor (C++): live mode (transformed paper view, hole detection, shot highlighting)
-# and capture mode (doc/programs/image_processor.md).
-find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc imgcodecs calib3d)
+# doc/programs/image_processor.md#technology
+find_package(OpenCV REQUIRED COMPONENTS core)
+if(OpenCV_VERSION VERSION_LESS 4 OR NOT OpenCV_VERSION VERSION_LESS 6)
+    message(FATAL_ERROR "OpenCV 4 or 5 is needed, found ${OpenCV_VERSION}")
+endif()
+# doc/development.md#what-is-needed
+if(OpenCV_VERSION VERSION_LESS 5)
+    set(TARGETSCOPE_OPENCV_CALIB calib3d)
+else()
+    set(TARGETSCOPE_OPENCV_CALIB calib geometry)
+endif()
+find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs ${TARGETSCOPE_OPENCV_CALIB})
 
 add_library(image_processor_core STATIC
     src/capture.cpp
