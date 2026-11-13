@@ -20,6 +20,9 @@ option(TARGETSCOPE_FAILPOINTS "Compile failpoints into the programs" OFF)
 
 if(TARGETSCOPE_BUILD_TESTS)
     enable_testing()
+    # doc/testing/overview.md#running-the-tests
+    find_package(GTest REQUIRED)
+    include(GoogleTest)
 endif()
 
 add_subdirectory(cpp/targetscope_common)
