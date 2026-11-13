@@ -8,8 +8,7 @@ pub const MAX_JSON_BYTES: u64 = 100 * 1024 * 1024;
 
 // doc/programs/importer.md#import-flow-import_file
 pub fn parse_and_validate(bytes: &[u8]) -> Result<ExportFile, ServiceError> {
-    let value: serde_json::Value =
-        serde_json::from_slice(bytes).map_err(|e| ServiceError::validation(format!("not a JSON file: {e}")))?;
+    let value: serde_json::Value = serde_json::from_slice(bytes).map_err(|e| ServiceError::validation(format!("not a JSON file: {e}")))?;
     if value.get("format").and_then(|v| v.as_str()) != Some(targetscope_common::export::FORMAT) {
         return Err(ServiceError::validation("format must be targetscope-export"));
     }

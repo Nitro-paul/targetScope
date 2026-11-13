@@ -10,12 +10,10 @@ failpoints = ["targetscope_common/failpoints", "fail/failpoints"]
 
 [dependencies]
 targetscope_common.workspace = true
-serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 tokio.workspace = true
 async-trait.workspace = true
-thiserror.workspace = true
 tracing.workspace = true
 fail.workspace = true
 jsonschema.workspace = true
