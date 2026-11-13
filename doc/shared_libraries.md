@@ -104,6 +104,8 @@ The types reject everything their schema rejects, so a program never sees a mess
 
 A failed check is a deserialization error, so `decode` answers it with `validation_failed`. Programs still check the rules that depend on more than one value or on stored data (e.g. `shot_count == shots.len()`).
 
+**Floats:** `serde_json` is built with the feature `float_roundtrip`, so a float read from JSON is bit-equal to the one that was written. A value passed through several programs (e.g. shot positions from `session_manager` to `analyzer`) gives the same result as in the sender.
+
 **Optional fields:** a missing field and `null` both deserialize to `None`. Fields that are always part of a type (e.g. `Session.notes`) are written as `null` when not set; optional request fields (e.g. `reply_to`, `corners` of `detect_shots_in_photo`, the SessionFilter fields) are left out when not set.
 
 ## Redis bus
@@ -261,6 +263,8 @@ pub trait Clock: Send + Sync {
 pub struct SystemClock;                       // the real clock, used in production
 ```
 The test kit (`crates/targetscope_testkit`, see [testing/overview.md](testing/overview.md#test-kit)) adds `FakeClock`, whose time only moves when a test advances it.
+
+**Test clock of a program:** a program gets its clock from `clock::program_clock()` (used by `program::connect` for the `Bus`). In test builds (cargo feature `failpoints`) the variable `TARGETSCOPE_TEST_NOW` (Unix milliseconds) makes it a `FrozenWallClock`: the wall clock stands still at that time, while monotonic time and `sleep` are real. Process tests use it where timestamps must be fixed (e.g. the exporter's file names); release builds ignore the variable.
 
 **Failpoints:** test builds contain named failpoints (`fail` crate, enabled by the cargo feature `failpoints`) at the places listed in [testing/overview.md](testing/overview.md#failpoints). A program calls `failpoints::setup()` at startup, which reads the `FAILPOINTS` environment variable (e.g. `FAILPOINTS="db.before_commit=return"`). `failpoints::hit(name)` evaluates a failpoint: `sleep(<ms>)` waits, `return` makes the code at that place fail, and `return(abort)` aborts the process. Release builds don't contain them; `hit` is then always `false`.
 
