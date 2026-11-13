@@ -37,7 +37,6 @@ iceoryx2 = "0.10"
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-appender = "0.2"
 fail = "0.5"
 jsonschema = { version = "0.61", default-features = false }
 
@@ -56,11 +55,9 @@ toml = "1"
 nix = { version = "0.31", features = ["signal", "process"] }
 fs4 = "1"
 argon2 = "0.6"
-rand = "0.10"
 hostname = "0.4"
 futures = "0.3"
 libc = "0.2"
-http-body-util = "0.1"
 
 # doc/testing/overview.md#test-environment
 tempfile = "3"
