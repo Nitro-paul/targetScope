@@ -27,7 +27,7 @@ add_library(targetscope_common_cpp STATIC
 )
 target_include_directories(targetscope_common_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/schemas/frames   # frame_header.h, the contract
+    ${PROJECT_SOURCE_DIR}/schemas/frames
 )
 target_link_libraries(targetscope_common_cpp PUBLIC nlohmann_json::nlohmann_json spdlog::spdlog)
 if(TARGETSCOPE_FAILPOINTS)
