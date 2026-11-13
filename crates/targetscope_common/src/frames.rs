@@ -179,11 +179,19 @@ impl FrameSubscriber {
         self.newest()
     }
 
+    // doc/frame_transport.md#subscriber-rules
     fn newest(&mut self) -> Result<Option<Frame>, FrameError> {
         let mut newest = None;
-        while let Some(sample) = self.subscriber.receive().map_err(err)? {
-            newest = Some(Frame { sample });
+        loop {
+            match self.subscriber.receive() {
+                Ok(Some(sample)) => newest = Some(Frame { sample }),
+                Ok(None) => return Ok(newest),
+                Err(e) if newest.is_some() => {
+                    tracing::debug!(error = ?e, "receive stopped at the borrow limit");
+                    return Ok(newest);
+                }
+                Err(e) => return Err(err(e)),
+            }
         }
-        Ok(newest)
     }
 }

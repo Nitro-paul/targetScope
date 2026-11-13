@@ -25,6 +25,7 @@ hostname.workspace = true
 libc.workspace = true
 
 [dev-dependencies]
+tempfile.workspace = true
 jsonschema.workspace = true
 targetscope_testkit.workspace = true
 tokio.workspace = true

@@ -84,8 +84,8 @@ impl Inner {
         {
             let mut settings = self.settings.write().unwrap();
             let mut seen: HashMap<String, Setting> = fresh.into_iter().map(|s| (s.name.clone(), s)).collect();
-            let names: Vec<String> = match name {
-                Some(n) => vec![n.to_string()],
+            let names: std::collections::BTreeSet<String> = match name {
+                Some(n) => [n.to_string()].into(),
                 None => settings.keys().chain(seen.keys()).cloned().collect(),
             };
             for n in names {

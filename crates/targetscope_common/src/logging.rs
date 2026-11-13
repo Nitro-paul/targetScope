@@ -20,14 +20,18 @@ pub fn init(program: &str, config: &BootstrapConfig) -> LogGuard {
 }
 
 pub fn init_with_clock(program: &str, config: &BootstrapConfig, clock: Arc<dyn Clock>) -> LogGuard {
+    let _ = subscriber(program, config, clock).try_init();
+    LogGuard
+}
+
+// doc/shared_libraries.md#logging
+pub fn subscriber(program: &str, config: &BootstrapConfig, clock: Arc<dyn Clock>) -> impl tracing::Subscriber + Send + Sync {
     let filter = EnvFilter::try_new(&config.log_level).unwrap_or_else(|_| EnvFilter::new("info"));
     let file = DailyFile::new(config.log_dir.clone(), program, clock);
-    let _ = tracing_subscriber::registry()
+    tracing_subscriber::registry()
         .with(filter)
         .with(tracing_subscriber::fmt::layer().with_writer(io::stderr))
         .with(tracing_subscriber::fmt::layer().with_ansi(false).with_writer(file))
-        .try_init();
-    LogGuard
 }
 
 // doc/shared_libraries.md#logging

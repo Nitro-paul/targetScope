@@ -372,7 +372,7 @@ impl Bus {
 
     async fn prepare_group(&self, stream: &str, group: &str) -> Result<ConnectionManager, BusError> {
         let mut c = blocking_connection(&self.inner.client).await?;
-        create_group(&mut c, stream, group).await?;
+        create_group(&mut c, stream, group, "0").await?;
         claim_all(&mut c, stream, group, &self.inner.consumer).await?;
         Ok(c)
     }
@@ -614,7 +614,7 @@ impl<E: DeserializeOwned> EventReader<E> {
             ReadMode::ConsumerGroup => {
                 if !self.claimed {
                     let conn = self.connection().await?;
-                    create_group(conn, &stream, &group).await?;
+                    create_group(conn, &stream, &group, "$").await?;
                     claim_all(conn, &stream, &group, &consumer).await?;
                     self.claimed = true;
                     self.last_id = "0".into();
@@ -717,9 +717,10 @@ fn stream_entries(v: RedisValue) -> Result<Vec<StreamId>, BusError> {
     Ok(reply.keys.into_iter().flat_map(|k| k.ids).filter(|e| !e.map.is_empty()).collect())
 }
 
-async fn create_group(conn: &mut ConnectionManager, stream: &str, group: &str) -> Result<(), BusError> {
+// doc/shared_libraries.md#redis-bus
+async fn create_group(conn: &mut ConnectionManager, stream: &str, group: &str, start: &str) -> Result<(), BusError> {
     let r: Result<(), redis::RedisError> =
-        redis::cmd("XGROUP").arg("CREATE").arg(stream).arg(group).arg("$").arg("MKSTREAM").query_async(conn).await;
+        redis::cmd("XGROUP").arg("CREATE").arg(stream).arg(group).arg(start).arg("MKSTREAM").query_async(conn).await;
     match r {
         Err(e) if e.code() == Some("BUSYGROUP") => Ok(()),
         r => Ok(r?),
