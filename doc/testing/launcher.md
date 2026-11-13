@@ -48,6 +48,8 @@ What is tested: starting, supervising and stopping Redis ([launcher.md](../progr
 | LA-RDS-03 | Redis doesn't answer | A fake `redis-server` that never answers `PING` | Exit after 10 s with a message |
 | LA-RDS-04 | Redis crashes | `kill -9` Redis | Restarted with backoff; `PING` answers again; programs reconnect |
 | LA-RDS-05 | Clean stop | Stop the launcher | `SHUTDOWN` sent to Redis last; the AOF file contains the last writes |
+| LA-RDS-06 | Redis from the deps folder | `[redis] binary = "redis-server"`, not in the `PATH`; a `redis-server` in `~/.local/opt/targetscope-deps/bin`, then also in `$TARGETSCOPE_DEPS/bin`, then also in the `PATH` (lookup function `find_binary_in`) | Found in the deps folder of `HOME`; then `$TARGETSCOPE_DEPS/bin` wins; then the `PATH` wins |
+| LA-RDS-07 | Redis not found | Neither in the `PATH` nor in a deps folder; a full path that doesn't exist | Not found; the launcher would exit with code 1 and the message naming the searched places |
 
 ## Startup order (integration)
 What is tested: starting in dependency order and waiting for `ping` ([launcher.md](../programs/launcher.md#startup-sequence)).

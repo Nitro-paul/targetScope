@@ -25,5 +25,6 @@ thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+tempfile.workspace = true
 targetscope_testkit.workspace = true
 tokio.workspace = true

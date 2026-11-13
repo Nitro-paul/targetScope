@@ -66,8 +66,14 @@ fn err<E: std::fmt::Debug>(e: E) -> FrameError {
 
 type FrameService = iceoryx2::service::port_factory::publish_subscribe::PortFactory<ipc::Service, [u8], FrameHeader>;
 
+// doc/frame_transport.md#iceoryx2-services
+fn iceoryx2_config() -> &'static Config {
+    static CONFIG: std::sync::OnceLock<Config> = std::sync::OnceLock::new();
+    CONFIG.get_or_init(Config::default)
+}
+
 fn node() -> Result<Node<ipc::Service>, FrameError> {
-    NodeBuilder::new().create::<ipc::Service>().map_err(err)
+    NodeBuilder::new().config(iceoryx2_config()).create::<ipc::Service>().map_err(err)
 }
 
 // doc/frame_transport.md#iceoryx2-services
@@ -144,7 +150,7 @@ pub fn frame_subscriber(service: &str) -> Result<FrameSubscriber, FrameError> {
 
 // doc/frame_transport.md#stale-shared-memory
 pub fn cleanup_dead_nodes() -> Result<(), FrameError> {
-    Node::<ipc::Service>::list(Config::global_config(), |state| {
+    Node::<ipc::Service>::list(iceoryx2_config(), |state| {
         if let NodeState::<ipc::Service>::Dead(view) = state {
             if let Err(e) = view.try_remove_stale_resources() {
                 tracing::warn!(error = ?e, "stale iceoryx2 resources could not be removed");

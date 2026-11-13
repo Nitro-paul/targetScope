@@ -110,6 +110,7 @@ Started as a child process:
 redis-server --port <redis.port> --bind 127.0.0.1 --dir <data_dir>/redis
              --appendonly yes --appendfsync everysec --save "" --logfile <log_dir>/redis.log
 ```
+- `[redis] binary` is a full path or a name. A name is looked up in the `PATH`, then in `$TARGETSCOPE_DEPS/bin` and `~/.local/opt/targetscope-deps/bin` (where `tools/install_deps.sh` builds Valkey, see [development.md](../development.md#install-without-root)), so a Redis built without root is found without changing the `PATH`. If it isn't found, the launcher exits with code 1 and a message that names the places it searched.
 - AOF persistence is required: the current session of `session_manager` must survive a restart of Redis or the PC.
 - Redis only listens on localhost; the browser never talks to Redis.
 - If the port is already in use (e.g. by a system Redis), the launcher stops with an error message instead of using a foreign Redis. Another port can be set in `[redis] port`.

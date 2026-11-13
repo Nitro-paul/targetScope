@@ -18,6 +18,8 @@ Redis is still used for everything else about the camera (status, controls, cali
 
 Each publish/subscribe service has a matching event service with the same name plus `/notify`. The publisher notifies it after each frame, so subscribers can block on a listener instead of polling.
 
+Every program creates its iceoryx2 nodes with iceoryx2's built-in default configuration (Rust `Config::default()`, C++ the default `iox2::Config`) and never reads an iceoryx2 configuration file. So all programs use the same settings, and iceoryx2 doesn't warn about a missing file.
+
 Service configuration (identical in every language; the values are part of the contract):
 
 | Setting | Value | Reason |
