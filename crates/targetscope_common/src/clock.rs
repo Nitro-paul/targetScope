@@ -28,6 +28,36 @@ impl Clock for SystemClock {
     }
 }
 
+// doc/shared_libraries.md#clock-and-failpoints
+pub struct FrozenWallClock(pub SystemTime);
+
+#[async_trait]
+impl Clock for FrozenWallClock {
+    fn now(&self) -> SystemTime {
+        self.0
+    }
+
+    fn monotonic(&self) -> Instant {
+        Instant::now()
+    }
+
+    async fn sleep(&self, d: Duration) {
+        tokio::time::sleep(d).await
+    }
+}
+
+// doc/shared_libraries.md#clock-and-failpoints
+pub fn program_clock() -> std::sync::Arc<dyn Clock> {
+    #[cfg(feature = "failpoints")]
+    if let Some(ms) = std::env::var(TEST_NOW_VAR).ok().and_then(|v| v.parse::<u64>().ok()) {
+        return std::sync::Arc::new(FrozenWallClock(UNIX_EPOCH + Duration::from_millis(ms)));
+    }
+    std::sync::Arc::new(SystemClock)
+}
+
+// doc/shared_libraries.md#clock-and-failpoints
+pub const TEST_NOW_VAR: &str = "TARGETSCOPE_TEST_NOW";
+
 pub fn unix_s(t: SystemTime) -> i64 {
     unix_ms(t).div_euclid(1000)
 }

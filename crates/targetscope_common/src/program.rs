@@ -26,7 +26,7 @@ pub async fn start(name: &'static str) -> Program {
 pub async fn connect(url: &str, name: &str) -> Bus {
     let mut backoff = Duration::from_millis(100);
     loop {
-        match Bus::connect(url, name).await {
+        match Bus::connect_with_clock(url, name, crate::clock::program_clock()).await {
             Ok(bus) => return bus,
             Err(e) => {
                 tracing::warn!(error = %e, "redis not reachable");
