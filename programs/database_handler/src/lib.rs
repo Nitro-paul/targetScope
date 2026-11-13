@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use serde_json::json;
 use targetscope_common::bus::Bus;
-use targetscope_common::clock::{Clock, SystemClock};
+use targetscope_common::clock::Clock;
 use targetscope_common::config::{expand_home, BootstrapConfig};
 use targetscope_common::messages::database_handler::{ChangeAction, DataChanged, DatabaseHandlerEvent, Table, PROGRAM};
 use targetscope_common::{failpoints, logging, program};
@@ -34,7 +34,7 @@ pub async fn run() -> ExitCode {
     failpoints::setup();
     let config = BootstrapConfig::from_env();
     let _log = logging::init(PROGRAM, &config);
-    let clock: Arc<dyn Clock> = Arc::new(SystemClock);
+    let clock: Arc<dyn Clock> = targetscope_common::clock::program_clock();
     let db = match Database::open(&config.db_path, &config.data_dir) {
         Ok(db) => db,
         Err(e) => {
