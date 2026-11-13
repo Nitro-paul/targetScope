@@ -47,9 +47,5 @@ pub fn start_order(programs: &[ProgramSpec]) -> Result<Vec<String>, String> {
 
 // doc/programs/launcher.md#startup-sequence
 pub fn enabled_dependencies<'a>(p: &'a ProgramSpec, programs: &'a [ProgramSpec]) -> Vec<&'a str> {
-    p.depends_on
-        .iter()
-        .filter(|d| programs.iter().any(|q| &q.name == *d && q.enabled))
-        .map(String::as_str)
-        .collect()
+    p.depends_on.iter().filter(|d| programs.iter().any(|q| &q.name == *d && q.enabled)).map(String::as_str).collect()
 }

@@ -54,7 +54,10 @@ fn la_rds_06_redis_from_the_deps_folder() {
         Some(deps.path().join("bin/redis-server"))
     );
     std::fs::write(empty.path().join("redis-server"), b"").unwrap();
-    assert_eq!(find_binary_in("redis-server", path, Some(deps.path().into()), Some(home.path().into())), Some(empty.path().join("redis-server")));
+    assert_eq!(
+        find_binary_in("redis-server", path, Some(deps.path().into()), Some(home.path().into())),
+        Some(empty.path().join("redis-server"))
+    );
 }
 
 // LA-RDS-07

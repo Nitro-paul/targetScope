@@ -57,9 +57,7 @@ pub async fn run(args: Vec<String>) -> ExitCode {
             return fail(format!("{}: {e}", dir.display()));
         }
     }
-    let bootstrap = BootstrapConfig::from_vars(|name| {
-        env::program_env(&config).into_iter().find(|(k, _)| k == name).map(|(_, v)| v)
-    });
+    let bootstrap = BootstrapConfig::from_vars(|name| env::program_env(&config).into_iter().find(|(k, _)| k == name).map(|(_, v)| v));
     let _log = logging::init(PROGRAM, &bootstrap);
     if let Err(e) = frames::cleanup_dead_nodes() {
         tracing::warn!(error = %e, "stale shared memory could not be removed");
