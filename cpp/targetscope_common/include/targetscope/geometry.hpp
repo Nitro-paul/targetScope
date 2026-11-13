@@ -17,4 +17,4 @@ struct Point {
 Point to_point(const Polar& p);
 Polar to_polar(const Point& p);
 
-}  // namespace targetscope::geometry
+}

@@ -12,4 +12,4 @@ namespace targetscope::targets {
 std::vector<model::Ring> generate_rings(const model::TargetType& t);
 std::optional<std::string> validate_target_type(const model::TargetType& t);
 
-}  // namespace targetscope::targets
+}

@@ -1,10 +1,10 @@
 // doc/testing/shared_libraries.md#geometry-unit
+#include "targetscope/geometry.hpp"
+
 #include <gtest/gtest.h>
 
 #include <cmath>
 #include <random>
-
-#include "targetscope/geometry.hpp"
 
 using namespace targetscope::geometry;
 
@@ -63,4 +63,6 @@ TEST(Geometry, LIB_GEO_06_RoundTrip) {
 }
 
 // LIB-GEO-07
-TEST(Geometry, LIB_GEO_07_RustAndCppAgree) { GTEST_SKIP() << "doc/testing/shared_libraries.md#geometry-unit LIB-GEO-07"; }
+TEST(Geometry, LIB_GEO_07_RustAndCppAgree) {
+    GTEST_SKIP() << "doc/testing/shared_libraries.md#geometry-unit LIB-GEO-07";
+}

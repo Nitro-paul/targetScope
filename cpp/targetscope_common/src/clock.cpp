@@ -15,4 +15,4 @@ std::int64_t unix_ms(std::chrono::system_clock::time_point t) {
     return std::chrono::duration_cast<std::chrono::milliseconds>(t.time_since_epoch()).count();
 }
 
-}  // namespace targetscope
+}

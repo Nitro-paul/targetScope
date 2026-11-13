@@ -1,7 +1,7 @@
 // doc/testing/shared_libraries.md#clock-unit
-#include <gtest/gtest.h>
-
 #include "targetscope/clock.hpp"
+
+#include <gtest/gtest.h>
 
 using namespace targetscope;
 

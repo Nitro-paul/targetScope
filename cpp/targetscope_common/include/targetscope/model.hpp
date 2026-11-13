@@ -3,11 +3,10 @@
 #pragma once
 
 #include <cstdint>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 namespace targetscope::model {
 
@@ -145,4 +144,4 @@ json optional_json(const std::optional<T>& v) {
     return v ? json(*v) : json(nullptr);
 }
 
-}  // namespace targetscope::model
+}

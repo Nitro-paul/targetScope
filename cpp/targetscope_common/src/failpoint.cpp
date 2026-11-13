@@ -32,4 +32,4 @@ bool hit(std::string_view name) {
     return false;
 }
 
-}  // namespace targetscope::failpoints
+}

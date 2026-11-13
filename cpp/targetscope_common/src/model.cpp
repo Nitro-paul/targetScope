@@ -60,7 +60,10 @@ void from_json(const json& j, PixelPoint& v) {
 }
 
 void to_json(json& j, const Corners& v) {
-    j = json{{"top_left", v.top_left}, {"top_right", v.top_right}, {"bottom_right", v.bottom_right}, {"bottom_left", v.bottom_left}};
+    j = json{{"top_left", v.top_left},
+             {"top_right", v.top_right},
+             {"bottom_right", v.bottom_right},
+             {"bottom_left", v.bottom_left}};
 }
 void from_json(const json& j, Corners& v) {
     j.at("top_left").get_to(v.top_left);
@@ -95,8 +98,16 @@ void from_json(const json& j, MenuEntry& v) {
 }
 
 void to_json(json& j, const CameraControl& v) {
-    j = json{{"id", v.id},     {"name", v.name},   {"kind", v.kind},   {"min", v.min},           {"max", v.max},
-             {"step", v.step}, {"default", v.default_value}, {"value", v.value}, {"menu", v.menu}, {"inactive", v.inactive}};
+    j = json{{"id", v.id},
+             {"name", v.name},
+             {"kind", v.kind},
+             {"min", v.min},
+             {"max", v.max},
+             {"step", v.step},
+             {"default", v.default_value},
+             {"value", v.value},
+             {"menu", v.menu},
+             {"inactive", v.inactive}};
 }
 void from_json(const json& j, CameraControl& v) {
     j.at("id").get_to(v.id);
@@ -135,4 +146,4 @@ void from_json(const json& j, Setting& v) {
 void to_json(json& j, const Condition& v) { j = json{{"field", v.field}, {"op", v.op}, {"value", v.value}}; }
 void to_json(json& j, const Filter& v) { j = json{{"conditions", v.conditions}}; }
 
-}  // namespace targetscope::model
+}
