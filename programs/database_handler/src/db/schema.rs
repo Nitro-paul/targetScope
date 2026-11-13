@@ -3,6 +3,7 @@
 use std::path::Path;
 
 use rusqlite::{params, Connection};
+use targetscope_common::failpoints;
 
 use crate::error::Result;
 use crate::known_settings::KNOWN_SETTINGS;
@@ -12,6 +13,8 @@ pub const MIGRATIONS: &[&str] = &[include_str!("../../migrations/0001_initial.sq
 pub fn migrate(c: &mut Connection, migrations: &[&str]) -> Result<()> {
     let version: i64 = c.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     for (i, sql) in migrations.iter().enumerate().skip(version as usize) {
+        // doc/testing/overview.md#failpoints
+        failpoints::hit("db.migrate");
         let tx = c.transaction()?;
         tx.execute_batch(sql)?;
         tx.pragma_update(None, "user_version", (i + 1) as i64)?;

@@ -21,6 +21,7 @@ tracing.workspace = true
 fail.workspace = true
 
 [dev-dependencies]
+redis.workspace = true
 tempfile.workspace = true
 targetscope_testkit.workspace = true
 tokio.workspace = true

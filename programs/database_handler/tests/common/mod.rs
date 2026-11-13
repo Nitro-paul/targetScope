@@ -47,7 +47,14 @@ impl Handler {
     }
 
     pub async fn restart(&mut self) {
+        self.restart_with(&[]).await;
+    }
+
+    pub async fn restart_with(&mut self, extra_env: &[(&str, &str)]) {
         self.program.terminate(Duration::from_secs(10));
+        let mut env = self.dir.env(&self.redis.url());
+        env.extend(extra_env.iter().map(|(k, v)| (k.to_string(), v.to_string())));
+        self.env = env;
         self.program = ProgramUnderTest::start(&binary(), P, &self.env).await;
     }
 
