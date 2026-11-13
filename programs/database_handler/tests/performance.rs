@@ -24,9 +24,8 @@ async fn large_database() -> (Handler, ReferenceIds) {
                  VALUES (?1, ?2, ?3, 500, 520, 10, ?4, ?5, ?6, 1, 0, ?7, 1200, 'perf', 1)",
             )
             .unwrap();
-        let mut shot = tx
-            .prepare("INSERT INTO shots (session_id, shot_no, paper_no, angle_turns, radius_mm) VALUES (?1, ?2, 1, ?3, ?4)")
-            .unwrap();
+        let mut shot =
+            tx.prepare("INSERT INTO shots (session_id, shot_no, paper_no, angle_turns, radius_mm) VALUES (?1, ?2, 1, ?3, ?4)").unwrap();
         for s in 1..=SESSIONS {
             session
                 .execute(rusqlite::params![
@@ -92,9 +91,8 @@ async fn perf_db_prf_02_full_read() {
 async fn perf_db_prf_03_save() {
     let (h, ids) = large_database().await;
     let mut p = cs_ref(ids, None);
-    let shots: Vec<_> = (0..SHOTS)
-        .map(|n| json!({ "angle_turns": n as f64 / 61.0, "radius_mm": 10.5, "paper_no": if n < 30 { 1 } else { 2 } }))
-        .collect();
+    let shots: Vec<_> =
+        (0..SHOTS).map(|n| json!({ "angle_turns": n as f64 / 61.0, "radius_mm": 10.5, "paper_no": if n < 30 { 1 } else { 2 } })).collect();
     p["shots"] = json!(shots);
     p["shot_count"] = json!(SHOTS);
     p["paper_count"] = json!(2);

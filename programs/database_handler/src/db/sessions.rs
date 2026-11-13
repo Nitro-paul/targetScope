@@ -53,9 +53,8 @@ pub fn insert(c: &Connection, uuid: Uuid, saved_at: i64, s: &NewSession, images:
         ],
     )?;
     let id = c.last_insert_rowid();
-    let mut shot = c.prepare_cached(
-        "INSERT INTO shots (session_id, shot_no, paper_no, angle_turns, radius_mm) VALUES (?1, ?2, ?3, ?4, ?5)",
-    )?;
+    let mut shot =
+        c.prepare_cached("INSERT INTO shots (session_id, shot_no, paper_no, angle_turns, radius_mm) VALUES (?1, ?2, ?3, ?4, ?5)")?;
     for (i, s) in s.shots.iter().enumerate() {
         shot.execute(params![id, i as i64 + 1, s.paper_no, s.angle_turns, s.radius_mm])?;
     }
@@ -172,7 +171,8 @@ pub fn delete(c: &Connection, id: i64) -> Result<Vec<String>> {
 
 // doc/programs/database_handler.md#startup
 pub fn all_image_paths(c: &Connection) -> Result<Vec<String>> {
-    let mut stmt = c.prepare("SELECT image_path FROM session_images UNION ALL SELECT image_path FROM devices WHERE image_path IS NOT NULL")?;
+    let mut stmt =
+        c.prepare("SELECT image_path FROM session_images UNION ALL SELECT image_path FROM devices WHERE image_path IS NOT NULL")?;
     let paths = stmt.query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
     Ok(paths)
 }

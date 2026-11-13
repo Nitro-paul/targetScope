@@ -49,16 +49,13 @@ pub fn reset(c: &Connection, names: &[&str], data_dir: &Path) -> Result<()> {
 pub fn find(c: &Connection, f: &Filter, data_dir: &Path) -> Result<Vec<Setting>> {
     let sql = filter_to_sql(f, SETTING_COLUMNS)?;
     let order = if f.order_by.is_none() { " ORDER BY name" } else { "" };
-    let mut stmt =
-        c.prepare(&format!("SELECT name, display_name, active, value FROM settings{}", insert_order(&sql.clause, order)))?;
+    let mut stmt = c.prepare(&format!("SELECT name, display_name, active, value FROM settings{}", insert_order(&sql.clause, order)))?;
     let rows = stmt.query_map(rusqlite::params_from_iter(sql.params), row)?;
     Ok(rows.map(|r| r.map(|s| complete(s, data_dir))).collect::<rusqlite::Result<_>>()?)
 }
 
 pub fn get_setting(c: &Connection, name: &str) -> Result<Option<Setting>> {
-    Ok(c
-        .query_row("SELECT name, display_name, active, value FROM settings WHERE name = ?1", [name], row)
-        .optional()?)
+    Ok(c.query_row("SELECT name, display_name, active, value FROM settings WHERE name = ?1", [name], row).optional()?)
 }
 
 pub fn get(c: &Connection, name: &str) -> Result<Option<String>> {

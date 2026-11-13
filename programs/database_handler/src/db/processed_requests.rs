@@ -6,9 +6,8 @@ use uuid::Uuid;
 use crate::error::Result;
 
 pub fn find(c: &Connection, request_id: &Uuid) -> Result<Option<serde_json::Value>> {
-    let text: Option<String> = c
-        .query_row("SELECT response FROM processed_requests WHERE request_id = ?1", [request_id.to_string()], |r| r.get(0))
-        .optional()?;
+    let text: Option<String> =
+        c.query_row("SELECT response FROM processed_requests WHERE request_id = ?1", [request_id.to_string()], |r| r.get(0)).optional()?;
     Ok(text.and_then(|t| serde_json::from_str(&t).ok()))
 }
 

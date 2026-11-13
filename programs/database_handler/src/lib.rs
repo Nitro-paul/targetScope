@@ -42,9 +42,8 @@ pub async fn run() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    let folder = |name: &str, default: PathBuf| {
-        db::settings::get(&db.conn, name).ok().flatten().map(|v| expand_home(&v)).unwrap_or(default)
-    };
+    let folder =
+        |name: &str, default: PathBuf| db::settings::get(&db.conn, name).ok().flatten().map(|v| expand_home(&v)).unwrap_or(default);
     let images = ImageStore {
         image_dir: folder("image_dir", config.data_dir.join("images")),
         staging_dir: folder("staging_dir", config.data_dir.join("staging")),
@@ -83,11 +82,7 @@ const RELOAD_ATTEMPTS: u32 = 10;
 // doc/interfaces.md#data_changed
 // doc/programs/database_handler.md#error-handling
 async fn send_reload(bus: &Bus) {
-    let event = DatabaseHandlerEvent::DataChanged(DataChanged {
-        table: Table::All,
-        key: json!(null),
-        action: ChangeAction::Reload,
-    });
+    let event = DatabaseHandlerEvent::DataChanged(DataChanged { table: Table::All, key: json!(null), action: ChangeAction::Reload });
     let mut delay = std::time::Duration::from_millis(100);
     for attempt in 1..=RELOAD_ATTEMPTS {
         match bus.publish(&event).await {

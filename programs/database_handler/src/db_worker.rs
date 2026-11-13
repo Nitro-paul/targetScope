@@ -9,9 +9,9 @@ use serde_json::{json, Value};
 use targetscope_common::clock::{unix_s, Clock};
 use targetscope_common::failpoints;
 use targetscope_common::messages::database_handler::{
-    ChangeAction, CreateSessionResponse, DataChanged, DatabaseHandlerRequest as R, IdResponse, ImportResponse,
-    MovedImages, NameResponse, ReadDevicesResponse, ReadSessionsResponse, ReadSettingsResponse,
-    ReadShootersResponse, ReadTargetTypesResponse, ResetSettingsResponse, SetDeviceImageResponse, Table,
+    ChangeAction, CreateSessionResponse, DataChanged, DatabaseHandlerRequest as R, IdResponse, ImportResponse, MovedImages, NameResponse,
+    ReadDevicesResponse, ReadSessionsResponse, ReadSettingsResponse, ReadShootersResponse, ReadTargetTypesResponse, ResetSettingsResponse,
+    SetDeviceImageResponse, Table,
 };
 use targetscope_common::model::{NewSession, PaperImage, Setting};
 use tokio::sync::{mpsc, oneshot};
@@ -139,12 +139,8 @@ impl DbWorker {
             }
             R::ReadShooters(r) => read(to_value(ReadShootersResponse { shooters: db::shooters::find(c, &r.filter)? })),
             R::ReadDevices(r) => read(to_value(ReadDevicesResponse { devices: db::devices::find(c, &r.filter)? })),
-            R::ReadTargetTypes(r) => {
-                read(to_value(ReadTargetTypesResponse { target_types: db::target_types::find(c, &r.filter)? }))
-            }
-            R::ReadSettings(r) => {
-                read(to_value(ReadSettingsResponse { settings: db::settings::find(c, &r.filter, &self.data_dir)? }))
-            }
+            R::ReadTargetTypes(r) => read(to_value(ReadTargetTypesResponse { target_types: db::target_types::find(c, &r.filter)? })),
+            R::ReadSettings(r) => read(to_value(ReadSettingsResponse { settings: db::settings::find(c, &r.filter, &self.data_dir)? })),
             R::Ping(_) => read(json!({})),
             R::ChangeImageDir(_) => Err(HandlerError::InvalidMessage("change_image_dir is handled by the stream worker".into())),
             write => {
@@ -205,19 +201,13 @@ impl DbWorker {
         if !s.copied.is_empty() || !s.failed.is_empty() {
             crate::image_dir_change::sync(&old, &s.new_dir, &s.copied, &s.failed)?;
         }
-        tx.execute(
-            "UPDATE settings SET value = ?1, active = 1 WHERE name = 'image_dir'",
-            [s.new_dir.display().to_string()],
-        )?;
+        tx.execute("UPDATE settings SET value = ?1, active = 1 WHERE name = 'image_dir'", [s.new_dir.display().to_string()])?;
         if let Some((id, type_name)) = &s.request_id {
             db::processed_requests::record(&tx, id, type_name, &s.response, now)?;
         }
         tx.commit()?;
         self.images.set_image_dir(s.new_dir);
-        Ok(DbOutcome {
-            response: s.response,
-            events: vec![event(Table::Settings, json!("image_dir"), ChangeAction::Updated)],
-        })
+        Ok(DbOutcome { response: s.response, events: vec![event(Table::Settings, json!("image_dir"), ChangeAction::Updated)] })
     }
 
     // doc/programs/database_handler.md#startup

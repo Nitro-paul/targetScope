@@ -49,8 +49,7 @@ impl HandlerError {
 impl From<HandlerError> for ServiceError {
     fn from(e: HandlerError) -> Self {
         if let HandlerError::StagedFileMissing(file) = &e {
-            return ServiceError::not_found(format!("staged file {file}"))
-                .with_details(serde_json::json!({ "staged_file": file }));
+            return ServiceError::not_found(format!("staged file {file}")).with_details(serde_json::json!({ "staged_file": file }));
         }
         let message = match &e {
             HandlerError::InvalidMessage(m)

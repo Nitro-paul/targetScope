@@ -104,9 +104,7 @@ async fn db_sho_09_filter() {
     for name in ["Alex", "Bea", "Chris"] {
         h.ok("save_shooter", json!({ "name": name })).await;
     }
-    let r = h
-        .ok("read_shooters", json!({ "filter": { "conditions": [{ "field": "name", "op": "like", "value": "Al%" }] } }))
-        .await;
+    let r = h.ok("read_shooters", json!({ "filter": { "conditions": [{ "field": "name", "op": "like", "value": "Al%" }] } })).await;
     let names: Vec<&str> = r["shooters"].as_array().unwrap().iter().map(|s| s["name"].as_str().unwrap()).collect();
     assert_eq!(names, ["Alex"]);
 }

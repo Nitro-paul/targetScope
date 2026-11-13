@@ -19,11 +19,9 @@ fn rings(t: &Value) -> Vec<(i64, f64)> {
     t["rings"].as_array().unwrap().iter().map(|r| (r["score"].as_i64().unwrap(), r["radius_mm"].as_f64().unwrap())).collect()
 }
 
-// doc/testing/shared_libraries.md#ring-generation-and-target-type-validation-unit (LIB-TGT-01)
-const TT_REF_RINGS: [(i64, f64); 12] = [
-    (12, 5.0), (11, 10.0), (10, 15.0), (9, 20.0), (8, 25.0), (7, 30.0),
-    (6, 40.0), (5, 50.0), (4, 60.0), (3, 70.0), (2, 80.0), (1, 90.0),
-];
+// LIB-TGT-01
+const TT_REF_RINGS: [(i64, f64); 12] =
+    [(12, 5.0), (11, 10.0), (10, 15.0), (9, 20.0), (8, 25.0), (7, 30.0), (6, 40.0), (5, 50.0), (4, 60.0), (3, 70.0), (2, 80.0), (1, 90.0)];
 
 fn assert_rings(t: &Value, expected: &[(i64, f64)]) {
     let got = rings(t);
@@ -50,7 +48,11 @@ async fn db_tgt_01_create_and_read() {
 #[tokio::test]
 async fn db_tgt_02_rings_in_the_payload_are_ignored() {
     let h = Handler::start().await;
-    let p = with(tt_ref(), "rings", json!([{ "score": 3, "radius_mm": 1.0 }, { "score": 2, "radius_mm": 2.0 }, { "score": 1, "radius_mm": 3.0 }]));
+    let p = with(
+        tt_ref(),
+        "rings",
+        json!([{ "score": 3, "radius_mm": 1.0 }, { "score": 2, "radius_mm": 2.0 }, { "score": 1, "radius_mm": 3.0 }]),
+    );
     let id = h.ok("save_target_type", p).await["id"].as_i64().unwrap();
     assert_rings(&target_type(&h, id).await, &TT_REF_RINGS);
 }
@@ -59,7 +61,7 @@ async fn db_tgt_02_rings_in_the_payload_are_ignored() {
 #[tokio::test]
 async fn db_tgt_03_invalid_target_types() {
     let h = Handler::start().await;
-    // doc/testing/shared_libraries.md#ring-generation-and-target-type-validation-unit (inputs of LIB-TGT-07)
+    // LIB-TGT-07
     let changes = [
         ("inner_white_score", json!(7)),
         ("black_score", json!(1)),
@@ -96,9 +98,16 @@ async fn db_tgt_05_locked_target_type() {
     let before = target_type(&h, ids.target_type_id).await;
     let base = with(tt_ref(), "id", json!(ids.target_type_id));
     let fields = [
-        ("paper_width_mm", json!(210.0)), ("paper_height_mm", json!(210.0)), ("center_x_mm", json!(101.0)),
-        ("center_y_mm", json!(101.0)), ("inner_white_radius_mm", json!(4.0)), ("inner_white_score", json!(11)),
-        ("black_radius_mm", json!(31.0)), ("black_score", json!(6)), ("outer_radius_mm", json!(89.0)), ("outer_score", json!(2)),
+        ("paper_width_mm", json!(210.0)),
+        ("paper_height_mm", json!(210.0)),
+        ("center_x_mm", json!(101.0)),
+        ("center_y_mm", json!(101.0)),
+        ("inner_white_radius_mm", json!(4.0)),
+        ("inner_white_score", json!(11)),
+        ("black_radius_mm", json!(31.0)),
+        ("black_score", json!(6)),
+        ("outer_radius_mm", json!(89.0)),
+        ("outer_score", json!(2)),
     ];
     for (field, value) in fields {
         assert_eq!(h.err("save_target_type", with(base.clone(), field, value)).await, "in_use", "{field}");

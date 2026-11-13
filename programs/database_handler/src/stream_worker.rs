@@ -97,12 +97,11 @@ impl StreamWorker {
             events.extend(o.events);
             images = report;
         }
-        let request = R::ResetSettings(targetscope_common::messages::database_handler::ResetSettings {
-            names: Some(names.clone()),
-            move_images,
-        });
+        let request =
+            R::ResetSettings(targetscope_common::messages::database_handler::ResetSettings { names: Some(names.clone()), move_images });
         let mut o = self.command(request_id, request).await?;
-        let mut response: ResetSettingsResponse = serde_json::from_value(o.response).map_err(|e| HandlerError::InvalidMessage(e.to_string()))?;
+        let mut response: ResetSettingsResponse =
+            serde_json::from_value(o.response).map_err(|e| HandlerError::InvalidMessage(e.to_string()))?;
         response.names = names;
         response.images = images;
         events.append(&mut o.events);
@@ -163,7 +162,8 @@ impl StreamWorker {
         }
         let (o, n) = (old.to_path_buf(), new.to_path_buf());
         let copied = tokio::task::spawn_blocking(move || copy_all(&o, &n)).await.map_err(|e| HandlerError::InvalidState(e.to_string()))?;
-        let switch = Switch { request_id: None, new_dir: new.to_path_buf(), copied: copied.copied, failed: copied.failed, response: Value::Null };
+        let switch =
+            Switch { request_id: None, new_dir: new.to_path_buf(), copied: copied.copied, failed: copied.failed, response: Value::Null };
         let mut outcome = self.switch_command(switch).await?;
         let (o, n) = (old.to_path_buf(), new.to_path_buf());
         let (moved, failed) =

@@ -18,7 +18,9 @@ fn fingerprint(h: &Handler) -> String {
         let mut stmt = db.prepare(&format!("SELECT * FROM {table} ORDER BY rowid")).unwrap();
         let n = stmt.column_count();
         let rows: Vec<String> = stmt
-            .query_map([], |r| Ok((0..n).map(|i| format!("{:?}", r.get::<_, rusqlite::types::Value>(i).unwrap())).collect::<Vec<_>>().join("|")))
+            .query_map([], |r| {
+                Ok((0..n).map(|i| format!("{:?}", r.get::<_, rusqlite::types::Value>(i).unwrap())).collect::<Vec<_>>().join("|"))
+            })
             .unwrap()
             .map(Result::unwrap)
             .collect();
@@ -95,7 +97,11 @@ async fn db_idm_01_same_request_twice() {
         ("import_target_type", with(with(tt, "name", json!("TT-IMP")), "uuid", json!("22222222-2222-4222-8222-222222222222"))),
         (
             "import_device",
-            with(with(serde_json::to_value(fixtures::dev_ref()).unwrap(), "name", json!("Imp")), "uuid", json!("33333333-3333-4333-8333-333333333333")),
+            with(
+                with(serde_json::to_value(fixtures::dev_ref()).unwrap(), "name", json!("Imp")),
+                "uuid",
+                json!("33333333-3333-4333-8333-333333333333"),
+            ),
         ),
         ("import_session", imported),
         ("save_setting", json!({ "name": "camera_fps", "display_name": "x", "value": "15", "active": true })),
@@ -163,13 +169,9 @@ async fn db_idm_03_crash_after_commit() {
     assert_eq!(h.count("SELECT count(*) FROM sessions"), 1);
     assert_eq!(h.device(ids.device_id).await["shot_count"], 5);
     let mut c = h.redis.connection().await;
-    let entries: redis::streams::StreamRangeReply =
-        redis::cmd("XRANGE").arg(&stream).arg("-").arg("+").query_async(&mut c).await.unwrap();
-    let ours = entries
-        .ids
-        .iter()
-        .filter(|e| redis::from_redis_value::<String>(e.map["data"].clone()).unwrap().contains(&id.to_string()))
-        .count();
+    let entries: redis::streams::StreamRangeReply = redis::cmd("XRANGE").arg(&stream).arg("-").arg("+").query_async(&mut c).await.unwrap();
+    let ours =
+        entries.ids.iter().filter(|e| redis::from_redis_value::<String>(e.map["data"].clone()).unwrap().contains(&id.to_string())).count();
     assert_eq!(ours, 1);
     assert_eq!(changes(&mut probe, 1).await, ["all/null/reload"]);
 }

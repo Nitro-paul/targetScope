@@ -220,9 +220,18 @@ fn db_sql_15_session_ranges() {
 #[test]
 fn db_sql_16_target_type_rules() {
     let d = db();
-    let base = [("paper_width_mm", "200"), ("paper_height_mm", "200"), ("center_x_mm", "100"), ("center_y_mm", "100"),
-        ("inner_white_radius_mm", "5"), ("inner_white_score", "12"), ("black_radius_mm", "30"), ("black_score", "7"),
-        ("outer_radius_mm", "90"), ("outer_score", "1")];
+    let base = [
+        ("paper_width_mm", "200"),
+        ("paper_height_mm", "200"),
+        ("center_x_mm", "100"),
+        ("center_y_mm", "100"),
+        ("inner_white_radius_mm", "5"),
+        ("inner_white_score", "12"),
+        ("black_radius_mm", "30"),
+        ("black_score", "7"),
+        ("outer_radius_mm", "90"),
+        ("outer_score", "1"),
+    ];
     let changes = [
         ("inner_white_score", "7"),
         ("black_score", "1"),

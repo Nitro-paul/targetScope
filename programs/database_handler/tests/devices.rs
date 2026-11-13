@@ -33,7 +33,9 @@ async fn db_dev_01_create() {
 #[tokio::test]
 async fn db_dev_02_invalid() {
     let h = Handler::start().await;
-    for payload in [with(dev_ref(), "name", json!("")), with(dev_ref(), "bullet_diameter_mm", json!(0)), without(dev_ref(), "bullet_diameter_mm")] {
+    for payload in
+        [with(dev_ref(), "name", json!("")), with(dev_ref(), "bullet_diameter_mm", json!(0)), without(dev_ref(), "bullet_diameter_mm")]
+    {
         assert_eq!(h.err("save_device", payload).await, "validation_failed");
     }
     assert!(h.ok("read_devices", json!({})).await["devices"].as_array().unwrap().is_empty());
@@ -123,10 +125,8 @@ async fn db_dev_09_set_an_image() {
     let id = h.ok("save_device", dev_ref()).await["id"].as_i64().unwrap();
     let staged = h.stage("paper.jpg");
     let mut probe = h.probe().await;
-    let path = h.ok("set_device_image", json!({ "device_id": id, "staged_file": staged })).await["image_path"]
-        .as_str()
-        .unwrap()
-        .to_string();
+    let path =
+        h.ok("set_device_image", json!({ "device_id": id, "staged_file": staged })).await["image_path"].as_str().unwrap().to_string();
     assert!(image_name_ok(&path, id, "jpg"), "{path}");
     assert_eq!(h.device(id).await["image_path"], path.as_str());
     assert_eq!(std::fs::read(h.image(&path)).unwrap(), std::fs::read(fixtures::testdata("images/paper.jpg")).unwrap());
