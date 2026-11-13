@@ -58,7 +58,6 @@ pub fn opt_count<'de, D: Deserializer<'de>>(d: D) -> Result<Option<i64>, D::Erro
     checked_opt(d, |v: &i64| *v >= 0, "is below 0")
 }
 
-/// `null` is kept as `Some(None)`, a missing field (with `default`) is `None`.
 pub fn opt_opt_count<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Option<i64>>, D::Error> {
     opt_count(d).map(Some)
 }

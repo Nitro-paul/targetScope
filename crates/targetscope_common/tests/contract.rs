@@ -47,7 +47,6 @@ fn rel(path: &Path, base: &Path) -> String {
     path.strip_prefix(base).unwrap().to_string_lossy().replace('\\', "/")
 }
 
-/// Schema names relative to `schemas/` without `.schema.json`, e.g. `analyzer/analyze_shots`.
 fn schema_names() -> BTreeSet<String> {
     let dir = schemas_dir();
     json_files(&dir)
@@ -57,7 +56,6 @@ fn schema_names() -> BTreeSet<String> {
         .collect()
 }
 
-// ------------------------------------------------------------------ validation
 
 struct SchemaFiles;
 
@@ -86,7 +84,6 @@ fn validators() -> &'static BTreeMap<String, jsonschema::Validator> {
     })
 }
 
-/// Validation errors as "<instance path>: <message>".
 fn errors(schema: &str, instance: &Value) -> Vec<String> {
     let v = validators().get(schema).unwrap_or_else(|| panic!("no schema {schema}"));
     v.iter_errors(instance).map(|e| format!("{}: {}", e.instance_path(), e)).collect()
@@ -96,7 +93,6 @@ fn schema(name: &str) -> Value {
     read_json(&schemas_dir().join(format!("{name}.schema.json")))
 }
 
-// ------------------------------------------------------------------ Rust types per schema
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Kind {
@@ -108,15 +104,11 @@ enum Kind {
 
 type Codec = fn(&Value) -> Result<Value, String>;
 
-/// How the Rust library handles the messages of one schema.
 #[derive(Clone, Copy)]
 struct Entry {
     kind: Kind,
-    /// example → Rust type → JSON, for the whole message
     round_trip: Codec,
-    /// example → Rust type → message built by the library's own constructors
     produce: Codec,
-    /// the receiving path of the library (envelope and payload); Err for rejected messages
     receive: Codec,
 }
 
@@ -235,7 +227,7 @@ fn event<E: Serialize + DeserializeOwned>() -> Entry {
     Entry { kind: Kind::Event, round_trip: event_round_trip::<E>, produce: event_produce::<E>, receive: event_receive::<E> }
 }
 
-/// Every schema with the Rust type that implements it (LIB-CON-07).
+// doc/shared_libraries.md#contract-tests
 fn registry() -> &'static BTreeMap<String, Entry> {
     static R: OnceLock<BTreeMap<String, Entry>> = OnceLock::new();
     R.get_or_init(|| {
@@ -330,7 +322,7 @@ fn registry() -> &'static BTreeMap<String, Entry> {
     })
 }
 
-/// Variant names of a tagged message enum, read from serde's "unknown variant" error.
+// doc/shared_libraries.md#contract-tests
 fn variants<E: DeserializeOwned>() -> Vec<String> {
     let e = serde_json::from_value::<E>(json!({ "type": "\u{1}", "payload": {} })).err().expect("unknown variant");
     let msg = e.to_string();
@@ -343,13 +335,11 @@ fn variants<E: DeserializeOwned>() -> Vec<String> {
         .collect()
 }
 
-// ------------------------------------------------------------------ examples
 
 fn examples_dir() -> PathBuf {
     schemas_dir().join("examples")
 }
 
-/// Valid examples by schema name; `target_types/` holds test data of the ring generation instead.
 fn examples() -> BTreeMap<String, Value> {
     let dir = examples_dir();
     json_files(&dir)
@@ -390,7 +380,6 @@ fn invalid_examples() -> Vec<Invalid> {
         .collect()
 }
 
-/// JSON equality where numbers compare by value (`30` equals `30.0`).
 fn json_eq(a: &Value, b: &Value) -> bool {
     match (a, b) {
         (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
@@ -406,9 +395,7 @@ fn report(failures: Vec<String>) {
     assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));
 }
 
-// ------------------------------------------------------------------ schema-driven variants
 
-/// The schema that describes the payload (messages) or the whole value (shared types).
 fn payload_schema(name: &str, kind: Kind) -> Value {
     let s = schema(name);
     let mut p = if kind == Kind::Shared { s } else { s["$defs"]["payload"].clone() };
@@ -460,7 +447,7 @@ fn with_payload(kind: Kind, example: &Value, payload: Value) -> Value {
     }
 }
 
-/// The example with every optional field once left out and once `null`, and every enum value once.
+// doc/shared_libraries.md#contract-tests
 fn variants_of(name: &str, kind: Kind, example: &Value) -> Vec<(String, Value)> {
     let mut out = vec![("example".to_string(), example.clone())];
     let Some(payload) = payload_of(kind, example) else { return out };
@@ -490,7 +477,6 @@ fn variants_of(name: &str, kind: Kind, example: &Value) -> Vec<(String, Value)> 
     out
 }
 
-// ------------------------------------------------------------------ tests
 
 // LIB-CON-01
 #[test]
@@ -513,7 +499,7 @@ fn lib_con_02_valid_examples_are_valid() {
         }
         failures.extend(errors(&name, &example).into_iter().map(|e| format!("{name}: {e}")));
     }
-    // ring generation data (doc/shared_libraries.md#target-types)
+    // doc/shared_libraries.md#target-types
     for p in json_files(&examples_dir().join("target_types")) {
         let v = read_json(&p);
         if v["valid"] == true {
@@ -567,7 +553,7 @@ fn lib_con_05_produced_messages_are_valid() {
         let Some(entry) = reg.get(&name) else { continue };
         for (desc, variant) in variants_of(&name, entry.kind, &example) {
             if !errors(&name, &variant).is_empty() {
-                continue; // not a valid message, e.g. null for a field that is never null
+                continue;
             }
             checked += 1;
             match (entry.produce)(&variant) {
@@ -640,7 +626,6 @@ fn lib_con_07_completeness_rust() {
             failures.push(format!("Rust type for {n} has no schema"));
         }
     }
-    // every variant of the message enums
     let enums: Vec<(&str, Vec<String>)> = vec![
         (analyzer::PROGRAM, variants::<analyzer::AnalyzerRequest>()),
         (camera_reader::PROGRAM, variants::<camera_reader::CameraReaderRequest>()),
@@ -666,12 +651,11 @@ fn lib_con_07_completeness_rust() {
             }
         }
     }
-    // every shared struct
     let src = std::fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("src/model.rs")).unwrap();
     for line in src.lines() {
         let Some(rest) = line.trim().strip_prefix("pub struct ") else { continue };
         let ty: String = rest.chars().take_while(|c| c.is_alphanumeric()).collect();
-        // doc/interfaces.md#import_session: the payload of import_session
+        // doc/interfaces.md#import_session
         if ty == "ImportedSession" {
             continue;
         }
@@ -710,7 +694,7 @@ fn lib_con_10_missing_and_null_optional_fields() {
     let reg = registry();
     let mut failures = Vec::new();
     for (name, example) in examples() {
-        // doc/interfaces.md#session_manager: in session_update_setup, null clears a value and a missing field keeps it
+        // doc/interfaces.md#session_manager
         if name == "session_manager/session_update_setup" {
             continue;
         }
