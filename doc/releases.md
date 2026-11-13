@@ -71,7 +71,7 @@ cd targetscope-<version>-linux-<arch>
 sudo ./install.sh                     # into /usr/local
 ./install.sh --prefix ~/.local        # without root
 ```
-`install.sh` copies `bin/targetscope` to `<prefix>/bin/` and `lib/targetscope/` to `<prefix>/lib/targetscope/` (an older version there is replaced completely), and checks that `redis-server` is found. The configuration of the user (`~/.config/targetscope/launcher.toml`, see [launcher.md](programs/launcher.md#usage)):
+`install.sh` copies `bin/targetscope` to `<prefix>/bin/` and `lib/targetscope/` to `<prefix>/lib/targetscope/` (an older version there is replaced completely), and checks that `redis-server` is found where the launcher looks for it ([launcher.md](programs/launcher.md#redis)). The configuration of the user (`~/.config/targetscope/launcher.toml`, see [launcher.md](programs/launcher.md#usage)):
 - doesn't exist: with the default prefix `/usr/local` nothing is written (the launcher writes its default on first start, which has `bin_dir = "/usr/local/lib/targetscope"`); with another prefix, the bundled `launcher.toml` is written with `bin_dir = "<prefix>/lib/targetscope"`
 - exists: it's never changed; if its `bin_dir` isn't `<prefix>/lib/targetscope`, `install.sh` prints a warning
 When run with `sudo`, the configuration of the user who called `sudo` is used (`SUDO_USER`).
