@@ -41,11 +41,8 @@ impl StatisticsHandler {
         } else {
             HashMap::new()
         };
-        let names: HashMap<i64, String> = read_target_types(&self.bus, &used(|s| s.target_type_id))
-            .await?
-            .into_iter()
-            .filter_map(|t| Some((t.id?, t.name)))
-            .collect();
+        let names: HashMap<i64, String> =
+            read_target_types(&self.bus, &used(|s| s.target_type_id)).await?.into_iter().filter_map(|t| Some((t.id?, t.name))).collect();
         let session_count = sessions.len() as i64;
         let groups = tokio::task::spawn_blocking(move || compute_groups(&sessions, &r, &devices, &names))
             .await

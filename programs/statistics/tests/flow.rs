@@ -64,7 +64,13 @@ async fn st_flw_05_database_handler_silent() {
     let _p = start_statistics(&redis, &dir).await;
     let bus = TestBus::connect(&redis.url()).await;
     let r = bus
-        .try_send(P, uuid::Uuid::new_v4(), "compute_statistics", json!({ "filter": {}, "group_by": "none", "period": "day" }), Duration::from_secs(30))
+        .try_send(
+            P,
+            uuid::Uuid::new_v4(),
+            "compute_statistics",
+            json!({ "filter": {}, "group_by": "none", "period": "day" }),
+            Duration::from_secs(30),
+        )
         .await
         .expect("response");
     assert_eq!(r.error.unwrap().code.as_str(), "timeout");
@@ -80,7 +86,12 @@ async fn st_flw_06_whole_result() {}
 async fn st_flw_07_retired_records() {
     let redis = RedisTestServer::start().await;
     let db_dir = TempDataDir::new();
-    let _db = ProgramUnderTest::start(&targetscope_testkit::process::program_binary("database_handler"), "database_handler", &db_dir.env(&redis.url())).await;
+    let _db = ProgramUnderTest::start(
+        &targetscope_testkit::process::program_binary("database_handler"),
+        "database_handler",
+        &db_dir.env(&redis.url()),
+    )
+    .await;
     let bus = TestBus::connect(&redis.url()).await;
     fixtures::load_filter_set(&bus).await;
     let dir = TempDataDir::new();

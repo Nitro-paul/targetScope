@@ -1,9 +1,7 @@
 // doc/programs/statistics.md#calculation-flow-compute_statistics
 
 use targetscope_common::bus::{Bus, BusError};
-use targetscope_common::messages::database_handler::{
-    ReadDevices, ReadSessions, ReadTargetTypes, SessionOrder, SessionOrderField,
-};
+use targetscope_common::messages::database_handler::{ReadDevices, ReadSessions, ReadTargetTypes, SessionOrder, SessionOrderField};
 use targetscope_common::model::{Device, Direction, Filter, FilterOp, Session, SessionFilter, TargetType};
 
 pub const PAGE_SIZE: i64 = 500;

@@ -19,9 +19,7 @@ pub fn key(s: &Session, by: GroupBy, devices: &HashMap<i64, Device>) -> Option<V
         GroupBy::None => None,
         GroupBy::Shooter => Some(json!({ "shooter_id": s.shooter_id })),
         GroupBy::Device => Some(json!({ "device_id": s.device_id })),
-        GroupBy::DeviceCategory => {
-            Some(json!({ "category": devices.get(&s.device_id).and_then(|d| d.category.clone()) }))
-        }
+        GroupBy::DeviceCategory => Some(json!({ "category": devices.get(&s.device_id).and_then(|d| d.category.clone()) })),
         GroupBy::Distance => Some(json!({ "distance_m": s.distance_m })),
         GroupBy::SingleHanded => Some(json!({ "single_handed": s.single_handed })),
         GroupBy::Supported => Some(json!({ "supported": s.supported })),

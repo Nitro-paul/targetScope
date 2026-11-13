@@ -39,10 +39,7 @@ async fn st_grp_03_by_shooter() {
         S { id: 3, shooter_id: Some(1), ..S::default() }.json(),
     ])
     .await;
-    assert_eq!(
-        keys(&s.groups("shooter").await),
-        [json!({ "shooter_id": 1 }), json!({ "shooter_id": 2 }), json!({ "shooter_id": null })]
-    );
+    assert_eq!(keys(&s.groups("shooter").await), [json!({ "shooter_id": 1 }), json!({ "shooter_id": 2 }), json!({ "shooter_id": null })]);
 }
 
 // ST-GRP-04
