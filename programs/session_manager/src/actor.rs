@@ -241,9 +241,6 @@ impl SessionActor {
                 *s = StoredSession::new(SessionState::Setup, r.input_mode);
             }
             R::SessionUpdateSetup(r) => {
-                if r.input_mode.is_some() {
-                    return Err(ServiceError::validation("input_mode can't be changed"));
-                }
                 if r.distance_m.flatten().is_some_and(|d| d < 0) {
                     return Err(ServiceError::validation("distance_m >= 0"));
                 }
