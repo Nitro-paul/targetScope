@@ -11,7 +11,6 @@ use targetscope_common::messages::{ResponseEnvelope, Status};
 use targetscope_testkit::fixtures;
 use uuid::Uuid;
 
-/// Every stored row except `processed_requests`, and every image file.
 fn fingerprint(h: &Handler) -> String {
     let db = h.db();
     let mut out = String::new();

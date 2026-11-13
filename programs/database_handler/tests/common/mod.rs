@@ -18,7 +18,6 @@ pub fn binary() -> PathBuf {
     PathBuf::from(env!("CARGO_BIN_EXE_database_handler"))
 }
 
-/// `database_handler` as a process with its own Redis and data folder.
 pub struct Handler {
     pub redis: RedisTestServer,
     pub dir: TempDataDir,
@@ -62,14 +61,12 @@ impl Handler {
         self.bus.send(P, r#type, payload).await
     }
 
-    /// Payload of a successful response.
     pub async fn ok(&self, r#type: &str, payload: Value) -> Value {
         let r = self.send(r#type, payload).await;
         assert_eq!(r.status, Status::Ok, "{type}: {:?}", r.error);
         r.payload.unwrap()
     }
 
-    /// Error code of a failed response.
     pub async fn err(&self, r#type: &str, payload: Value) -> String {
         let r = self.send(r#type, payload).await;
         assert_eq!(r.status, Status::Error, "{type} succeeded: {:?}", r.payload);
@@ -117,7 +114,6 @@ impl Handler {
         r["sessions"][0].clone()
     }
 
-    /// `CS-REF` with the given staged image on paper 1, or without images.
     pub fn cs_ref(&self, ids: ReferenceIds, staged: Option<&str>) -> Value {
         cs_ref(ids, staged)
     }
@@ -168,7 +164,6 @@ pub fn now_s() -> i64 {
     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64
 }
 
-/// The next `data_changed` events as `table/key/action`.
 pub async fn changes(probe: &mut EventProbe, n: usize) -> Vec<String> {
     let mut out = Vec::new();
     for _ in 0..n {

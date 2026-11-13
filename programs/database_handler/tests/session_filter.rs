@@ -28,14 +28,12 @@ impl FilterSet {
         self.ids.iter().find(|(k, v)| **v == id && k.starts_with('F')).map(|(k, _)| k.clone()).unwrap()
     }
 
-    /// Session names in response order, and `total`.
     async fn read(&self, payload: Value) -> (Vec<String>, i64) {
         let r = self.h.ok("read_sessions", payload).await;
         let names = r["sessions"].as_array().unwrap().iter().map(|s| self.name_of(s["id"].as_i64().unwrap())).collect();
         (names, r["total"].as_i64().unwrap())
     }
 
-    /// Session names matching a filter, sorted.
     async fn matching(&self, filter: Value) -> Vec<String> {
         let (mut names, total) = self.read(json!({ "filter": filter, "include_shots": false })).await;
         assert_eq!(total, names.len() as i64);

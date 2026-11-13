@@ -77,15 +77,27 @@ pub async fn run() -> ExitCode {
     }
 }
 
+// doc/programs/database_handler.md#error-handling
+const RELOAD_ATTEMPTS: u32 = 10;
+
 // doc/interfaces.md#data_changed
+// doc/programs/database_handler.md#error-handling
 async fn send_reload(bus: &Bus) {
     let event = DatabaseHandlerEvent::DataChanged(DataChanged {
         table: Table::All,
         key: json!(null),
         action: ChangeAction::Reload,
     });
-    if let Err(e) = bus.publish(&event).await {
-        tracing::warn!(error = %e, "reload event not sent");
+    let mut delay = std::time::Duration::from_millis(100);
+    for attempt in 1..=RELOAD_ATTEMPTS {
+        match bus.publish(&event).await {
+            Ok(_) => return,
+            Err(e) if attempt == RELOAD_ATTEMPTS => tracing::warn!(error = %e, "reload event not sent"),
+            Err(_) => {
+                tokio::time::sleep(delay).await;
+                delay = (delay * 2).min(std::time::Duration::from_secs(2));
+            }
+        }
     }
 }
 
