@@ -32,6 +32,7 @@ crates/targetscope_common/
 └── src/
     ├── lib.rs
     ├── model.rs        # model types (serde)
+    ├── check.rs        # value checks used while deserializing (see Value checks)
     ├── messages/
     │   ├── mod.rs      # RequestEnvelope, ResponseEnvelope, EventEnvelope, ErrorCode, ErrorBody
     │   ├── database_handler.rs
@@ -94,7 +95,14 @@ pub struct EventEnvelope { r#type: String, version: u32, event_id: Uuid, source:
 ```
 - `RequestEnvelope::decode::<R>()` turns `type` + `payload` into the program's request enum. An unknown `type` or a `version` other than 1 gives `invalid_message`; a payload that doesn't fit its type gives `validation_failed`.
 - `ok_response(payload)` and `error_response(&ServiceError)` build the response with `type` = request type + `_response` and the same `request_id` and `version`.
-- `EventEnvelope::new(source, timestamp_ms, &event)` sets a new `event_id`; `decode::<E>()` gives the event enum.
+- `EventEnvelope::new(source, timestamp_ms, &event)` sets a new `event_id`; `decode::<E>()` gives the event enum (error for a `version` other than 1).
+
+### Value checks
+The types reject everything their schema rejects, so a program never sees a message that doesn't match the contract:
+- every struct has `#[serde(deny_unknown_fields)]`; the two payloads that flatten a shared type (`import_device`, `import_session`) take their own fields out and deserialize the rest into the strict type
+- fields with a range in the schema use a checking deserializer from `check.rs` (crate-private): `angle_turns` in `0 ≤ x < 1`; `radius_mm` `≥ 0`; `bullet_diameter_mm` and paper sizes `> 0`; `confidence` in `0..1`; `paper_no`, `paper_count` and the `shot_count` of a session `≥ 1`; `distance_m`, `duration_s`, `limit`, `offset` and the `shot_count` of a device `≥ 0`; names not empty; `notes` at most 10 000 characters; the `shots` of `create_session` not empty
+
+A failed check is a deserialization error, so `decode` answers it with `validation_failed`. Programs still check the rules that depend on more than one value or on stored data (e.g. `shot_count == shots.len()`).
 
 **Optional fields:** a missing field and `null` both deserialize to `None`. Fields that are always part of a type (e.g. `Session.notes`) are written as `null` when not set; optional request fields (e.g. `reply_to`, `corners` of `detect_shots_in_photo`, the SessionFilter fields) are left out when not set.
 
@@ -152,7 +160,7 @@ pub enum BusError { Redis(redis::RedisError), Timeout, Remote(ErrorBody), Decode
 - Responses are read by the background task with `XREAD BLOCK` on `<program>:responses`, matched by `request_id`, and delivered through a `oneshot` channel; unknown request ids (e.g. late responses after a timeout) are dropped and logged.
 - Blocking reads (`XREAD BLOCK`, `XREADGROUP BLOCK`, 1 s) use their own connections, so they never delay other commands.
 - Reconnects use `redis::aio::ConnectionManager`; read loops retry with exponential backoff (100 ms up to 5 s), timed by the `Clock`.
-- `serve` handles requests one at a time, in stream order (session_manager, launcher, importer). `serve_concurrent` starts a task per request, at most `limit` at once, so `ping` and short requests are answered while long ones run (analyzer: 16, database_handler: 8, statistics: 4, exporter: 2); each task sends its response and acknowledges its entry.
+- `serve` handles requests one at a time, in stream order (session_manager, launcher, importer). `serve_concurrent` starts a task per request, at most `limit` at once, so `ping` and short requests are answered while long ones run (analyzer: 16, database_handler: 8, statistics: 4, exporter: 2); each task sends its response and acknowledges its entry on the shared command connection (the read loop's connection is blocked in `XREADGROUP BLOCK`). After a (re)connect, `serve_concurrent` reads its pending entries in batches, each batch after the last entry of the one before, because entries handed to a task stay pending until that task acknowledges them; when no pending entry is left it reads new ones (`>`).
 - `Bus::stop()` ends `serve` and `serve_concurrent` after the requests being handled are answered (used on SIGTERM); `Bus::reconnects()` is a `watch` channel that changes every time the request loop had to reconnect to Redis (database_handler then sends `data_changed` `all`/`reload`).
 - `RequestEnvelope::decode` answers a request whose `type` the program doesn't know, or whose `version` isn't 1, with `invalid_message`; a known type whose payload doesn't fit (missing or wrongly typed field, unknown enum value) with `validation_failed`. An entry whose `data` isn't JSON is logged and acknowledged without a response. A request with an unknown `type` or `version` is answered with `invalid_message` (if it has `reply_to`) and acknowledged. Every request is handled inside a `tracing` span with its `request_id`, so all log lines of a request contain it.
 - The consumer name is `<hostname>-<pid>`. Because a restarted program has a new pid, `serve` and group-mode event readers first claim all pending entries of the group (`XAUTOCLAIM … 0`) and handle them before new ones (only one instance of each program runs). The consumer group of a request stream is created with `XGROUP CREATE … 0 MKSTREAM`, so requests written before the program first started are handled too; the consumer group of an event reader starts at `$` (only events after its creation). `BUSYGROUP` is ignored.
@@ -209,6 +217,8 @@ The same two functions exist in `targetscope_common_cpp`; both are tested with t
 
 ## Contract tests
 `tests/contract.rs` runs, for every schema in `schemas/`: validate its examples (`jsonschema` crate), deserialize them into the Rust type, serialize back and compare as JSON values, and validate the serialized output; every invalid example in `schemas/examples/invalid/` must be rejected. A message type without a schema, or a schema without a Rust type, fails the test. All cases: [testing/shared_libraries.md](testing/shared_libraries.md).
+
+The test keeps a table from schema name to Rust type. Messages are built with the library's own constructors (`RequestEnvelope::new`, `ok_response`, `error_response`, `EventEnvelope::new`), so the envelopes are checked too. Variants for LIB-CON-05 and LIB-CON-10 are derived from each example and its schema: every optional field once left out and once `null`, every enum value and both booleans once. The variant names of the request and event enums are read from serde's "unknown variant" error, and the shared structs from `src/model.rs`.
 
 ## Bootstrap configuration
 Values needed before the database can be read. The launcher sets them as environment variables for every program (see [launcher](programs/launcher.md#bootstrap-environment)).

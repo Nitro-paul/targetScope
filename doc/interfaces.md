@@ -82,6 +82,8 @@ Naming conventions for all fields:
 
 Optional fields may be missing or `null`; both mean "not set".
 
+Messages must match their schema exactly: a field the schema doesn't define, or a value outside the range the schema allows (e.g. `angle_turns` 1.0, `paper_no` 0, an empty `name`), makes the message invalid. A request like that is answered with `validation_failed`; a listener skips such an event.
+
 ### Request envelope
 ```json
 {
@@ -125,6 +127,7 @@ Optional fields may be missing or `null`; both mean "not set".
   "payload": { }
 }
 ```
+- `version`: as in the request envelope; listeners skip events with another version
 - `event_id`: UUID v4; listeners use it to ignore an event they already processed
 - `source`: name of the program that sent the event
 - `timestamp_ms`: Unix time in milliseconds when the event happened
