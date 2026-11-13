@@ -4,7 +4,7 @@
 
 1. Every relative link and anchor in the Markdown files exists.
 2. Every `doc/<file>.md#<anchor>` reference in code and data files exists.
-3. Comments in code only contain such references or test ids (and nothing else).
+3. Comments in code (line, trailing and block comments) only contain such references or test ids.
 
 Usage: tools/check_docs.py [<repo folder>]; exit code 1 if anything is wrong."""
 import os
@@ -49,7 +49,6 @@ def read(path):
         return None
 
 
-# 1. Markdown links
 for path in (p for p in tracked if p.endswith('.md')):
     in_code = False
     for number, line in enumerate(read(path).split('\n'), 1):
@@ -68,7 +67,6 @@ for path in (p for p in tracked if p.endswith('.md')):
             elif fragment and resolved.endswith('.md') and fragment not in anchors(resolved):
                 problems.append(f'{path}:{number}: anchor not found: {target}')
 
-# 2. doc references in code and data
 DOC_REF = re.compile(r'(?<![\w/.-])((?:\.\./)*doc/[\w./-]+\.md)(?:#([\w.-]+))?')
 for path in tracked:
     text = None if path.endswith(('.md', '.lock', '.pdf', '.png', '.jpg', '.ttf')) else read(path)
@@ -82,7 +80,6 @@ for path in tracked:
             elif m.group(2) and m.group(2) not in anchors(target):
                 problems.append(f'{path}:{number}: anchor not found: {target}#{m.group(2)}')
 
-# 3. comment rule
 CODE = ('.rs', '.cpp', '.hpp', '.h', '.js', '.css', '.sh', '.toml', '.cmake', 'CMakeLists.txt', '.py')
 REF = r'doc/[\w./*-]+\.md(#[\w.-]+)?'
 TEST_ID = r'[A-Z]{2,4}(-[A-Z0-9]+)+'
@@ -106,7 +103,6 @@ for path in tracked:
             if line[:m.start()].count('"') % 2 == 0 and '://' not in line:
                 problems.append(f'{path}:{number}: trailing comment: {m.group(0).strip()[:60]}')
 
-# 3b. block comments in C and C++ files
 for path in tracked:
     if not path.endswith(('.h', '.hpp', '.cpp', '.css')):
         continue
