@@ -1,0 +1,16 @@
+/target/
+/build/
+/build-*/
+compile_commands.json
+
+# doc/interfaces.md#staging-folder
+.*.part
+
+.vscode/
+.idea/
+*.swp
+
+node_modules/
+
+# doc/releases.md#building-a-release
+/dist/
