@@ -37,7 +37,8 @@ fn lib_log_02_daily_file() {
     writeln!(file.make_writer(), "day one").unwrap();
     clock.advance(Duration::from_secs(86_400));
     writeln!(file.make_writer(), "day two").unwrap();
-    let names: Vec<String> = std::fs::read_dir(dir.path()).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+    let names: Vec<String> =
+        std::fs::read_dir(dir.path()).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
     assert_eq!(names.len(), 2, "{names:?}");
     assert!(std::fs::read_to_string(dir.path().join("test.log")).unwrap().contains("day two"));
     let old = names.iter().find(|n| n.starts_with("test.log.")).unwrap();

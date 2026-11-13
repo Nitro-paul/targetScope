@@ -114,10 +114,7 @@ pub struct Shot {
 impl Shot {
     // doc/interfaces.md#shot
     pub fn is_valid(&self) -> bool {
-        self.angle_turns.is_finite()
-            && self.radius_mm.is_finite()
-            && (0.0..1.0).contains(&self.angle_turns)
-            && self.radius_mm >= 0.0
+        self.angle_turns.is_finite() && self.radius_mm.is_finite() && (0.0..1.0).contains(&self.angle_turns) && self.radius_mm >= 0.0
     }
 }
 
@@ -253,10 +250,7 @@ impl Filter {
     }
 
     pub fn with(field: &str, op: FilterOp, value: impl Into<serde_json::Value>) -> Self {
-        Filter {
-            conditions: vec![Condition { field: field.to_string(), op, value: value.into() }],
-            ..Default::default()
-        }
+        Filter { conditions: vec![Condition { field: field.to_string(), op, value: value.into() }], ..Default::default() }
     }
 }
 

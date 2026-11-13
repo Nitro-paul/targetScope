@@ -4,11 +4,7 @@
 use crate::model::{Ring, TargetType};
 
 pub fn generate_rings(t: &TargetType) -> Vec<Ring> {
-    let anchors = [
-        (t.inner_white_score, t.inner_white_radius_mm),
-        (t.black_score, t.black_radius_mm),
-        (t.outer_score, t.outer_radius_mm),
-    ];
+    let anchors = [(t.inner_white_score, t.inner_white_radius_mm), (t.black_score, t.black_radius_mm), (t.outer_score, t.outer_radius_mm)];
     let mut rings = Vec::new();
     let mut score = t.inner_white_score;
     while score >= t.outer_score && score >= 1 {
@@ -29,15 +25,8 @@ fn ring_radius(anchors: &[(i64, f64); 3], s: i64) -> f64 {
 }
 
 pub fn validate_target_type(t: &TargetType) -> Result<(), String> {
-    let finite = [
-        t.paper_width_mm,
-        t.paper_height_mm,
-        t.center_x_mm,
-        t.center_y_mm,
-        t.inner_white_radius_mm,
-        t.black_radius_mm,
-        t.outer_radius_mm,
-    ];
+    let finite =
+        [t.paper_width_mm, t.paper_height_mm, t.center_x_mm, t.center_y_mm, t.inner_white_radius_mm, t.black_radius_mm, t.outer_radius_mm];
     if finite.iter().any(|v| !v.is_finite()) {
         return Err("all sizes are finite numbers".into());
     }

@@ -139,11 +139,7 @@ pub fn frame_publisher(service: &str, max_len: usize) -> Result<FramePublisher, 
 
 pub fn frame_subscriber(service: &str) -> Result<FrameSubscriber, FrameError> {
     let node = node()?;
-    let subscriber = frame_service(&node, service)?
-        .subscriber_builder()
-        .buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE)
-        .create()
-        .map_err(err)?;
+    let subscriber = frame_service(&node, service)?.subscriber_builder().buffer_size(SUBSCRIBER_MAX_BUFFER_SIZE).create().map_err(err)?;
     let listener = notify_service(&node, service)?.listener_builder().create().map_err(err)?;
     Ok(FrameSubscriber { _node: node, subscriber, listener })
 }

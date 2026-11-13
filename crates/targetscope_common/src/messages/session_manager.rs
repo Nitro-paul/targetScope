@@ -8,6 +8,8 @@ use crate::model::{Corners, CurrentSession, InputMode};
 pub const PROGRAM: &str = "session_manager";
 pub const STREAM: &str = "session_manager:requests";
 
+// doc/shared_libraries.md#messages
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum SessionManagerRequest {
@@ -31,6 +33,8 @@ pub enum SessionManagerRequest {
 }
 
 // doc/interfaces.md#events-session_managerevents
+// doc/shared_libraries.md#messages
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload", rename_all = "snake_case")]
 pub enum SessionManagerEvent {

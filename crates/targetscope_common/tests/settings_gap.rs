@@ -21,7 +21,8 @@ async fn lib_set_06_no_gap_at_startup() {
     let loading = tokio::spawn(async move { SettingsCache::load(&bus).await.unwrap() });
     tokio::time::sleep(Duration::from_millis(200)).await;
     fake.on("read_settings", Answer::Ok(s("12")));
-    let ev = DatabaseHandlerEvent::DataChanged(DataChanged { table: Table::Settings, key: json!("camera_fps"), action: ChangeAction::Updated });
+    let ev =
+        DatabaseHandlerEvent::DataChanged(DataChanged { table: Table::Settings, key: json!("camera_fps"), action: ChangeAction::Updated });
     fake.bus.publish(&ev).await.unwrap();
     let cache = loading.await.unwrap();
     failpoints::clear("settings.after_note_id");

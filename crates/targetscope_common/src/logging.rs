@@ -49,9 +49,7 @@ struct DailyState {
 
 impl DailyFile {
     pub fn new(dir: PathBuf, program: &str, clock: Arc<dyn Clock>) -> Self {
-        DailyFile {
-            inner: Arc::new(Mutex::new(DailyState { dir, program: program.to_string(), clock, open: None })),
-        }
+        DailyFile { inner: Arc::new(Mutex::new(DailyState { dir, program: program.to_string(), clock, open: None })) }
     }
 }
 
@@ -64,11 +62,7 @@ impl DailyState {
         let today = local(unix_s(self.clock.now())).date;
         let stale = match &self.open {
             Some((date, _)) => (*date != today).then_some(*date),
-            None => fs::metadata(self.current())
-                .and_then(|m| m.modified())
-                .ok()
-                .map(|t| local(unix_s(t)).date)
-                .filter(|d| *d != today),
+            None => fs::metadata(self.current()).and_then(|m| m.modified()).ok().map(|t| local(unix_s(t)).date).filter(|d| *d != today),
         };
         if let Some(date) = stale {
             self.open = None;

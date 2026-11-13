@@ -125,14 +125,5 @@ pub fn rfc3339_local(unix_s: i64) -> String {
     let off = l.utc_offset_s;
     let sign = if off < 0 { '-' } else { '+' };
     let off = off.abs();
-    format!(
-        "{}T{:02}:{:02}:{:02}{}{:02}:{:02}",
-        l.date,
-        l.hour,
-        l.minute,
-        l.second,
-        sign,
-        off / 3600,
-        (off % 3600) / 60
-    )
+    format!("{}T{:02}:{:02}:{:02}{}{:02}:{:02}", l.date, l.hour, l.minute, l.second, sign, off / 3600, (off % 3600) / 60)
 }

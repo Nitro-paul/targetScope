@@ -218,7 +218,8 @@ async fn lib_bus_07_stream_entry_format() {
 async fn lib_bus_08_unknown_request_type() {
     let s = setup(false).await;
     let id = Uuid::new_v4();
-    raw_request(&s, &json!({ "type": "nonsense", "version": 1, "request_id": id, "reply_to": "x:responses", "payload": {} }).to_string()).await;
+    raw_request(&s, &json!({ "type": "nonsense", "version": 1, "request_id": id, "reply_to": "x:responses", "payload": {} }).to_string())
+        .await;
     let mut got = Vec::new();
     for _ in 0..100 {
         got = responses(&s, "x:responses").await;
@@ -246,7 +247,12 @@ async fn lib_bus_09_unparseable_entry() {
 #[tokio::test(flavor = "multi_thread")]
 async fn lib_bus_10_unknown_version() {
     let s = setup(false).await;
-    raw_request(&s, &json!({ "type": "echo", "version": 99, "request_id": Uuid::new_v4(), "reply_to": "y:responses", "payload": { "value": 1 } }).to_string()).await;
+    raw_request(
+        &s,
+        &json!({ "type": "echo", "version": 99, "request_id": Uuid::new_v4(), "reply_to": "y:responses", "payload": { "value": 1 } })
+            .to_string(),
+    )
+    .await;
     s.a.request(Echo { value: 1, delay_ms: 0 }).await.unwrap();
     assert_eq!(responses(&s, "y:responses").await[0]["error"]["code"], "invalid_message");
     assert_eq!(pending(&s).await, 0);
@@ -441,7 +447,14 @@ async fn lib_bus_23_many_pending_requests_at_start() {
     while delivered < 250 {
         assert!(Instant::now() < deadline);
         let r: redis::streams::StreamReadReply = redis::cmd("XREADGROUP")
-            .arg("GROUP").arg("b").arg("crashed").arg("COUNT").arg(1000).arg("STREAMS").arg("b:requests").arg(">")
+            .arg("GROUP")
+            .arg("b")
+            .arg("crashed")
+            .arg("COUNT")
+            .arg(1000)
+            .arg("STREAMS")
+            .arg("b:requests")
+            .arg(">")
             .query_async(&mut c)
             .await
             .unwrap();
