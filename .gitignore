@@ -11,3 +11,6 @@ compile_commands.json
 *.swp
 
 node_modules/
+
+# doc/releases.md#building-a-release
+/dist/
