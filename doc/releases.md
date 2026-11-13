@@ -89,6 +89,13 @@ Without installing, from the unpacked bundle:
 ```
 `run.sh` writes `etc/launcher.toml` in the bundle on its first start (the bundled default with `bin_dir` = the bundle's `lib/targetscope`) and starts `bin/targetscope --config etc/launcher.toml`. It uses the same data folder as an installed TargetScope. If `TARGETSCOPE_DEPS` is set, its `bin` folder is put in front of the `PATH` (for a `redis-server` built there).
 
+### Building and running in one step
+For trying out the current state on the development PC:
+```
+release/build_and_run.sh [build options] [-- launcher options]
+```
+Runs `release/build.sh` with the build options (without any: `--without camera_reader,image_processor`, as long as these two programs are stubs that exit at once), then starts the new bundle with its `run.sh`, passing the launcher options. Ctrl+C stops TargetScope. It uses the same data folder as an installed TargetScope.
+
 ## Uninstalling
 ```
 sudo ./uninstall.sh                   # or: ./uninstall.sh --prefix ~/.local

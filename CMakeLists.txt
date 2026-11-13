@@ -1,7 +1,7 @@
 # doc/software_description.md#code-organization
 # doc/testing/overview.md#running-the-tests
 cmake_minimum_required(VERSION 3.24)
-project(targetscope VERSION 0.0.3 LANGUAGES CXX)
+project(targetscope VERSION 0.0.5 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
