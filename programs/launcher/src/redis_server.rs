@@ -1,5 +1,6 @@
 // doc/programs/launcher.md#redis
 
+use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::{Duration, Instant};
 
@@ -17,7 +18,14 @@ pub fn port_in_use(port: u16) -> bool {
 pub fn spawn(c: &LauncherConfig) -> Result<Child, String> {
     let dir = c.paths.data_dir.join("redis");
     std::fs::create_dir_all(&dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    Command::new(&c.redis.binary)
+    let binary = find_binary(&c.redis.binary).ok_or_else(|| {
+        format!(
+            "{} not found (searched the PATH, $TARGETSCOPE_DEPS/bin and ~/.local/opt/targetscope-deps/bin); \
+             install Redis or Valkey, or set [redis] binary in the launcher configuration to its full path",
+            c.redis.binary
+        )
+    })?;
+    Command::new(&binary)
         .args(["--port", &c.redis.port.to_string(), "--bind", "127.0.0.1"])
         .arg("--dir")
         .arg(&dir)
@@ -27,7 +35,32 @@ pub fn spawn(c: &LauncherConfig) -> Result<Child, String> {
         .stdin(Stdio::null())
         .kill_on_drop(false)
         .spawn()
-        .map_err(|e| format!("{} could not be started: {e}", c.redis.binary))
+        .map_err(|e| format!("{} could not be started: {e}", binary.display()))
+}
+
+// doc/programs/launcher.md#redis
+pub fn find_binary(binary: &str) -> Option<PathBuf> {
+    find_binary_in(binary, std::env::var_os("PATH"), std::env::var_os("TARGETSCOPE_DEPS"), std::env::var_os("HOME"))
+}
+
+// doc/programs/launcher.md#redis
+pub fn find_binary_in(
+    binary: &str,
+    path: Option<std::ffi::OsString>,
+    deps: Option<std::ffi::OsString>,
+    home: Option<std::ffi::OsString>,
+) -> Option<PathBuf> {
+    if binary.contains('/') {
+        let path = targetscope_common::config::expand_home(binary);
+        return path.is_file().then_some(path);
+    }
+    let path_dirs: Vec<PathBuf> = path.map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
+    let deps_dirs = deps
+        .map(PathBuf::from)
+        .into_iter()
+        .chain(home.map(|h| PathBuf::from(h).join(".local/opt/targetscope-deps")))
+        .map(|d| d.join("bin"));
+    path_dirs.into_iter().chain(deps_dirs).map(|d| d.join(binary)).find(|p| p.is_file())
 }
 
 pub async fn wait_ready(url: &str, timeout: Duration) -> Result<(), String> {
