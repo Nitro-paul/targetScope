@@ -10,7 +10,7 @@ How to install everything needed to build, run and test TargetScope on a Linux P
 | Messaging | Redis-compatible server (`redis-server`): Redis or Valkey | Redis ≥ 7 or Valkey ≥ 8 |
 | C++ Redis client | hiredis, redis-plus-plus | hiredis ≥ 1.2, redis-plus-plus ≥ 1.3.9 |
 | Video between programs | iceoryx2 C and C++ bindings | exactly the version of the Rust crate (`0.10.0`, see `Cargo.toml`), because both sides share the shared-memory format |
-| Image processing, camera | OpenCV with `core`, `imgproc`, `imgcodecs`, `calib3d`, `videoio` (V4L2 and FFmpeg backends) | 4.x or 5.x |
+| Image processing, camera | OpenCV with `core`, `imgproc`, `imgcodecs`, `videoio` (V4L2 and FFmpeg backends) and the camera calibration modules: `calib3d` in OpenCV 4, `calib` and `geometry` in OpenCV 5 (the header `opencv2/calib3d.hpp` exists in both). CMake accepts 4.x and 5.x and stops with a message for other versions | 4.x or 5.x |
 | C++ libraries | nlohmann/json, spdlog, GoogleTest | json ≥ 3.11, spdlog ≥ 1.12 |
 | MJPEG feeds | libjpeg-turbo (`libturbojpeg`, found with `pkg-config`) | ≥ 2.1 |
 | Frontend tests | Node.js | ≥ 20 |
