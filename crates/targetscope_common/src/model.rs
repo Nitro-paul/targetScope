@@ -5,21 +5,27 @@ use uuid::Uuid;
 
 // doc/interfaces.md#session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Session {
     pub id: i64,
     pub uuid: Uuid,
     pub saved_at: i64,
     pub score: i64,
     pub grouping_score: i64,
+    #[serde(default, deserialize_with = "crate::check::opt_count")]
     pub distance_m: Option<i64>,
     pub target_type_id: i64,
     pub shooter_id: Option<i64>,
     pub device_id: i64,
     pub single_handed: bool,
     pub supported: bool,
+    #[serde(deserialize_with = "crate::check::number")]
     pub shot_count: i64,
+    #[serde(default, deserialize_with = "crate::check::opt_count")]
     pub duration_s: Option<i64>,
+    #[serde(default, deserialize_with = "crate::check::notes")]
     pub notes: Option<String>,
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_count: i64,
     #[serde(default)]
     pub images: Vec<PaperImage>,
@@ -29,19 +35,26 @@ pub struct Session {
 
 // doc/interfaces.md#create_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NewSession {
     pub score: i64,
     pub grouping_score: i64,
+    #[serde(default, deserialize_with = "crate::check::opt_count")]
     pub distance_m: Option<i64>,
     pub target_type_id: i64,
     pub shooter_id: Option<i64>,
     pub device_id: i64,
     pub single_handed: bool,
     pub supported: bool,
+    #[serde(deserialize_with = "crate::check::number")]
     pub shot_count: i64,
+    #[serde(default, deserialize_with = "crate::check::opt_count")]
     pub duration_s: Option<i64>,
+    #[serde(default, deserialize_with = "crate::check::notes")]
     pub notes: Option<String>,
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_count: i64,
+    #[serde(deserialize_with = "crate::check::non_empty")]
     pub shots: Vec<SessionShot>,
     #[serde(default)]
     pub images: Vec<StagedPaperImage>,
@@ -49,6 +62,7 @@ pub struct NewSession {
 
 // doc/interfaces.md#import_session
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "serde_json::Map<String, serde_json::Value>")]
 pub struct ImportedSession {
     pub uuid: Uuid,
     pub saved_at: i64,
@@ -56,24 +70,44 @@ pub struct ImportedSession {
     pub session: NewSession,
 }
 
+// doc/shared_libraries.md#value-checks
+impl TryFrom<serde_json::Map<String, serde_json::Value>> for ImportedSession {
+    type Error = String;
+
+    fn try_from(mut m: serde_json::Map<String, serde_json::Value>) -> Result<Self, String> {
+        let mut take = |field: &str| m.remove(field).ok_or_else(|| format!("missing field `{field}`"));
+        let uuid = serde_json::from_value(take("uuid")?).map_err(|e| e.to_string())?;
+        let saved_at = serde_json::from_value(take("saved_at")?).map_err(|e| e.to_string())?;
+        let session = serde_json::from_value(serde_json::Value::Object(m)).map_err(|e| e.to_string())?;
+        Ok(ImportedSession { uuid, saved_at, session })
+    }
+}
+
 // doc/interfaces.md#session
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PaperImage {
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_no: i64,
     pub image_path: String,
 }
 
 // doc/interfaces.md#create_session
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StagedPaperImage {
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_no: i64,
     pub staged_file: String,
 }
 
 // doc/interfaces.md#shot
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Shot {
+    #[serde(deserialize_with = "crate::check::angle_turns")]
     pub angle_turns: f64,
+    #[serde(deserialize_with = "crate::check::non_negative")]
     pub radius_mm: f64,
 }
 
@@ -89,9 +123,13 @@ impl Shot {
 
 // doc/interfaces.md#sessionshot
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionShot {
+    #[serde(deserialize_with = "crate::check::angle_turns")]
     pub angle_turns: f64,
+    #[serde(deserialize_with = "crate::check::non_negative")]
     pub radius_mm: f64,
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_no: i64,
 }
 
@@ -103,11 +141,13 @@ impl SessionShot {
 
 // doc/interfaces.md#shooter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Shooter {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
+    #[serde(deserialize_with = "crate::check::name")]
     pub name: String,
     #[serde(default)]
     pub retired: bool,
@@ -115,19 +155,22 @@ pub struct Shooter {
 
 // doc/interfaces.md#device
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Device {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
+    #[serde(deserialize_with = "crate::check::name")]
     pub name: String,
     pub category: Option<String>,
     pub description: Option<String>,
     pub caliber: Option<String>,
+    #[serde(deserialize_with = "crate::check::positive")]
     pub bullet_diameter_mm: f64,
     #[serde(default)]
     pub image_path: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "crate::check::count")]
     pub shot_count: i64,
     #[serde(default)]
     pub locked: bool,
@@ -137,11 +180,13 @@ pub struct Device {
 
 // doc/interfaces.md#targettype
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TargetType {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Uuid>,
+    #[serde(deserialize_with = "crate::check::name")]
     pub name: String,
     pub paper_width_mm: f64,
     pub paper_height_mm: f64,
@@ -163,6 +208,7 @@ pub struct TargetType {
 
 // doc/interfaces.md#ring
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Ring {
     pub score: i64,
     pub radius_mm: f64,
@@ -170,7 +216,9 @@ pub struct Ring {
 
 // doc/interfaces.md#setting
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Setting {
+    #[serde(deserialize_with = "crate::check::name")]
     pub name: String,
     pub display_name: String,
     pub active: bool,
@@ -187,14 +235,15 @@ pub struct Setting {
 
 // doc/interfaces.md#filter
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Filter {
     #[serde(default)]
     pub conditions: Vec<Condition>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub order_by: Option<OrderBy>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, deserialize_with = "crate::check::opt_count", skip_serializing_if = "Option::is_none")]
     pub limit: Option<i64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default, deserialize_with = "crate::check::opt_count", skip_serializing_if = "Option::is_none")]
     pub offset: Option<i64>,
 }
 
@@ -213,6 +262,7 @@ impl Filter {
 
 // doc/interfaces.md#filter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Condition {
     pub field: String,
     pub op: FilterOp,
@@ -235,6 +285,7 @@ pub enum FilterOp {
 
 // doc/interfaces.md#filter
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OrderBy {
     pub field: String,
     pub direction: Direction,
@@ -249,6 +300,7 @@ pub enum Direction {
 
 // doc/interfaces.md#sessionfilter
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionFilter {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub session_ids: Option<Vec<i64>>,
@@ -278,6 +330,7 @@ pub struct SessionFilter {
 
 // doc/interfaces.md#sessionfilter
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct IntRange {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub min: Option<i64>,
@@ -287,6 +340,7 @@ pub struct IntRange {
 
 // doc/interfaces.md#sessionfilter
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TimeRange {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<i64>,
@@ -296,6 +350,7 @@ pub struct TimeRange {
 
 // doc/interfaces.md#corners
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Corners {
     pub top_left: PixelPoint,
     pub top_right: PixelPoint,
@@ -305,6 +360,7 @@ pub struct Corners {
 
 // doc/interfaces.md#corners
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PixelPoint {
     pub x: f64,
     pub y: f64,
@@ -312,6 +368,7 @@ pub struct PixelPoint {
 
 // doc/interfaces.md#analysisresult
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct OffsetMm {
     pub x_mm: f64,
     pub y_mm: f64,
@@ -319,6 +376,7 @@ pub struct OffsetMm {
 
 // doc/interfaces.md#analysisresult
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AnalysisResult {
     pub shot_scores: Vec<i64>,
     pub score: i64,
@@ -341,17 +399,20 @@ pub enum SessionState {
 
 // doc/interfaces.md#currentsession
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CurrentSession {
     pub state: SessionState,
     pub recovered_from: Option<SessionState>,
     pub setup: SessionSetup,
     pub shots: Vec<CurrentShot>,
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_no: i64,
     pub paper_images: Vec<StagedPaperImage>,
     pub notes: Option<String>,
     pub analysis: Option<AnalysisResult>,
     pub analysis_outdated: bool,
     pub started_at: Option<i64>,
+    #[serde(deserialize_with = "crate::check::count")]
     pub duration_s: i64,
     pub calibration: Option<CalibrationStatus>,
 }
@@ -367,10 +428,12 @@ pub enum InputMode {
 
 // doc/interfaces.md#sessionsetup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SessionSetup {
     pub input_mode: InputMode,
     pub shooter_id: Option<i64>,
     pub device_id: Option<i64>,
+    #[serde(default, deserialize_with = "crate::check::opt_count")]
     pub distance_m: Option<i64>,
     pub target_type_id: Option<i64>,
     pub single_handed: bool,
@@ -379,12 +442,17 @@ pub struct SessionSetup {
 
 // doc/interfaces.md#currentshot
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CurrentShot {
+    #[serde(deserialize_with = "crate::check::angle_turns")]
     pub angle_turns: f64,
+    #[serde(deserialize_with = "crate::check::non_negative")]
     pub radius_mm: f64,
     pub origin: InputMode,
+    #[serde(default, deserialize_with = "crate::check::opt_unit")]
     pub confidence: Option<f64>,
     pub hole_id: Option<i64>,
+    #[serde(deserialize_with = "crate::check::number")]
     pub paper_no: i64,
 }
 
@@ -413,6 +481,7 @@ pub enum CalibrationMethod {
 
 // doc/interfaces.md#calibrationstatus
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CalibrationStatus {
     pub state: CalibrationState,
     pub method: Option<CalibrationMethod>,
@@ -435,6 +504,7 @@ pub enum ControlKind {
 
 // doc/interfaces.md#cameracontrol
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraControl {
     pub id: i64,
     pub name: String,
@@ -451,6 +521,7 @@ pub struct CameraControl {
 
 // doc/interfaces.md#cameracontrol
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct MenuEntry {
     pub value: i64,
     pub label: String,
@@ -458,6 +529,7 @@ pub struct MenuEntry {
 
 // doc/interfaces.md#statisticsgroup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StatisticsGroup {
     pub target_type_id: i64,
     pub group_key: Option<serde_json::Value>,
@@ -468,6 +540,7 @@ pub struct StatisticsGroup {
 
 // doc/interfaces.md#statisticsgroup
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TrendEntry {
     pub period_start: i64,
     pub values: StatisticsValues,
@@ -475,6 +548,7 @@ pub struct TrendEntry {
 
 // doc/interfaces.md#statisticsvalues
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StatisticsValues {
     pub session_count: i64,
     pub shot_count: i64,

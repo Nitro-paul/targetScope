@@ -17,9 +17,11 @@ pub enum AnalyzerRequest {
 
 // doc/interfaces.md#analyze_shots
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct AnalyzeShots {
     pub shots: Vec<Shot>,
     pub target_type: TargetType,
+    #[serde(deserialize_with = "crate::check::positive")]
     pub bullet_diameter_mm: f64,
 }
 request!(AnalyzeShots, AnalysisResult, "analyze_shots", 5);

@@ -16,22 +16,26 @@ pub enum ImporterRequest {
 
 // doc/interfaces.md#import_file
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportFile {
     pub staged_file: String,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportCounts {
     pub created: i64,
     pub existing: i64,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RestoredImages {
     pub restored: i64,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ImportFileResponse {
     pub shooters: ImportCounts,
     pub target_types: ImportCounts,

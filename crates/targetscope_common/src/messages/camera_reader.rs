@@ -43,9 +43,11 @@ pub enum CameraSource {
 
 // doc/interfaces.md#camera_status
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraStatus {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraStatusResponse {
     pub state: CameraState,
     pub camera_source: CameraSource,
@@ -60,9 +62,11 @@ request!(CameraStatus, CameraStatusResponse, "camera_status", 5);
 
 // doc/interfaces.md#camera_list_devices
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraListDevices {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DeviceFormat {
     pub width_px: i64,
     pub height_px: i64,
@@ -70,6 +74,7 @@ pub struct DeviceFormat {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CaptureDevice {
     pub path: String,
     pub name: String,
@@ -78,6 +83,7 @@ pub struct CaptureDevice {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraListDevicesResponse {
     pub devices: Vec<CaptureDevice>,
 }
@@ -85,9 +91,11 @@ request!(CameraListDevices, CameraListDevicesResponse, "camera_list_devices", 5)
 
 // doc/interfaces.md#camera_list_controls
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraListControls {}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ControlsResponse {
     pub controls: Vec<CameraControl>,
 }
@@ -95,6 +103,7 @@ request!(CameraListControls, ControlsResponse, "camera_list_controls", 5);
 
 // doc/interfaces.md#camera_set_control
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraSetControl {
     pub id: i64,
     pub value: i64,
@@ -103,6 +112,7 @@ request!(CameraSetControl, ControlsResponse, "camera_set_control", 5);
 
 // doc/interfaces.md#camera_state_changed
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct CameraStateChanged {
     pub state: CameraState,
     pub message: String,

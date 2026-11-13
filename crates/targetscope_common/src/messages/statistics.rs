@@ -38,6 +38,7 @@ pub enum Period {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ComputeStatistics {
     #[serde(default)]
     pub filter: SessionFilter,
@@ -46,6 +47,7 @@ pub struct ComputeStatistics {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ComputeStatisticsResponse {
     pub groups: Vec<StatisticsGroup>,
     pub session_count: i64,

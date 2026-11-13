@@ -410,3 +410,51 @@ async fn lib_bus_21_ping_is_answered_by_the_serve_loop() {
     s.a.ping("b", Duration::from_secs(5)).await.unwrap();
     assert_eq!(s.rec.calls.load(Ordering::SeqCst), 0);
 }
+
+// LIB-BUS-22
+#[tokio::test(flavor = "multi_thread")]
+async fn lib_bus_22_serve_concurrent_answers_at_once() {
+    let s = setup(true).await;
+    s.a.request(Echo { value: 0, delay_ms: 0 }).await.unwrap();
+    for i in 1..=5 {
+        tokio::time::sleep(Duration::from_millis(1500)).await;
+        let started = Instant::now();
+        assert_eq!(s.a.request(Echo { value: i, delay_ms: 0 }).await.unwrap().value, i);
+        assert!(started.elapsed() < Duration::from_millis(200), "request {i}: {:?}", started.elapsed());
+    }
+}
+
+// LIB-BUS-23
+#[tokio::test(flavor = "multi_thread")]
+async fn lib_bus_23_many_pending_requests_at_start() {
+    let redis = RedisTestServer::start().await;
+    let a = Bus::connect(&redis.url(), "a").await.unwrap();
+    let mut c = redis.connection().await;
+    let _: () = redis::cmd("XGROUP").arg("CREATE").arg("b:requests").arg("b").arg("0").arg("MKSTREAM").query_async(&mut c).await.unwrap();
+    let mut calls = Vec::new();
+    for i in 0..250 {
+        let a = a.clone();
+        calls.push(tokio::spawn(async move { a.request(Echo { value: i, delay_ms: 0 }).await }));
+    }
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let mut delivered = 0;
+    while delivered < 250 {
+        assert!(Instant::now() < deadline);
+        let r: redis::streams::StreamReadReply = redis::cmd("XREADGROUP")
+            .arg("GROUP").arg("b").arg("crashed").arg("COUNT").arg(1000).arg("STREAMS").arg("b:requests").arg(">")
+            .query_async(&mut c)
+            .await
+            .unwrap();
+        delivered += r.keys.iter().map(|k| k.ids.len()).sum::<usize>();
+    }
+    let b = Bus::connect(&redis.url(), "b").await.unwrap();
+    let rec = Arc::new(Recorder::default());
+    let handler = Arc::new(Handler(rec.clone()));
+    tokio::spawn(async move { b.serve_concurrent(handler, 16).await });
+    for (i, call) in calls.into_iter().enumerate() {
+        assert_eq!(call.await.unwrap().unwrap().value, i as i64);
+    }
+    assert_eq!(rec.calls.load(Ordering::SeqCst), 250);
+    let v: redis::Value = redis::cmd("XPENDING").arg("b:requests").arg("b").query_async(&mut c).await.unwrap();
+    assert!(matches!(v, redis::Value::Array(ref items) if items.first() == Some(&redis::Value::Int(0))), "{v:?}");
+}

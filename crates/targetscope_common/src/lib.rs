@@ -1,6 +1,7 @@
 // doc/shared_libraries.md
 
 pub mod bus;
+mod check;
 pub mod clock;
 pub mod config;
 pub mod export;

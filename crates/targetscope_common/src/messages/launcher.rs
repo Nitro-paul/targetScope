@@ -34,6 +34,7 @@ pub enum ProgramState {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProgramStatus {
     pub name: String,
     pub state: ProgramState,
@@ -43,9 +44,11 @@ pub struct ProgramStatus {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LauncherStatus {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LauncherStatusResponse {
     pub programs: Vec<ProgramStatus>,
 }
@@ -53,6 +56,7 @@ request!(LauncherStatus, LauncherStatusResponse, "launcher_status", 5);
 
 // doc/interfaces.md#restart_program
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RestartProgram {
     pub name: String,
 }

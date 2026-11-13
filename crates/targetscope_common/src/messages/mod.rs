@@ -32,6 +32,7 @@ pub trait Request: Serialize + Send + Sync {
 
 // doc/interfaces.md#request-envelope
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RequestEnvelope {
     pub r#type: String,
     pub version: u32,
@@ -93,6 +94,7 @@ impl RequestEnvelope {
 
 // doc/interfaces.md#response-envelope
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ResponseEnvelope {
     pub r#type: String,
     pub version: u32,
@@ -104,6 +106,7 @@ pub struct ResponseEnvelope {
 
 // doc/interfaces.md#event-envelope
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct EventEnvelope {
     pub r#type: String,
     pub version: u32,
@@ -128,7 +131,11 @@ impl EventEnvelope {
         })
     }
 
+    // doc/interfaces.md#event-envelope
     pub fn decode<E: DeserializeOwned>(&self) -> Result<E, serde_json::Error> {
+        if self.version != VERSION {
+            return Err(serde::de::Error::custom(format!("unsupported version {} of {}", self.version, self.r#type)));
+        }
         decode_tagged(&self.r#type, &self.payload)
     }
 }
@@ -184,6 +191,7 @@ impl ErrorCode {
 
 // doc/interfaces.md#response-envelope
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ErrorBody {
     pub code: ErrorCode,
     pub message: String,
@@ -249,10 +257,12 @@ impl From<ErrorBody> for ServiceError {
 
 // doc/interfaces.md#ping
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Ping {}
 
 // doc/interfaces.md#ping
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PingResponse {
     pub program: String,
     pub program_version: String,
@@ -262,6 +272,7 @@ pub struct PingResponse {
 
 // doc/interfaces.md#message-format
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Empty {}
 
 // doc/interfaces.md#streams-and-keys

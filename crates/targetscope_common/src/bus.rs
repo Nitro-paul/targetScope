@@ -311,7 +311,8 @@ impl Bus {
         let permits = self.permits(limit);
         let mut backoff = MIN_BACKOFF;
         let mut conn: Option<ConnectionManager> = None;
-        let mut pending_phase = true;
+        // doc/shared_libraries.md#redis-bus
+        let mut pending_after: Option<String> = None;
         let mut first = true;
         loop {
             if self.is_stopping() {
@@ -321,7 +322,7 @@ impl Bus {
                 Some(c) => c,
                 None => match self.prepare_group(&stream, &group).await {
                     Ok(c) => {
-                        pending_phase = true;
+                        pending_after = Some("0".into());
                         self.note_reconnect(&mut first);
                         conn.insert(c)
                     }
@@ -333,17 +334,18 @@ impl Bus {
                     }
                 },
             };
-            let start = if pending_phase { "0" } else { ">" };
-            match xreadgroup(c, &stream, &group, &self.inner.consumer, start, !pending_phase).await {
+            let start = pending_after.clone().unwrap_or_else(|| ">".into());
+            match xreadgroup(c, &stream, &group, &self.inner.consumer, &start, pending_after.is_none()).await {
                 Ok(entries) => {
                     backoff = MIN_BACKOFF;
-                    if pending_phase {
-                        pending_phase = false;
+                    if pending_after.is_some() {
+                        pending_after = entries.last().map(|e| e.id.clone());
                     }
                     for entry in entries {
                         let permit = permits.clone().acquire_owned().await.expect("semaphore closed");
+                        // doc/shared_libraries.md#redis-bus
                         let (bus, handler, mut c, stream, group) =
-                            (self.clone(), handler.clone(), c.clone(), stream.clone(), group.clone());
+                            (self.clone(), handler.clone(), self.inner.conn.clone(), stream.clone(), group.clone());
                         tokio::spawn(async move {
                             bus.handle_entry(&mut c, &stream, &group, entry, handler.as_ref()).await;
                             drop(permit);

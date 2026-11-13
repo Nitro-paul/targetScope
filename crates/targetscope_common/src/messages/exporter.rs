@@ -27,6 +27,7 @@ pub enum ExportFormat {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportSessions {
     #[serde(default)]
     pub filter: SessionFilter,
@@ -36,6 +37,7 @@ pub struct ExportSessions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportSessionsResponse {
     pub files: Vec<String>,
 }
@@ -43,9 +45,11 @@ request!(ExportSessions, ExportSessionsResponse, "export_sessions", 300);
 
 // doc/interfaces.md#list_exports
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ListExports {}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExportFile {
     pub name: String,
     pub size_bytes: i64,
@@ -53,6 +57,7 @@ pub struct ExportFile {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ListExportsResponse {
     pub files: Vec<ExportFile>,
 }
@@ -60,6 +65,7 @@ request!(ListExports, ListExportsResponse, "list_exports", 5);
 
 // doc/interfaces.md#delete_export
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct DeleteExport {
     pub name: String,
 }
