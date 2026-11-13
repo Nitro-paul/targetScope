@@ -259,7 +259,7 @@ The StreamWorker uses `Bus::serve_concurrent` with up to 8 requests at a time, s
 2. `Database::open`: create the file and parent directory if missing; set `PRAGMA foreign_keys = ON`, `PRAGMA journal_mode = WAL`, `PRAGMA busy_timeout = 5000`; run migrations; insert default settings (folder defaults from `TARGETSCOPE_DATA_DIR`). No target types are inserted: they are always created by the user from a photo (see [target type editor](web_server.md#target-type-editor)) or imported.
 3. Create the image folder (`devices/`, `sessions/`) and the staging folder if missing.
 4. Start the DbWorker thread.
-5. Connect to Redis, create the consumer group (`XGROUP CREATE ... $ MKSTREAM`, ignoring `BUSYGROUP`), send `data_changed` `all`/`reload`, and start the StreamWorker. From now on `ping` is answered, which tells the launcher the program is ready.
+5. Connect to Redis, create the consumer group (`XGROUP CREATE ... 0 MKSTREAM`, ignoring `BUSYGROUP`, see [shared_libraries.md](../shared_libraries.md#redis-bus)), send `data_changed` `all`/`reload`, and start the StreamWorker. From now on `ping` is answered, which tells the launcher the program is ready.
 6. Run maintenance at startup and then once an hour: purge `processed_requests` older than `processed_requests_retention_days`, and delete staging files (including leftover `.part` files) older than `staging_max_age_hours`.
 7. On SIGTERM/SIGINT: finish the current request and exit.
 
