@@ -1,12 +1,11 @@
-// Named failpoints, compiled into test builds only (doc/testing/overview.md#failpoints).
-// A test switches a failpoint on to return an error, wait, or abort the process.
+// doc/testing/overview.md#failpoints
+// doc/shared_libraries.md#clock-and-failpoints
 #pragma once
 
 #include <string_view>
 
 namespace targetscope::failpoints {
 
-// Returns true if the failpoint is set to "return an error"; waits or aborts if set so.
 bool hit(std::string_view name);
 
 }  // namespace targetscope::failpoints

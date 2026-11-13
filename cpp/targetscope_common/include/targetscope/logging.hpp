@@ -1,5 +1,4 @@
-// Logging setup with spdlog: stderr + daily rotated file <log_dir>/<program>.log
-// (doc/shared_libraries.md#logging).
+// doc/shared_libraries.md#logging
 #pragma once
 
 #include <string>
