@@ -1,7 +1,4 @@
+// doc/programs/camera_reader.md#architecture
 #include "camera_controls.hpp"
 
-namespace camera_reader {
-
-// TODO: implementation
-
-}  // namespace camera_reader
+namespace camera_reader {}

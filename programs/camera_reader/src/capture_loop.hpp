@@ -1,6 +1,4 @@
-// Capture thread (doc/programs/camera_reader.md#capture-loop):
-// create source from settings -> open (retry every 2 s) -> apply controls -> publish frames;
-// 10 failed reads in a row or 2 s without a frame -> disconnected; reopen on settings change.
+// doc/programs/camera_reader.md#capture-loop
 #pragma once
 
 #include <atomic>
@@ -21,7 +19,7 @@ enum class CameraState { Connected, Disconnected, Disabled };
 
 struct CameraStatus {
     CameraState state = CameraState::Disabled;
-    std::string camera_source;  // v4l2 | rtsp | none
+    std::string camera_source;
     std::string device;
     std::string camera_key;
     std::optional<SourceInfo> info;
@@ -34,19 +32,19 @@ inline constexpr auto FRAME_TIMEOUT = std::chrono::seconds(2);
 inline constexpr int MAX_FAILED_READS = 10;
 
 class CaptureLoop {
-public:
+   public:
     using SourceFactory = std::function<std::unique_ptr<FrameSource>()>;
-    using StateCallback = std::function<void(const CameraStatus&)>;  // -> camera_state_changed
+    using StateCallback = std::function<void(const CameraStatus&)>;
 
     CaptureLoop(SourceFactory factory, StateCallback on_state);
     ~CaptureLoop();
 
     void start();
     void stop();
-    void reopen();  // a reopen setting changed
+    void reopen();
     CameraStatus status() const;
 
-private:
+   private:
     void run();
     SourceFactory factory_;
     StateCallback on_state_;
@@ -57,4 +55,4 @@ private:
     std::thread thread_;
 };
 
-}  // namespace camera_reader
+}

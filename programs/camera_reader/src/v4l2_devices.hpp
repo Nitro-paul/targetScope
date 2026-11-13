@@ -1,5 +1,4 @@
-// camera_list_devices: /dev/video* with VIDIOC_QUERYCAP (V4L2_CAP_VIDEO_CAPTURE only),
-// formats with VIDIOC_ENUM_FMT, VIDIOC_ENUM_FRAMESIZES, VIDIOC_ENUM_FRAMEINTERVALS.
+// doc/programs/camera_reader.md#architecture
 #pragma once
 
 #include <optional>
@@ -15,14 +14,13 @@ struct DeviceFormat {
 };
 
 struct CaptureDevice {
-    std::string path;      // /dev/videoN
+    std::string path;
     std::string name;
-    std::string bus_info;  // camera_key of USB cameras
+    std::string bus_info;
     std::vector<DeviceFormat> formats;
 };
 
 std::vector<CaptureDevice> list_capture_devices();
-// Current /dev/videoN of the camera with this bus_info; empty bus_info = lowest N.
 std::optional<std::string> resolve_device(const std::string& bus_info);
 
-}  // namespace camera_reader
+}
