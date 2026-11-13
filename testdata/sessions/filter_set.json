@@ -1,0 +1,160 @@
+{
+  "$comment": "FILTER-SET (doc/testing/database_handler.md#session-filter-integration). Records are created first, the sessions imported in this order, then the records marked retired are retired. Every session has paper_count 1 and shot_count shots on paper 1 at angle_turns i/shot_count, radius_mm 1.5; grouping_score = score.",
+  "shooters": [
+    {
+      "name": "Alex"
+    },
+    {
+      "name": "Bea"
+    },
+    {
+      "name": "Chris",
+      "retired": true
+    }
+  ],
+  "devices": [
+    {
+      "name": "D1",
+      "category": "air pistol",
+      "caliber": ".177",
+      "bullet_diameter_mm": 4.0
+    },
+    {
+      "name": "D2",
+      "category": "air rifle",
+      "caliber": ".177",
+      "bullet_diameter_mm": 4.5
+    },
+    {
+      "name": "D3",
+      "category": "pistol",
+      "caliber": ".22 LR",
+      "bullet_diameter_mm": 5.6
+    },
+    {
+      "name": "D4",
+      "category": "air pistol",
+      "caliber": ".177",
+      "bullet_diameter_mm": 4.5,
+      "retired": true
+    }
+  ],
+  "target_types": [
+    {
+      "name": "TT-REF"
+    },
+    {
+      "name": "TT-2"
+    },
+    {
+      "name": "TT-3",
+      "retired": true
+    }
+  ],
+  "sessions": [
+    {
+      "name": "F1",
+      "uuid": "00000000-0000-4000-8000-000000000001",
+      "shooter": "Alex",
+      "device": "D1",
+      "target_type": "TT-REF",
+      "distance_m": 10,
+      "single_handed": true,
+      "supported": false,
+      "shot_count": 5,
+      "score": 40,
+      "saved_at": 1768039200
+    },
+    {
+      "name": "F2",
+      "uuid": "00000000-0000-4000-8000-000000000002",
+      "shooter": "Alex",
+      "device": "D2",
+      "target_type": "TT-REF",
+      "distance_m": 10,
+      "single_handed": false,
+      "supported": true,
+      "shot_count": 10,
+      "score": 95,
+      "saved_at": 1770717600
+    },
+    {
+      "name": "F3",
+      "uuid": "00000000-0000-4000-8000-000000000003",
+      "shooter": "Bea",
+      "device": "D1",
+      "target_type": "TT-REF",
+      "distance_m": 10,
+      "single_handed": true,
+      "supported": false,
+      "shot_count": 20,
+      "score": 180,
+      "saved_at": 1773136800
+    },
+    {
+      "name": "F4",
+      "uuid": "00000000-0000-4000-8000-000000000004",
+      "shooter": "Bea",
+      "device": "D3",
+      "target_type": "TT-2",
+      "distance_m": 25,
+      "single_handed": false,
+      "supported": false,
+      "shot_count": 5,
+      "score": 30,
+      "saved_at": 1775815200
+    },
+    {
+      "name": "F5",
+      "uuid": "00000000-0000-4000-8000-000000000005",
+      "shooter": null,
+      "device": "D3",
+      "target_type": "TT-2",
+      "distance_m": 25,
+      "single_handed": true,
+      "supported": false,
+      "shot_count": 60,
+      "score": 500,
+      "saved_at": 1778407200
+    },
+    {
+      "name": "F6",
+      "uuid": "00000000-0000-4000-8000-000000000006",
+      "shooter": "Chris",
+      "device": "D1",
+      "target_type": "TT-REF",
+      "distance_m": 10,
+      "single_handed": true,
+      "supported": false,
+      "shot_count": 5,
+      "score": 45,
+      "saved_at": 1781085600
+    },
+    {
+      "name": "F7",
+      "uuid": "00000000-0000-4000-8000-000000000007",
+      "shooter": "Alex",
+      "device": "D4",
+      "target_type": "TT-REF",
+      "distance_m": 10,
+      "single_handed": false,
+      "supported": false,
+      "shot_count": 5,
+      "score": 41,
+      "saved_at": 1783677600
+    },
+    {
+      "name": "F8",
+      "uuid": "00000000-0000-4000-8000-000000000008",
+      "shooter": "Alex",
+      "device": "D1",
+      "target_type": "TT-3",
+      "distance_m": 10,
+      "single_handed": false,
+      "supported": false,
+      "shot_count": 5,
+      "score": 39,
+      "saved_at": 1786356000
+    }
+  ]
+}

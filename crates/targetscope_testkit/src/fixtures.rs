@@ -68,3 +68,52 @@ pub struct ReferenceIds {
     pub shooter_id: i64,
     pub device_id: i64,
 }
+
+// doc/testing/database_handler.md#session-filter-integration
+pub async fn load_filter_set(bus: &crate::TestBus) -> std::collections::HashMap<String, i64> {
+    const DB: &str = "database_handler";
+    let set: Value = serde_json::from_str(&std::fs::read_to_string(testdata("sessions/filter_set.json")).unwrap()).unwrap();
+    let mut ids = std::collections::HashMap::new();
+    let id = |r: targetscope_common::messages::ResponseEnvelope| {
+        r.payload.as_ref().and_then(|p| p["id"].as_i64()).unwrap_or_else(|| panic!("{:?}", r.error))
+    };
+    let records = |kind: &str| set[kind].as_array().unwrap().clone();
+    let target_type = |name: &Value| {
+        let mut t = serde_json::to_value(tt_ref()).unwrap();
+        t["name"] = name.clone();
+        t
+    };
+    for s in records("shooters") {
+        ids.insert(s["name"].as_str().unwrap().to_string(), id(bus.send(DB, "save_shooter", json!({ "name": s["name"] })).await));
+    }
+    for d in records("devices") {
+        let mut p = d.clone();
+        p.as_object_mut().unwrap().remove("retired");
+        ids.insert(d["name"].as_str().unwrap().to_string(), id(bus.send(DB, "save_device", p).await));
+    }
+    for t in records("target_types") {
+        ids.insert(t["name"].as_str().unwrap().to_string(), id(bus.send(DB, "save_target_type", target_type(&t["name"])).await));
+    }
+    for s in records("sessions") {
+        let n = s["shot_count"].as_i64().unwrap();
+        let shots: Vec<Value> =
+            (0..n).map(|i| json!({ "angle_turns": i as f64 / n as f64, "radius_mm": 1.5, "paper_no": 1 })).collect();
+        let named = |field: &str| s[field].as_str().map(|name| ids[name]);
+        let payload = json!({
+            "uuid": s["uuid"], "saved_at": s["saved_at"], "score": s["score"], "grouping_score": s["score"],
+            "distance_m": s["distance_m"], "target_type_id": named("target_type"), "shooter_id": named("shooter"),
+            "device_id": named("device"), "single_handed": s["single_handed"], "supported": s["supported"],
+            "shot_count": n, "duration_s": null, "notes": null, "paper_count": 1, "shots": shots, "images": []
+        });
+        ids.insert(s["name"].as_str().unwrap().to_string(), id(bus.send(DB, "import_session", payload).await));
+    }
+    for (kind, request) in [("shooters", "save_shooter"), ("devices", "save_device"), ("target_types", "save_target_type")] {
+        for r in records(kind).into_iter().filter(|r| r["retired"] == true) {
+            let mut p = if kind == "target_types" { target_type(&r["name"]) } else { r.clone() };
+            p["id"] = json!(ids[r["name"].as_str().unwrap()]);
+            p["retired"] = json!(true);
+            id(bus.send(DB, request, p).await);
+        }
+    }
+    ids
+}
