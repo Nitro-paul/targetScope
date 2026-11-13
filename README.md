@@ -37,7 +37,7 @@ The full design is in [doc/software_description.md](doc/software_description.md)
 | `web_server` | Rust | [doc/programs/web_server.md](doc/programs/web_server.md) |
 
 ## Building
-Requirements and how to install them: [doc/development.md](doc/development.md).
+Requirements and how to install them: [doc/development.md](doc/development.md). Building, installing and running a release: [doc/releases.md](doc/releases.md).
 
 ```sh
 cargo build --workspace            # Rust programs and libraries

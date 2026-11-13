@@ -118,6 +118,8 @@ targetscope/
 ├── testdata/               # reference data, photos, videos, golden files
 ├── config/
 │   └── launcher.toml
+├── release/                # release tools: build.sh, bump.sh, install/run scripts of the bundle (branch releases)
+├── VERSION                 # version number <release>.<majorfix>.<minorfix> (see releases.md)
 └── doc/
 ```
 
@@ -146,3 +148,4 @@ The staging and image folders must be on the same file system, so that moving a 
 - [programs/](programs/): one design document per program, same names as the program folders in the code
 - [testing/](testing/overview.md): the complete test suite: test levels, tools, reference data and every test case per part
 - [development.md](development.md): installing the build, runtime and test dependencies
+- [releases.md](releases.md): version numbers, building a release, installing, running and uninstalling it
