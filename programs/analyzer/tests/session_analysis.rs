@@ -161,8 +161,8 @@ fn an_anl_10_compared_with_brute_force() {
     let mut rng = Rng(0x9e37_79b9_7f4a_7c15);
     let (mut equal, total) = (0, 1000);
     for _ in 0..total {
-        let n = 2 + (rng.next() * 9.0) as usize;
-        let shots: Vec<Shot> = (0..n).map(|_| shot(rng.next(), rng.next() * 40.0)).collect();
+        let n = 2 + (rng.next_f64() * 9.0) as usize;
+        let shots: Vec<Shot> = (0..n).map(|_| shot(rng.next_f64(), rng.next_f64() * 40.0)).collect();
         let points: Vec<Point> = shots.iter().map(|s| Point::from(*s)).collect();
         let found = analyze(&shots, &tt_ref(), DEV_REF_DIAMETER).grouping_score;
         let reference = brute_force(&points, &rings, DEV_REF_DIAMETER / 2.0);

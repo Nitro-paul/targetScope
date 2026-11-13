@@ -28,9 +28,20 @@ async fn db_ses_01_create_with_one_paper_and_image() {
     assert_eq!(r["images"], json!([{ "paper_no": 1, "image_path": path }]));
 
     let s = h.session(id).await;
-    for field in ["shooter_id", "device_id", "target_type_id", "distance_m", "single_handed", "supported", "shot_count",
-        "paper_count", "score", "grouping_score", "duration_s", "notes"]
-    {
+    for field in [
+        "shooter_id",
+        "device_id",
+        "target_type_id",
+        "distance_m",
+        "single_handed",
+        "supported",
+        "shot_count",
+        "paper_count",
+        "score",
+        "grouping_score",
+        "duration_s",
+        "notes",
+    ] {
         assert_eq!(s[field], payload[field], "{field}");
     }
     assert!((s["saved_at"].as_i64().unwrap() - now_s()).abs() <= 2);
@@ -219,9 +230,23 @@ async fn db_ses_11_read_one_session() {
     assert_eq!(s["shots"], p["shots"]);
     let papers: Vec<i64> = s["images"].as_array().unwrap().iter().map(|i| i["paper_no"].as_i64().unwrap()).collect();
     assert_eq!(papers, [1, 2]);
-    for field in ["id", "uuid", "saved_at", "score", "grouping_score", "distance_m", "target_type_id", "shooter_id", "device_id",
-        "single_handed", "supported", "shot_count", "duration_s", "notes", "paper_count"]
-    {
+    for field in [
+        "id",
+        "uuid",
+        "saved_at",
+        "score",
+        "grouping_score",
+        "distance_m",
+        "target_type_id",
+        "shooter_id",
+        "device_id",
+        "single_handed",
+        "supported",
+        "shot_count",
+        "duration_s",
+        "notes",
+        "paper_count",
+    ] {
         assert!(s.get(field).is_some(), "{field}");
     }
 }

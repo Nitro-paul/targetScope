@@ -1,8 +1,4 @@
-// See include/targetscope/bus.hpp
+// doc/shared_libraries.md#c-library-targetscope_common_cpp
 #include "targetscope/bus.hpp"
 
-namespace targetscope {
-
-// TODO: implementation
-
-}  // namespace targetscope
+namespace targetscope {}

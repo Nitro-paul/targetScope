@@ -4,12 +4,11 @@
 
 #include <chrono>
 #include <cstdint>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include <nlohmann/json.hpp>
 
 #include "targetscope/model.hpp"
 
@@ -169,5 +168,5 @@ struct PaperReplaced {
 
 void to_json(json& j, const PaperReplaced& v);
 
-}  // namespace messages
-}  // namespace targetscope
+}
+}

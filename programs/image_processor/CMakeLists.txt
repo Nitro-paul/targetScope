@@ -48,14 +48,14 @@ if(TARGETSCOPE_BUILD_TESTS)
     target_link_libraries(image_processor_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
     gtest_discover_tests(image_processor_tests)
 
-    # Release build, nightly: ctest --test-dir build -L performance
+    # doc/testing/overview.md#running-the-tests
     add_executable(image_processor_performance_tests tests/performance_test.cpp)
     target_link_libraries(image_processor_performance_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
     gtest_discover_tests(image_processor_performance_tests PROPERTIES LABELS performance)
 
-    # Accuracy report over testdata/photos and testdata/videos: ctest --test-dir build -L accuracy
+    # doc/testing/overview.md#running-the-tests
     add_executable(image_processor_accuracy_tests tests/accuracy_test.cpp)
     target_link_libraries(image_processor_accuracy_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
     gtest_discover_tests(image_processor_accuracy_tests PROPERTIES LABELS accuracy)
-    # Hardware tests (IP-HW) are manual checklists: doc/testing/image_processor.md#hardware-tests-manual
+    # doc/testing/image_processor.md#hardware-tests-manual
 endif()

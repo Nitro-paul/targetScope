@@ -57,7 +57,11 @@ TEST(Envelopes, LIB_ENV_06_EventEnvelope) {
 }
 
 // LIB-ENV-07
-TEST(Envelopes, LIB_ENV_07_UnknownRequestType) { GTEST_SKIP() << "doc/testing/shared_libraries.md#envelopes-unit LIB-ENV-07"; }
+TEST(Envelopes, LIB_ENV_07_UnknownRequestType) {
+    GTEST_SKIP() << "doc/testing/shared_libraries.md#envelopes-unit LIB-ENV-07";
+}
 
 // LIB-ENV-08
-TEST(Envelopes, LIB_ENV_08_UnknownVersion) { GTEST_SKIP() << "doc/testing/shared_libraries.md#envelopes-unit LIB-ENV-08"; }
+TEST(Envelopes, LIB_ENV_08_UnknownVersion) {
+    GTEST_SKIP() << "doc/testing/shared_libraries.md#envelopes-unit LIB-ENV-08";
+}

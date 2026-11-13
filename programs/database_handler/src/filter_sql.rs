@@ -47,12 +47,8 @@ pub const TARGET_TYPE_COLUMNS: &[(&str, ColumnType)] = &[
     ("retired", ColumnType::Bool),
 ];
 
-pub const SETTING_COLUMNS: &[(&str, ColumnType)] = &[
-    ("name", ColumnType::Text),
-    ("display_name", ColumnType::Text),
-    ("active", ColumnType::Bool),
-    ("value", ColumnType::Text),
-];
+pub const SETTING_COLUMNS: &[(&str, ColumnType)] =
+    &[("name", ColumnType::Text), ("display_name", ColumnType::Text), ("active", ColumnType::Bool), ("value", ColumnType::Text)];
 
 pub struct Sql {
     pub clause: String,

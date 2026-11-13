@@ -1,4 +1,4 @@
-// Controllable time; it only moves when a test advances it.
+// doc/testing/overview.md#test-kit
 #pragma once
 
 #include <chrono>
@@ -8,7 +8,7 @@
 namespace targetscope::testkit {
 
 class FakeClock final : public Clock {
-public:
+   public:
     explicit FakeClock(std::chrono::system_clock::time_point start);
     void advance(std::chrono::milliseconds d);
     std::chrono::system_clock::time_point now() const override;
@@ -16,4 +16,4 @@ public:
     void sleep(std::chrono::milliseconds d) const override;
 };
 
-}  // namespace targetscope::testkit
+}

@@ -26,9 +26,8 @@ pub fn migrate(c: &mut Connection, migrations: &[&str]) -> Result<()> {
 
 // doc/database.md#known-settings
 pub fn insert_default_settings(c: &Connection, data_dir: &Path) -> Result<()> {
-    let mut stmt = c.prepare(
-        "INSERT INTO settings (name, display_name, active, value) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(name) DO NOTHING",
-    )?;
+    let mut stmt =
+        c.prepare("INSERT INTO settings (name, display_name, active, value) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(name) DO NOTHING")?;
     for k in KNOWN_SETTINGS {
         stmt.execute(params![k.name, k.display_name, k.default_active, k.default_value(data_dir)])?;
     }

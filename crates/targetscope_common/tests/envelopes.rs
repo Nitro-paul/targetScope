@@ -33,7 +33,7 @@ fn lib_env_01_request_envelope() {
 #[test]
 fn lib_env_02_request_without_reply_to() {
     let v = serde_json::to_value(ping_envelope(None)).unwrap();
-    assert!(v.get("reply_to").map_or(true, Value::is_null));
+    assert!(v.get("reply_to").is_none_or(Value::is_null));
 }
 
 // LIB-ENV-03

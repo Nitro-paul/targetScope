@@ -8,7 +8,7 @@ namespace targetscope::failpoints {
 
 bool hit(std::string_view name);
 
-}  // namespace targetscope::failpoints
+}
 
 #if defined(TARGETSCOPE_FAILPOINTS)
 #define TS_FAILPOINT(name) ::targetscope::failpoints::hit(name)

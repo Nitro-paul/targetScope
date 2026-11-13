@@ -25,13 +25,7 @@ pub fn analyze(shots: &[Shot], target: &TargetType, bullet_diameter_mm: f64) -> 
     let shot_scores: Vec<i64> = points.iter().map(|p| shot_score(p.length(), &rings, b)).collect();
     let score = shot_scores.iter().sum();
     if points.is_empty() {
-        return AnalysisResult {
-            shot_scores,
-            score,
-            grouping_score: 0,
-            grouping_shift: OffsetMm::default(),
-            mean_point: None,
-        };
+        return AnalysisResult { shot_scores, score, grouping_score: 0, grouping_shift: OffsetMm::default(), mean_point: None };
     }
     // doc/programs/analyzer.md#mean-point-of-impact
     let n = points.len() as f64;
@@ -59,11 +53,7 @@ struct Candidate {
 
 // doc/programs/analyzer.md#grouping-algorithm
 fn better(a: &Candidate, b: &Candidate) -> std::cmp::Ordering {
-    b.score
-        .cmp(&a.score)
-        .then(a.c.length().total_cmp(&b.c.length()))
-        .then(a.c.x.total_cmp(&b.c.x))
-        .then(a.c.y.total_cmp(&b.c.y))
+    b.score.cmp(&a.score).then(a.c.length().total_cmp(&b.c.length())).then(a.c.x.total_cmp(&b.c.x)).then(a.c.y.total_cmp(&b.c.y))
 }
 
 // doc/programs/analyzer.md#grouping-algorithm

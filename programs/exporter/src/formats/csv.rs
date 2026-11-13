@@ -9,9 +9,25 @@ use crate::collect::ExportData;
 use crate::formats::ImageEntries;
 
 const SESSION_COLUMNS: [&str; 19] = [
-    "session_id", "session_uuid", "saved_at", "shooter", "device", "device_category", "caliber", "target_type", "distance_m",
-    "single_handed", "supported", "shot_count", "paper_count", "duration_s", "score", "grouping_score",
-    "grouping_shift_x_mm", "grouping_shift_y_mm", "notes",
+    "session_id",
+    "session_uuid",
+    "saved_at",
+    "shooter",
+    "device",
+    "device_category",
+    "caliber",
+    "target_type",
+    "distance_m",
+    "single_handed",
+    "supported",
+    "shot_count",
+    "paper_count",
+    "duration_s",
+    "score",
+    "grouping_score",
+    "grouping_shift_x_mm",
+    "grouping_shift_y_mm",
+    "notes",
 ];
 const SHOT_COLUMNS: [&str; 8] = ["session_id", "shot_no", "paper_no", "angle_turns", "radius_mm", "x_mm", "y_mm", "score"];
 

@@ -102,11 +102,8 @@ async fn db_mnt_03_staging_folder() {
         std::fs::create_dir(staging.join("old_folder")).unwrap();
     });
     let files = |m: &Maintenance| {
-        let mut v: Vec<String> = std::fs::read_dir(&m.dir.staging_dir)
-            .unwrap()
-            .flatten()
-            .map(|e| e.file_name().to_string_lossy().into_owned())
-            .collect();
+        let mut v: Vec<String> =
+            std::fs::read_dir(&m.dir.staging_dir).unwrap().flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect();
         v.sort();
         v
     };
@@ -123,7 +120,7 @@ async fn db_mnt_04_runs_every_hour() {
         insert(&m.conn(), &id, m.now_s - 40 * DAY);
         m.clock.advance(Duration::from_secs(1800));
         tokio::time::sleep(Duration::from_millis(300)).await;
-        assert_eq!(m.request_ids(), [id.clone()], "a run after half an hour");
+        assert_eq!(m.request_ids(), [id], "a run after half an hour");
         m.clock.advance(Duration::from_secs(1800));
         m.until("no run after an hour", |m| m.request_ids().is_empty()).await;
     }

@@ -12,7 +12,13 @@ use crate::archive::ImportArchive;
 pub fn check(file: &ExportFile, mut archive: Option<&mut ImportArchive>) -> Result<Vec<String>, ServiceError> {
     let fail = |m: String| Err(ServiceError::validation(m));
     let mut seen = HashSet::new();
-    let all = file.shooters.iter().map(|s| s.uuid).chain(file.target_types.iter().map(|t| t.uuid)).chain(file.devices.iter().map(|d| d.uuid)).chain(file.sessions.iter().map(|s| s.uuid));
+    let all = file
+        .shooters
+        .iter()
+        .map(|s| s.uuid)
+        .chain(file.target_types.iter().map(|t| t.uuid))
+        .chain(file.devices.iter().map(|d| d.uuid))
+        .chain(file.sessions.iter().map(|s| s.uuid));
     for u in all {
         if !seen.insert(u) {
             return fail(format!("uuid {u} appears twice"));
@@ -67,7 +73,7 @@ pub fn check(file: &ExportFile, mut archive: Option<&mut ImportArchive>) -> Resu
         }
     }
     let mut warnings = Vec::new();
-    if let Some(zip) = archive.as_deref_mut() {
+    if let Some(zip) = archive.as_mut() {
         let entries = file
             .sessions
             .iter()

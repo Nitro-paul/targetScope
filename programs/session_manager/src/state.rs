@@ -1,9 +1,7 @@
 // doc/programs/session_manager.md#persistence-and-recovery
 
 use serde::{Deserialize, Serialize};
-use targetscope_common::model::{
-    CurrentSession, CurrentShot, Device, InputMode, SessionSetup, SessionState, StagedPaperImage, TargetType,
-};
+use targetscope_common::model::{CurrentSession, CurrentShot, Device, InputMode, SessionSetup, SessionState, StagedPaperImage, TargetType};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

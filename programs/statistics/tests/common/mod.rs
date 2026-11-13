@@ -66,7 +66,7 @@ pub fn devices() -> Vec<Value> {
 pub fn serve(db: &FakeProgram, sessions: Vec<Value>, devices: Vec<Value>) {
     db.on(
         "read_sessions",
-        Responder::new(move |p| {
+        Responder::answer(move |p| {
             let offset = p["offset"].as_u64().unwrap_or(0) as usize;
             let limit = p["limit"].as_u64().map(|l| l as usize).unwrap_or(usize::MAX);
             let page: Vec<Value> = sessions.iter().skip(offset).take(limit).cloned().collect();
@@ -74,7 +74,7 @@ pub fn serve(db: &FakeProgram, sessions: Vec<Value>, devices: Vec<Value>) {
         }),
     );
     let by_ids = |records: Vec<Value>, key: &'static str| {
-        Responder::new(move |p| {
+        Responder::answer(move |p| {
             let ids = p["filter"]["conditions"][0]["value"].as_array().cloned().unwrap_or_default();
             let found: Vec<Value> = records.iter().filter(|r| ids.contains(&r["id"])).cloned().collect();
             Answer::Ok(json!({ key: found }))
@@ -123,8 +123,7 @@ impl Default for S {
 
 impl S {
     pub fn json(&self) -> Value {
-        let shots: Vec<Value> =
-            self.shots.iter().map(|(a, r)| json!({ "angle_turns": a, "radius_mm": r, "paper_no": 1 })).collect();
+        let shots: Vec<Value> = self.shots.iter().map(|(a, r)| json!({ "angle_turns": a, "radius_mm": r, "paper_no": 1 })).collect();
         json!({
             "id": self.id, "uuid": Uuid::new_v4(), "saved_at": self.saved_at, "score": 10 * shots.len(),
             "grouping_score": 11 * shots.len(), "distance_m": self.distance_m, "target_type_id": self.target_type_id,

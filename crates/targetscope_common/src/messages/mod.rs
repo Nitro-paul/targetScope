@@ -56,10 +56,7 @@ impl RequestEnvelope {
     // doc/interfaces.md#error-codes
     pub fn decode<R: DeserializeOwned>(&self) -> Result<R, ServiceError> {
         if self.version != VERSION {
-            return Err(ServiceError::new(
-                ErrorCode::InvalidMessage,
-                format!("unsupported version {} of {}", self.version, self.r#type),
-            ));
+            return Err(ServiceError::new(ErrorCode::InvalidMessage, format!("unsupported version {} of {}", self.version, self.r#type)));
         }
         decode_tagged(&self.r#type, &self.payload).map_err(|e| {
             let msg = e.to_string();
@@ -121,14 +118,7 @@ impl EventEnvelope {
         let tagged = serde_json::to_value(event)?;
         let r#type = tagged.get("type").and_then(Value::as_str).unwrap_or_default().to_string();
         let payload = tagged.get("payload").cloned().unwrap_or_else(|| Value::Object(Default::default()));
-        Ok(EventEnvelope {
-            r#type,
-            version: VERSION,
-            event_id: Uuid::new_v4(),
-            source: source.to_string(),
-            timestamp_ms,
-            payload,
-        })
+        Ok(EventEnvelope { r#type, version: VERSION, event_id: Uuid::new_v4(), source: source.to_string(), timestamp_ms, payload })
     }
 
     // doc/interfaces.md#event-envelope
@@ -240,8 +230,7 @@ impl ServiceError {
 
     // doc/interfaces.md#error-codes
     pub fn setting_not_set(setting: &str) -> Self {
-        Self::new(ErrorCode::SettingNotSet, format!("setting {setting} is not set"))
-            .with_details(serde_json::json!({ "setting": setting }))
+        Self::new(ErrorCode::SettingNotSet, format!("setting {setting} is not set")).with_details(serde_json::json!({ "setting": setting }))
     }
 
     pub fn body(&self) -> ErrorBody {

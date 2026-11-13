@@ -7,7 +7,7 @@
 namespace targetscope {
 
 class Clock {
-public:
+   public:
     virtual ~Clock() = default;
     virtual std::chrono::system_clock::time_point now() const = 0;
     virtual std::chrono::steady_clock::time_point monotonic() const = 0;
@@ -15,7 +15,7 @@ public:
 };
 
 class SystemClock final : public Clock {
-public:
+   public:
     std::chrono::system_clock::time_point now() const override;
     std::chrono::steady_clock::time_point monotonic() const override;
     void sleep(std::chrono::milliseconds d) const override;
@@ -23,4 +23,4 @@ public:
 
 std::int64_t unix_ms(std::chrono::system_clock::time_point t);
 
-}  // namespace targetscope
+}

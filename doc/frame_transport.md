@@ -54,6 +54,7 @@ typedef struct {
     double   px_per_mm;      /* live frames: scale of the transformed paper image; raw: 0 */
 } TargetScopeFrameHeader;    /* 48 bytes, 8-byte aligned */
 ```
+- The header file has no comments of its own; the comments of this listing describe the fields.
 - C++ uses the struct directly and sets `static constexpr const char* IOX2_TYPE_NAME = TARGETSCOPE_FRAME_HEADER_TYPE_NAME;` in a wrapper type, so iceoryx2 identifies it by name across languages.
 - Rust mirrors it as a `#[repr(C)]` struct with `#[derive(ZeroCopySend)]` and `#[type_name("TargetScopeFrameHeader")]`.
 - Both sides have compile-time checks of size (48) and field offsets.

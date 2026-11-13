@@ -105,7 +105,9 @@ impl ImportArchive {
         let name = format!("import_{}.{ext}", Uuid::new_v4());
         let part = staging_dir.join(format!(".{name}.part"));
         let mut src = self.zip.by_name(entry).map_err(|e| invalid(e.to_string()))?;
-        let result = File::create(&part).and_then(|mut f| std::io::copy(&mut src, &mut f)).and_then(|_| std::fs::rename(&part, staging_dir.join(&name)));
+        let result = File::create(&part)
+            .and_then(|mut f| std::io::copy(&mut src, &mut f))
+            .and_then(|_| std::fs::rename(&part, staging_dir.join(&name)));
         if let Err(e) = result {
             let _ = std::fs::remove_file(&part);
             return Err(ServiceError::io(e.to_string()));

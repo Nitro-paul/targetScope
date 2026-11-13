@@ -9,4 +9,4 @@ namespace targetscope::logging {
 
 void init(const std::string& program, const BootstrapConfig& config);
 
-}  // namespace targetscope::logging
+}

@@ -32,4 +32,4 @@ BootstrapConfig BootstrapConfig::from_vars(const std::function<std::optional<std
     return c;
 }
 
-}  // namespace targetscope
+}

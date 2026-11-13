@@ -18,16 +18,7 @@ pub fn id8(request_id: &Uuid) -> String {
 // doc/programs/exporter.md#export-flow-export_sessions
 pub fn prefix(now_s: i64, request_id: &Uuid) -> String {
     let l = local(now_s);
-    format!(
-        "{:04}-{:02}-{:02}_{:02}{:02}{:02}_{}",
-        l.date.year,
-        l.date.month,
-        l.date.day,
-        l.hour,
-        l.minute,
-        l.second,
-        id8(request_id)
-    )
+    format!("{:04}-{:02}-{:02}_{:02}{:02}{:02}_{}", l.date.year, l.date.month, l.date.day, l.hour, l.minute, l.second, id8(request_id))
 }
 
 fn is_part(name: &str) -> bool {
@@ -37,10 +28,7 @@ fn is_part(name: &str) -> bool {
 // doc/programs/exporter.md#export-flow-export_sessions
 pub fn existing_files(export_dir: &Path, request_id: &Uuid) -> io::Result<Vec<String>> {
     let tag = format!("_{}", id8(request_id));
-    let mut files: Vec<String> = list_names(export_dir)?
-        .into_iter()
-        .filter(|n| n.len() > 17 && n[17..].starts_with(&tag))
-        .collect();
+    let mut files: Vec<String> = list_names(export_dir)?.into_iter().filter(|n| n.len() > 17 && n[17..].starts_with(&tag)).collect();
     files.sort();
     Ok(files)
 }

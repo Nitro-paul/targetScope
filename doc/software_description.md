@@ -93,8 +93,9 @@ Shared code is in one library per language: `targetscope_common` (Rust) and `tar
 ## Code organization
 ```
 targetscope/
-├── Cargo.toml              # Rust workspace
+├── Cargo.toml, Cargo.lock  # Rust workspace
 ├── CMakeLists.txt          # C++ projects
+├── rustfmt.toml, .clang-format, .editorconfig   # code style (development.md#code-style)
 ├── schemas/                # language-neutral contract: JSON Schemas, examples, frame_header.h
 ├── crates/
 │   ├── targetscope_common/         # Rust shared library
@@ -118,6 +119,7 @@ targetscope/
 ├── testdata/               # reference data, photos, videos, golden files
 ├── config/
 │   └── launcher.toml
+├── tools/                  # install_deps.sh (dependencies without root), check_docs.py (links and comments)
 ├── release/                # release tools: build.sh, bump.sh, install/run scripts of the bundle (branch releases)
 ├── VERSION                 # version number <release>.<majorfix>.<minorfix> (see releases.md)
 └── doc/

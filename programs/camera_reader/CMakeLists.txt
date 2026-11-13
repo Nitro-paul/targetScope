@@ -4,7 +4,6 @@ if(OpenCV_VERSION VERSION_LESS 4 OR NOT OpenCV_VERSION VERSION_LESS 6)
     message(FATAL_ERROR "OpenCV 4 or 5 is needed, found ${OpenCV_VERSION}")
 endif()
 
-# Everything except main(), so the tests can link it.
 add_library(camera_reader_core STATIC
     src/camera_identity.cpp
     src/camera_controls.cpp
@@ -34,5 +33,5 @@ if(TARGETSCOPE_BUILD_TESTS)
     target_include_directories(camera_reader_tests PRIVATE tests)
     target_link_libraries(camera_reader_tests PRIVATE camera_reader_core targetscope_testkit_cpp GTest::gtest_main)
     gtest_discover_tests(camera_reader_tests)
-    # Hardware tests (CR-HW) are manual checklists: doc/testing/camera_reader.md#hardware-tests-manual
+    # doc/testing/camera_reader.md#hardware-tests-manual
 endif()

@@ -5,9 +5,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use super::{request, Ping};
-use crate::model::{
-    Device, Filter, ImportedSession, NewSession, PaperImage, Session, SessionFilter, Setting, Shooter, TargetType,
-};
+use crate::model::{Device, Filter, ImportedSession, NewSession, PaperImage, Session, SessionFilter, Setting, Shooter, TargetType};
 
 pub const PROGRAM: &str = "database_handler";
 pub const STREAM: &str = "database_handler:requests";

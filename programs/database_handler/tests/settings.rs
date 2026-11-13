@@ -66,10 +66,19 @@ async fn db_set_02_valid_values() {
 async fn db_set_03_invalid_values() {
     let h = Handler::start().await;
     let cases = [
-        ("camera_fps", "0"), ("camera_fps", "121"), ("camera_fps", "abc"), ("camera_fps", "30.5"),
-        ("camera_source", "usb"), ("camera_rtsp_url", "http://x"),
-        ("web_bind_address", "8080"), ("web_bind_address", "0.0.0.0:70000"), ("web_bind_address", "localhost:8080"),
-        ("camera_controls", "[]"), ("camera_controls", "{"), ("live_feed_quality", "101"), ("admin_password_hash", "secret"),
+        ("camera_fps", "0"),
+        ("camera_fps", "121"),
+        ("camera_fps", "abc"),
+        ("camera_fps", "30.5"),
+        ("camera_source", "usb"),
+        ("camera_rtsp_url", "http://x"),
+        ("web_bind_address", "8080"),
+        ("web_bind_address", "0.0.0.0:70000"),
+        ("web_bind_address", "localhost:8080"),
+        ("camera_controls", "[]"),
+        ("camera_controls", "{"),
+        ("live_feed_quality", "101"),
+        ("admin_password_hash", "secret"),
     ];
     for (name, value) in cases {
         let before = h.setting(name).await;

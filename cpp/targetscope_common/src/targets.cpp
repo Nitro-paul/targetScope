@@ -19,7 +19,8 @@ std::vector<model::Ring> generate_rings(const model::TargetType& t) {
             if (score == s) return r;
         const auto& a = s > anchors[1].first ? anchors[0] : anchors[1];
         const auto& b = s > anchors[1].first ? anchors[1] : anchors[2];
-        return a.second + static_cast<double>(a.first - s) * (b.second - a.second) / static_cast<double>(a.first - b.first);
+        return a.second +
+               static_cast<double>(a.first - s) * (b.second - a.second) / static_cast<double>(a.first - b.first);
     };
     std::vector<model::Ring> rings;
     for (std::int64_t s = t.inner_white_score; s >= t.outer_score && s >= 1; --s) rings.push_back({s, radius(s)});
@@ -27,8 +28,8 @@ std::vector<model::Ring> generate_rings(const model::TargetType& t) {
 }
 
 std::optional<std::string> validate_target_type(const model::TargetType& t) {
-    for (double v : {t.paper_width_mm, t.paper_height_mm, t.center_x_mm, t.center_y_mm, t.inner_white_radius_mm, t.black_radius_mm,
-                     t.outer_radius_mm})
+    for (double v : {t.paper_width_mm, t.paper_height_mm, t.center_x_mm, t.center_y_mm, t.inner_white_radius_mm,
+                     t.black_radius_mm, t.outer_radius_mm})
         if (!std::isfinite(v)) return "all sizes are finite numbers";
     const std::array<std::pair<bool, const char*>, 11> rules{{
         {t.paper_width_mm > 0 && t.paper_height_mm > 0, "paper size > 0"},
@@ -48,4 +49,4 @@ std::optional<std::string> validate_target_type(const model::TargetType& t) {
     return std::nullopt;
 }
 
-}  // namespace targetscope::targets
+}

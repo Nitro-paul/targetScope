@@ -11,9 +11,9 @@ use serde_json::{json, Value};
 
 use targetscope_common::export::ExportFile;
 use targetscope_common::messages::{
-    analyzer, camera_reader, database_handler as db, exporter, image_processor as ip, importer, launcher,
-    session_manager as sm, statistics, ErrorBody, ErrorCode, EventEnvelope, Ping, PingResponse, Request,
-    RequestEnvelope, ResponseEnvelope, ServiceError, Status, VERSION,
+    analyzer, camera_reader, database_handler as db, exporter, image_processor as ip, importer, launcher, session_manager as sm,
+    statistics, ErrorBody, ErrorCode, EventEnvelope, Ping, PingResponse, Request, RequestEnvelope, ResponseEnvelope, ServiceError, Status,
+    VERSION,
 };
 use targetscope_common::model;
 
@@ -49,13 +49,8 @@ fn rel(path: &Path, base: &Path) -> String {
 
 fn schema_names() -> BTreeSet<String> {
     let dir = schemas_dir();
-    json_files(&dir)
-        .iter()
-        .map(|p| rel(p, &dir))
-        .filter_map(|r| r.strip_suffix(".schema.json").map(str::to_string))
-        .collect()
+    json_files(&dir).iter().map(|p| rel(p, &dir)).filter_map(|r| r.strip_suffix(".schema.json").map(str::to_string)).collect()
 }
-
 
 struct SchemaFiles;
 
@@ -92,7 +87,6 @@ fn errors(schema: &str, instance: &Value) -> Vec<String> {
 fn schema(name: &str) -> Value {
     read_json(&schemas_dir().join(format!("{name}.schema.json")))
 }
-
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum Kind {
@@ -144,12 +138,7 @@ fn request_receive<E: Serialize + DeserializeOwned>(m: &Value) -> Result<Value, 
 }
 
 fn request<T: Request + DeserializeOwned, E: Serialize + DeserializeOwned>() -> Entry {
-    Entry {
-        kind: Kind::Request,
-        round_trip: request_round_trip::<T>,
-        produce: request_produce::<T>,
-        receive: request_receive::<E>,
-    }
+    Entry { kind: Kind::Request, round_trip: request_round_trip::<T>, produce: request_produce::<T>, receive: request_receive::<E> }
 }
 
 fn response_round_trip<R: Serialize + DeserializeOwned>(m: &Value) -> Result<Value, String> {
@@ -194,12 +183,7 @@ fn response_receive<R: Serialize + DeserializeOwned>(m: &Value) -> Result<Value,
 }
 
 fn response<R: Serialize + DeserializeOwned>() -> Entry {
-    Entry {
-        kind: Kind::Response,
-        round_trip: response_round_trip::<R>,
-        produce: response_produce::<R>,
-        receive: response_receive::<R>,
-    }
+    Entry { kind: Kind::Response, round_trip: response_round_trip::<R>, produce: response_produce::<R>, receive: response_receive::<R> }
 }
 
 fn event_round_trip<E: Serialize + DeserializeOwned>(m: &Value) -> Result<Value, String> {
@@ -328,13 +312,8 @@ fn variants<E: DeserializeOwned>() -> Vec<String> {
     let msg = e.to_string();
     let list = msg.split("expected one of ").nth(1).or_else(|| msg.split("expected ").nth(1)).unwrap_or("");
     let list = list.split(" at line ").next().unwrap_or("");
-    list.split([',', ' '])
-        .map(|s| s.trim().trim_matches('`'))
-        .filter(|s| !s.is_empty() && *s != "or")
-        .map(str::to_string)
-        .collect()
+    list.split([',', ' ']).map(|s| s.trim().trim_matches('`')).filter(|s| !s.is_empty() && *s != "or").map(str::to_string).collect()
 }
-
 
 fn examples_dir() -> PathBuf {
     schemas_dir().join("examples")
@@ -368,7 +347,7 @@ fn invalid_examples() -> Vec<Invalid> {
         .map(|p| {
             let r = rel(&p, &dir);
             let v = read_json(&p);
-            let (stem, _) = r.rsplit_once('.').unwrap(); // drop ".json"
+            let (stem, _) = r.rsplit_once('.').unwrap();
             let (schema, _case) = stem.rsplit_once('.').unwrap_or_else(|| panic!("{r}: name <schema>.<case>.json"));
             Invalid {
                 file: r.clone(),
@@ -384,9 +363,7 @@ fn json_eq(a: &Value, b: &Value) -> bool {
     match (a, b) {
         (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
         (Value::Array(x), Value::Array(y)) => x.len() == y.len() && x.iter().zip(y).all(|(a, b)| json_eq(a, b)),
-        (Value::Object(x), Value::Object(y)) => {
-            x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).is_some_and(|w| json_eq(v, w)))
-        }
+        (Value::Object(x), Value::Object(y)) => x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).is_some_and(|w| json_eq(v, w))),
         _ => a == b,
     }
 }
@@ -394,7 +371,6 @@ fn json_eq(a: &Value, b: &Value) -> bool {
 fn report(failures: Vec<String>) {
     assert!(failures.is_empty(), "{} failures:\n{}", failures.len(), failures.join("\n"));
 }
-
 
 fn payload_schema(name: &str, kind: Kind) -> Value {
     let s = schema(name);
@@ -477,7 +453,6 @@ fn variants_of(name: &str, kind: Kind, example: &Value) -> Vec<(String, Value)> 
     out
 }
 
-
 // LIB-CON-01
 #[test]
 fn lib_con_01_every_schema_has_an_example() {
@@ -557,9 +532,7 @@ fn lib_con_05_produced_messages_are_valid() {
             }
             checked += 1;
             match (entry.produce)(&variant) {
-                Ok(produced) => {
-                    failures.extend(errors(&name, &produced).into_iter().map(|e| format!("{name} ({desc}): {e}")))
-                }
+                Ok(produced) => failures.extend(errors(&name, &produced).into_iter().map(|e| format!("{name} ({desc}): {e}"))),
                 Err(e) => failures.push(format!("{name} ({desc}): valid message rejected: {e}")),
             }
         }
@@ -701,8 +674,7 @@ fn lib_con_10_missing_and_null_optional_fields() {
         let Some(entry) = reg.get(&name) else { continue };
         let Some(payload) = payload_of(entry.kind, &example) else { continue };
         let s = payload_schema(&name, entry.kind);
-        let required: BTreeSet<&str> =
-            s["required"].as_array().into_iter().flatten().filter_map(Value::as_str).collect();
+        let required: BTreeSet<&str> = s["required"].as_array().into_iter().flatten().filter_map(Value::as_str).collect();
         for (field, fs) in s["properties"].as_object().into_iter().flatten() {
             if !allows_null(fs) {
                 continue;

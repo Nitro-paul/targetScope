@@ -3,7 +3,7 @@
 How a TargetScope release is numbered, built, installed and run. The tools are on the branch `releases` (folder `release/` and the file `VERSION`); the build dependencies are those of [development.md](development.md).
 
 ## The branch `releases`
-Every part of TargetScope is developed on its own branch. The branch `releases` contains the merged state of all of them, plus the release tools and `Cargo.lock`, so a release always builds with the same dependency versions. Before a release, the current state of all branches is merged into it:
+Every part of TargetScope is developed on its own branch. The branch `releases` contains the merged state of all of them, plus the release tools. `Cargo.lock` belongs to the branch `workspace` and is committed, so a release always builds with the dependency versions that were tested. Before a release, the current state of all branches is merged into it:
 ```
 git checkout releases
 git merge workspace documentation schemas common_rust common_cpp testkit launcher database_handler \
@@ -27,9 +27,9 @@ The number is written in four places, which always agree: `VERSION` (repository 
 
 ### Raising the version
 ```
-release/bump.sh release        # 0.1.0 → 1.0.0
-release/bump.sh majorfix       # 1.0.0 → 1.1.0
-release/bump.sh minorfix       # 1.1.0 → 1.1.1
+release/bump.sh release        # e.g. 0.3.2 → 1.0.0
+release/bump.sh majorfix       # e.g. 1.0.4 → 1.1.0
+release/bump.sh minorfix       # e.g. 1.1.0 → 1.1.1
 ```
 `bump.sh` writes the new number into `VERSION`, `Cargo.toml` and `CMakeLists.txt` and prints it. It doesn't commit or tag; the release commit is tagged `v<version>` by hand after the build was checked.
 
@@ -37,7 +37,7 @@ release/bump.sh minorfix       # 1.1.0 → 1.1.1
 ```
 release/build.sh [--without <program>,<program>] [--out <folder>]
 ```
-1. Checks that `VERSION`, `Cargo.toml` and `CMakeLists.txt` have the same number; otherwise it stops.
+1. Checks that `VERSION`, `Cargo.toml` and `CMakeLists.txt` have the same number, and runs `tools/check_docs.py` ([development.md](development.md#checks)); if either fails, it stops.
 2. Builds the Rust programs with `cargo build --release` (without the feature `failpoints`, so no failpoint and no test clock is compiled in, see [testing/overview.md](testing/overview.md#failpoints)).
 3. Builds the C++ programs with CMake (`Release`, tests and failpoints off, folder `build-release/`) and copies them into the bundle. If `TARGETSCOPE_DEPS` is set ([development.md](development.md#environment)), its `lib` folder is the run path of the C++ binaries, so they find redis-plus-plus, hiredis and iceoryx2 there.
 4. Assembles the bundle (below) in `<folder>` (default `dist/`), packs it as `targetscope-<version>-linux-<arch>.tar.gz` and writes its SHA-256 sum next to it (`.sha256`).

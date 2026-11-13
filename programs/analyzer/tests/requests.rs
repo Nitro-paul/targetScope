@@ -104,7 +104,7 @@ async fn an_req_05_several_requests_at_once() {
     let sets: Vec<Vec<Shot>> = (0..8)
         .map(|i| {
             let mut rng = Rng(100 + i);
-            (0..60).map(|_| shot(rng.next(), rng.next() * 90.0)).collect()
+            (0..60).map(|_| shot(rng.next_f64(), rng.next_f64() * 90.0)).collect()
         })
         .collect();
     let url = a.redis.url();

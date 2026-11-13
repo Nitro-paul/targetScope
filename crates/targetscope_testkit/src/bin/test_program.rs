@@ -37,9 +37,8 @@ async fn main() {
         .unwrap_or_default();
     let args = args();
     let value = |flag: &str| args.iter().position(|a| a == flag).and_then(|i| args.get(i + 1)).cloned();
-    let values = |flag: &str| {
-        args.iter().enumerate().filter(|(_, a)| *a == flag).filter_map(|(i, _)| args.get(i + 1).cloned()).collect::<Vec<_>>()
-    };
+    let values =
+        |flag: &str| args.iter().enumerate().filter(|(_, a)| *a == flag).filter_map(|(i, _)| args.get(i + 1).cloned()).collect::<Vec<_>>();
 
     if args.iter().any(|a| a == "--ignore-sigterm") {
         unsafe { libc::signal(libc::SIGTERM, libc::SIG_IGN) };

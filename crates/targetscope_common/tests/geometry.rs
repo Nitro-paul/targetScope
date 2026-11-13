@@ -17,7 +17,9 @@ fn close(a: f64, b: f64, tol: f64) -> bool {
 // LIB-GEO-01
 #[test]
 fn lib_geo_01_polar_to_cartesian_four_directions() {
-    for ((a, r), (x, y)) in [((0.0, 10.0), (0.0, 10.0)), ((0.25, 10.0), (10.0, 0.0)), ((0.5, 10.0), (0.0, -10.0)), ((0.75, 10.0), (-10.0, 0.0))] {
+    for ((a, r), (x, y)) in
+        [((0.0, 10.0), (0.0, 10.0)), ((0.25, 10.0), (10.0, 0.0)), ((0.5, 10.0), (0.0, -10.0)), ((0.75, 10.0), (-10.0, 0.0))]
+    {
         let p = to_point(a, r);
         assert!(close(p.x, x, 1e-9) && close(p.y, y, 1e-9), "{a} {r} -> {p:?}");
     }
@@ -39,7 +41,9 @@ fn lib_geo_03_cartesian_to_polar_center() {
 // LIB-GEO-04
 #[test]
 fn lib_geo_04_cartesian_to_polar_four_directions() {
-    for ((x, y), (a, r)) in [((0.0, 10.0), (0.0, 10.0)), ((10.0, 0.0), (0.25, 10.0)), ((0.0, -10.0), (0.5, 10.0)), ((-10.0, 0.0), (0.75, 10.0))] {
+    for ((x, y), (a, r)) in
+        [((0.0, 10.0), (0.0, 10.0)), ((10.0, 0.0), (0.25, 10.0)), ((0.0, -10.0), (0.5, 10.0)), ((-10.0, 0.0), (0.75, 10.0))]
+    {
         let p = to_polar(x, y);
         assert!(close(p.angle_turns, a, 1e-12) && close(p.radius_mm, r, 1e-12), "{x} {y} -> {p:?}");
     }

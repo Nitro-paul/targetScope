@@ -112,7 +112,11 @@ pub fn shot_labels(session: &Session) -> Vec<String> {
         .map(|s| {
             let n = count.entry(s.paper_no).or_insert(0);
             *n += 1;
-            if session.paper_count > 1 { format!("{}.{}", s.paper_no, n) } else { n.to_string() }
+            if session.paper_count > 1 {
+                format!("{}.{}", s.paper_no, n)
+            } else {
+                n.to_string()
+            }
         })
         .collect()
 }
@@ -135,17 +139,8 @@ pub fn render(
     let mut white_text = c.layer();
 
     let header = [
-        format!(
-            "{}   {}   {}",
-            rfc3339_local(session.saved_at),
-            shooter.map(|s| s.name.as_str()).unwrap_or("no shooter"),
-            device.name
-        ),
-        format!(
-            "{}   {}",
-            session.distance_m.map(|d| format!("{d} m")).unwrap_or_else(|| "distance not set".into()),
-            target.name
-        ),
+        format!("{}   {}   {}", rfc3339_local(session.saved_at), shooter.map(|s| s.name.as_str()).unwrap_or("no shooter"), device.name),
+        format!("{}   {}", session.distance_m.map(|d| format!("{d} m")).unwrap_or_else(|| "distance not set".into()), target.name),
         format!(
             "score {}   grouping score {}   shots {}   papers {}",
             session.score, session.grouping_score, session.shot_count, session.paper_count

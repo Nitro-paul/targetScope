@@ -20,4 +20,4 @@ Polar to_polar(const Point& p) {
     return {a, r};
 }
 
-}  // namespace targetscope::geometry
+}

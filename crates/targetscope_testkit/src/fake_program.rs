@@ -25,7 +25,7 @@ pub enum Answer {
 pub struct Responder(pub Arc<dyn Fn(&Value) -> Answer + Send + Sync>);
 
 impl Responder {
-    pub fn new(f: impl Fn(&Value) -> Answer + Send + Sync + 'static) -> Answer {
+    pub fn answer(f: impl Fn(&Value) -> Answer + Send + Sync + 'static) -> Answer {
         Answer::Computed(Responder(Arc::new(f)))
     }
 }

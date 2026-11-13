@@ -93,10 +93,7 @@ async fn db_evt_06_settings() {
     h.ok("save_setting", setting("camera_fps", "15")).await;
     h.ok("save_setting", setting("my_setting", "x")).await;
     h.ok("delete_setting", json!({ "name": "my_setting" })).await;
-    assert_eq!(
-        changes(&mut probe, 3).await,
-        ["settings/camera_fps/updated", "settings/my_setting/created", "settings/my_setting/deleted"]
-    );
+    assert_eq!(changes(&mut probe, 3).await, ["settings/camera_fps/updated", "settings/my_setting/created", "settings/my_setting/deleted"]);
 }
 
 // DB-EVT-07

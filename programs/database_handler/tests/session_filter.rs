@@ -113,10 +113,7 @@ async fn db_flt_09_distance_from() {
 #[tokio::test]
 async fn db_flt_10_distance_bounds_are_inclusive() {
     let f = FilterSet::load().await;
-    assert_eq!(
-        f.matching(json!({ "distance_m": { "min": 10, "max": 10 } })).await,
-        names(&["F1", "F2", "F3", "F6", "F7", "F8"])
-    );
+    assert_eq!(f.matching(json!({ "distance_m": { "min": 10, "max": 10 } })).await, names(&["F1", "F2", "F3", "F6", "F7", "F8"]));
 }
 
 // DB-FLT-11
@@ -220,8 +217,7 @@ async fn db_flt_23_order_by_a_field_that_isn_t_allowed() {
 #[tokio::test]
 async fn db_flt_24_paging() {
     let f = FilterSet::load().await;
-    let (order, total) =
-        f.read(json!({ "filter": {}, "order_by": { "field": "id", "direction": "asc" }, "limit": 3, "offset": 3 })).await;
+    let (order, total) = f.read(json!({ "filter": {}, "order_by": { "field": "id", "direction": "asc" }, "limit": 3, "offset": 3 })).await;
     assert_eq!(order, names(&["F4", "F5", "F6"]));
     assert_eq!(total, 8);
 }

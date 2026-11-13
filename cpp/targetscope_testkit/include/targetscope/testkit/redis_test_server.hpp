@@ -1,4 +1,4 @@
-// redis-server on a free port with its own temporary folder and AOF on; restartable.
+// doc/testing/overview.md#test-kit
 #pragma once
 
 #include <filesystem>
@@ -7,17 +7,17 @@
 namespace targetscope::testkit {
 
 class RedisTestServer {
-public:
-    RedisTestServer();   // starts
-    ~RedisTestServer();  // stops, removes the folder
+   public:
+    RedisTestServer();
+    ~RedisTestServer();
     std::string url() const;
     void stop();
-    void restart();      // same folder and port
+    void restart();
     int port() const { return port_; }
-private:
+
+   private:
     int port_{};
     std::filesystem::path dir_;
-    // TODO: child pid
 };
 
-}  // namespace targetscope::testkit
+}

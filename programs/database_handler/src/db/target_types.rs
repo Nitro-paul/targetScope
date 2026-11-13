@@ -42,8 +42,7 @@ pub fn get(c: &Connection, id: i64) -> Result<Option<TargetType>> {
 }
 
 fn name_taken(c: &Connection, name: &str, except: Option<i64>) -> Result<bool> {
-    Ok(c
-        .query_row("SELECT 1 FROM target_types WHERE name = ?1 COLLATE NOCASE AND id IS NOT ?2", params![name, except], |_| Ok(()))
+    Ok(c.query_row("SELECT 1 FROM target_types WHERE name = ?1 COLLATE NOCASE AND id IS NOT ?2", params![name, except], |_| Ok(()))
         .optional()?
         .is_some())
 }

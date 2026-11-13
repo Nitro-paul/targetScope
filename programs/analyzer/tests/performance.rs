@@ -9,7 +9,7 @@ use common::{shot, tt_ref, Rng, DEV_REF_DIAMETER};
 
 fn timed(max_radius: f64) -> Duration {
     let mut rng = Rng(7);
-    let shots: Vec<_> = (0..60).map(|_| shot(rng.next(), rng.next() * max_radius)).collect();
+    let shots: Vec<_> = (0..60).map(|_| shot(rng.next_f64(), rng.next_f64() * max_radius)).collect();
     let start = Instant::now();
     analyze(&shots, &tt_ref(), DEV_REF_DIAMETER);
     start.elapsed()

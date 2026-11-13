@@ -242,7 +242,10 @@ async fn db_dir_09_crash_during_the_copy() {
     expected.sort();
     assert_eq!(image_files(&new_dir), expected);
     for p in &paths {
-        assert_eq!(std::fs::read(new_dir.join(p)).unwrap(), std::fs::read(targetscope_testkit::fixtures::testdata("images/paper.jpg")).unwrap());
+        assert_eq!(
+            std::fs::read(new_dir.join(p)).unwrap(),
+            std::fs::read(targetscope_testkit::fixtures::testdata("images/paper.jpg")).unwrap()
+        );
     }
 }
 

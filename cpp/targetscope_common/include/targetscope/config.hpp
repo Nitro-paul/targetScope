@@ -21,4 +21,4 @@ struct BootstrapConfig {
     static BootstrapConfig from_vars(const std::function<std::optional<std::string>(const std::string&)>& var);
 };
 
-}  // namespace targetscope
+}

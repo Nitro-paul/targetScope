@@ -57,7 +57,8 @@ impl Importer<'_> {
     pub async fn import_all(&mut self, file: &ExportFile, mut result: ImportFileResponse) -> Result<ImportFileResponse, ServiceError> {
         let mut shooters = HashMap::new();
         for s in &file.shooters {
-            let r = self.bus.request(ImportShooter(Shooter { id: None, uuid: Some(s.uuid), name: s.name.clone(), retired: s.retired })).await?;
+            let r =
+                self.bus.request(ImportShooter(Shooter { id: None, uuid: Some(s.uuid), name: s.name.clone(), retired: s.retired })).await?;
             count(&mut result.shooters, &r);
             shooters.insert(s.uuid, r.id);
             after_record()?;

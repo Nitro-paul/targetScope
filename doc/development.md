@@ -74,3 +74,19 @@ The top-level `CMakeLists.txt` also adds `$TARGETSCOPE_DEPS` to the CMake search
 
 ## Build and test
 See [README.md](../README.md#building) and [testing/overview.md](testing/overview.md#running-the-tests). Integration tests start their own `redis-server` from `PATH` on a free port; they never touch a running TargetScope.
+
+## Code style
+- **Rust:** `rustfmt.toml` (maximum line width 140, `use_small_heuristics = "Max"`). Format with `cargo fmt --all`; `cargo clippy --workspace --all-targets` reports no warnings. A warning that can't be fixed is silenced at the place it occurs with `#[allow(...)]`, preceded by the comment that names the documentation section of the design behind it.
+- **C++:** `.clang-format` (Google style, 4 spaces, maximum line width 120, no namespace end comments). Format with `clang-format -i <files>`.
+- **Other files:** `.editorconfig` (UTF-8, LF, final newline, no trailing spaces; 4 spaces, 2 for web and data files).
+- **Comments:** a comment in code only names the documentation section that explains the code (`// doc/interfaces.md#shot`, several sections separated by `, `) or, in a test, the id of the test case (`// DB-SES-01`). Behavior that isn't documented yet is documented first. Design, reasons and usage belong in `doc/`, not in the code.
+- **Unwritten tests:** a planned test case that isn't implemented is a test function marked `#[ignore = "not implemented"]` with `todo!("<id>")` (Rust) or `GTEST_SKIP() << "not implemented: <id>"` (C++), so it is reported as ignored or skipped, never as passed.
+- **Build output** (`target/`, `build/`, `build-*/`, `dist/`) is never committed.
+
+## Checks
+```
+cargo fmt --all --check
+cargo clippy --workspace --all-targets
+tools/check_docs.py              # Markdown links and anchors, doc references in code, the comment rule
+```
+`tools/check_docs.py` exits with code 1 and lists every problem it finds; it is run before every release.

@@ -69,7 +69,10 @@ pub async fn wait_ready(url: &str, timeout: Duration) -> Result<(), String> {
     loop {
         let ok = match tokio::time::timeout(Duration::from_millis(500), client.get_multiplexed_async_connection()).await {
             Ok(Ok(mut conn)) => {
-                matches!(tokio::time::timeout(Duration::from_millis(500), redis::cmd("PING").query_async::<String>(&mut conn)).await, Ok(Ok(_)))
+                matches!(
+                    tokio::time::timeout(Duration::from_millis(500), redis::cmd("PING").query_async::<String>(&mut conn)).await,
+                    Ok(Ok(_))
+                )
             }
             _ => false,
         };

@@ -1,17 +1,19 @@
 // doc/testing/shared_libraries.md#bootstrap-configuration-unit
+#include "targetscope/config.hpp"
+
 #include <gtest/gtest.h>
 
 #include <cstdlib>
 #include <map>
 
-#include "targetscope/config.hpp"
-
 using namespace targetscope;
 
 // LIB-CFG-01
 TEST(Config, LIB_CFG_01_AllVariablesSet) {
-    std::map<std::string, std::string> env{{"TARGETSCOPE_REDIS_URL", "redis://127.0.0.1:7000/"}, {"TARGETSCOPE_DATA_DIR", "/srv/data"},
-                                           {"TARGETSCOPE_DB_PATH", "/srv/db.sqlite"},              {"TARGETSCOPE_LOG_DIR", "/srv/logs"},
+    std::map<std::string, std::string> env{{"TARGETSCOPE_REDIS_URL", "redis://127.0.0.1:7000/"},
+                                           {"TARGETSCOPE_DATA_DIR", "/srv/data"},
+                                           {"TARGETSCOPE_DB_PATH", "/srv/db.sqlite"},
+                                           {"TARGETSCOPE_LOG_DIR", "/srv/logs"},
                                            {"TARGETSCOPE_LOG", "debug"}};
     auto c = BootstrapConfig::from_vars([&](const std::string& n) -> std::optional<std::string> {
         auto it = env.find(n);
@@ -36,4 +38,6 @@ TEST(Config, LIB_CFG_02_Defaults) {
 }
 
 // LIB-CFG-03
-TEST(Config, LIB_CFG_03_RustAndCppAgree) { GTEST_SKIP() << "doc/testing/shared_libraries.md#bootstrap-configuration-unit LIB-CFG-03"; }
+TEST(Config, LIB_CFG_03_RustAndCppAgree) {
+    GTEST_SKIP() << "doc/testing/shared_libraries.md#bootstrap-configuration-unit LIB-CFG-03";
+}

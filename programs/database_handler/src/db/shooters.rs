@@ -13,8 +13,7 @@ fn row(r: &Row) -> rusqlite::Result<Shooter> {
 }
 
 fn name_taken(c: &Connection, name: &str, except: Option<i64>) -> Result<Option<i64>> {
-    Ok(c
-        .query_row("SELECT id FROM shooters WHERE name = ?1 COLLATE NOCASE AND id IS NOT ?2", params![name, except], |r| r.get(0))
+    Ok(c.query_row("SELECT id FROM shooters WHERE name = ?1 COLLATE NOCASE AND id IS NOT ?2", params![name, except], |r| r.get(0))
         .optional()?)
 }
 

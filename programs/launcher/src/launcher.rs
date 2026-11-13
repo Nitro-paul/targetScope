@@ -11,9 +11,7 @@ use nix::unistd::Pid;
 use serde_json::Value;
 use targetscope_common::bus::Bus;
 use targetscope_common::idempotency::RedisIdempotencyStore;
-use targetscope_common::messages::launcher::{
-    LauncherEvent, LauncherRequest, LauncherStatusResponse, ProgramState, RestartProgram,
-};
+use targetscope_common::messages::launcher::{LauncherEvent, LauncherRequest, LauncherStatusResponse, ProgramState, RestartProgram};
 use targetscope_common::messages::ServiceError;
 use tokio::process::Command;
 use tokio::sync::{mpsc, oneshot};
@@ -305,7 +303,10 @@ impl Launcher {
                 let response = serde_json::to_value(RestartProgram { name: r.name.clone() }).expect("serializable");
                 let mut pipe = redis::pipe();
                 self.idem.record(&mut pipe, &id, &response);
-                let () = pipe.query_async(&mut self.bus.connection()).await.map_err(|e| ServiceError::from(targetscope_common::bus::BusError::from(e)))?;
+                let () = pipe
+                    .query_async(&mut self.bus.connection())
+                    .await
+                    .map_err(|e| ServiceError::from(targetscope_common::bus::BusError::from(e)))?;
                 let p = &mut self.programs[i];
                 p.restarts.clear();
                 p.restart_count = 0;

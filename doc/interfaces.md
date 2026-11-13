@@ -434,7 +434,7 @@ In the UI, shots are labelled per paper (`<paper_no>.<n>`, e.g. `2.3` = third sh
 #### ping
 Payload: `{}`
 
-Response `ping_response`: `{ "program": "analyzer", "program_version": "0.1.0", "language": "rust", "started_at": <Unix seconds> }`. Used by the launcher to check that a program is ready.
+Response `ping_response`: `{ "program": "analyzer", "program_version": "<version, e.g. 0.0.5>", "language": "rust", "started_at": <Unix seconds> }`. Used by the launcher to check that a program is ready.
 
 ## database_handler
 Stream `database_handler:requests`. Design: [programs/database_handler.md](programs/database_handler.md).

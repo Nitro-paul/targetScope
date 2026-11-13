@@ -28,7 +28,9 @@ impl RequestHandler<ExporterRequest> for ExporterHandler {
     async fn handle(&self, id: Uuid, req: ExporterRequest) -> Result<Value, ServiceError> {
         let v = match req {
             ExporterRequest::ExportSessions(r) => serde_json::to_value(self.export(id, r).await?),
-            ExporterRequest::ListExports(_) => serde_json::to_value(ListExportsResponse { files: files::list(&self.export_dir()?).map_err(io)? }),
+            ExporterRequest::ListExports(_) => {
+                serde_json::to_value(ListExportsResponse { files: files::list(&self.export_dir()?).map_err(io)? })
+            }
             ExporterRequest::DeleteExport(r) => serde_json::to_value(self.delete(r)?),
             ExporterRequest::Ping(_) => Ok(Value::Null),
         };
@@ -107,8 +109,10 @@ pub fn write_files(
         }
     };
     let result = match (format, image_dir) {
-        (ExportFormat::Csv, None) => write(format!("{prefix}_sessions.csv"), &mut |f| csv::write_sessions(f, data, None).map_err(std::io::Error::other))
-            .and_then(|_| write(format!("{prefix}_shots.csv"), &mut |f| csv::write_shots(f, data).map_err(std::io::Error::other))),
+        (ExportFormat::Csv, None) => {
+            write(format!("{prefix}_sessions.csv"), &mut |f| csv::write_sessions(f, data, None).map_err(std::io::Error::other))
+                .and_then(|_| write(format!("{prefix}_shots.csv"), &mut |f| csv::write_shots(f, data).map_err(std::io::Error::other)))
+        }
         (ExportFormat::Json, None) => {
             let file = json::build(data, now, None);
             write(format!("{prefix}.json"), &mut |f| json::write(f, &file).map_err(std::io::Error::other))

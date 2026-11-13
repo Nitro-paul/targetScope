@@ -8,12 +8,12 @@
 namespace targetscope {
 
 namespace {
-constexpr std::array<const char*, 11> CODES = {"invalid_message", "validation_failed", "not_found",         "in_use",
-                                               "setting_not_set", "invalid_state",     "unavailable",       "processing_failed",
-                                               "io_error",        "database_error",    "timeout"};
+constexpr std::array<const char*, 11> CODES = {
+    "invalid_message", "validation_failed", "not_found", "in_use",         "setting_not_set", "invalid_state",
+    "unavailable",     "processing_failed", "io_error",  "database_error", "timeout"};
 
 ServiceError invalid(const std::string& msg) { return ServiceError(ErrorCode::InvalidMessage, msg); }
-}  // namespace
+}
 
 const char* to_string(ErrorCode code) { return CODES[static_cast<std::size_t>(code)]; }
 
@@ -31,8 +31,9 @@ std::string new_uuid() {
     a = (a & 0xFFFFFFFFFFFF0FFFull) | 0x0000000000004000ull;
     b = (b & 0x3FFFFFFFFFFFFFFFull) | 0x8000000000000000ull;
     char buf[37];
-    std::snprintf(buf, sizeof buf, "%08x-%04x-%04x-%04x-%012llx", static_cast<unsigned>(a >> 32), static_cast<unsigned>((a >> 16) & 0xFFFF),
-                  static_cast<unsigned>(a & 0xFFFF), static_cast<unsigned>(b >> 48), static_cast<unsigned long long>(b & 0xFFFFFFFFFFFFull));
+    std::snprintf(buf, sizeof buf, "%08x-%04x-%04x-%04x-%012llx", static_cast<unsigned>(a >> 32),
+                  static_cast<unsigned>((a >> 16) & 0xFFFF), static_cast<unsigned>(a & 0xFFFF),
+                  static_cast<unsigned>(b >> 48), static_cast<unsigned long long>(b & 0xFFFFFFFFFFFFull));
     return buf;
 }
 
@@ -43,8 +44,9 @@ json to_json(const RequestEnvelope& e) {
 }
 
 json to_json(const ResponseEnvelope& e) {
-    return json{{"type", e.type},  {"version", e.version}, {"request_id", e.request_id}, {"status", e.ok ? "ok" : "error"},
-                {"error", e.error}, {"payload", e.payload}};
+    return json{
+        {"type", e.type},   {"version", e.version}, {"request_id", e.request_id}, {"status", e.ok ? "ok" : "error"},
+        {"error", e.error}, {"payload", e.payload}};
 }
 
 json to_json(const EventEnvelope& e) {
@@ -153,5 +155,5 @@ void to_json(json& j, const PaperReplaced& v) {
     j = json{{"live_paper", v.live_paper}, {"previous_paper_staged_file", optional_json(v.previous_paper_staged_file)}};
 }
 
-}  // namespace messages
-}  // namespace targetscope
+}
+}

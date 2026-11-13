@@ -29,7 +29,8 @@ struct Query {
 
 async fn query(State(st): State<AppState>, h: HeaderMap, b: Bytes) -> ApiResult {
     let q: Query = parse(&b)?;
-    call(&st, id(&h)?, ReadSessions { filter: q.filter, order_by: q.order_by, limit: q.limit, offset: q.offset, include_shots: false }).await
+    call(&st, id(&h)?, ReadSessions { filter: q.filter, order_by: q.order_by, limit: q.limit, offset: q.offset, include_shots: false })
+        .await
 }
 
 async fn read(State(st): State<AppState>, Path(session_id): Path<i64>) -> ApiResult {

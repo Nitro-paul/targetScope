@@ -20,8 +20,8 @@ use uuid::Uuid;
 use crate::clock::{unix_ms, unix_s, Clock, SystemClock};
 use crate::failpoints;
 use crate::messages::{
-    event_stream, request_stream, response_stream, ErrorBody, ErrorCode, EventEnvelope, PingResponse, Request,
-    RequestEnvelope, ResponseEnvelope, ServiceError, Status,
+    event_stream, request_stream, response_stream, ErrorBody, ErrorCode, EventEnvelope, PingResponse, Request, RequestEnvelope,
+    ResponseEnvelope, ServiceError, Status,
 };
 
 // doc/interfaces.md#streams-and-keys
@@ -177,12 +177,7 @@ impl Bus {
         decode_response(self.send_envelope(&request_stream(program), env, timeout).await?)
     }
 
-    pub async fn send_envelope(
-        &self,
-        stream: &str,
-        mut env: RequestEnvelope,
-        timeout: Duration,
-    ) -> Result<ResponseEnvelope, BusError> {
+    pub async fn send_envelope(&self, stream: &str, mut env: RequestEnvelope, timeout: Duration) -> Result<ResponseEnvelope, BusError> {
         let id = env.request_id;
         if env.reply_to.is_none() {
             env.reply_to = Some(response_stream(&self.inner.program));
@@ -205,8 +200,8 @@ impl Bus {
 
     // doc/interfaces.md#event-envelope
     pub async fn publish<E: Serialize + Sync>(&self, event: &E) -> Result<EventEnvelope, BusError> {
-        let env = EventEnvelope::new(&self.inner.program, unix_ms(self.inner.clock.now()), event)
-            .map_err(|e| BusError::Decode(e.to_string()))?;
+        let env =
+            EventEnvelope::new(&self.inner.program, unix_ms(self.inner.clock.now()), event).map_err(|e| BusError::Decode(e.to_string()))?;
         let data = serde_json::to_string(&env).map_err(|e| BusError::Decode(e.to_string()))?;
         xadd(&mut self.inner.conn.clone(), &event_stream(&self.inner.program), MAXLEN_EVENTS, &data).await?;
         Ok(env)
@@ -379,14 +374,8 @@ impl Bus {
         Ok(c)
     }
 
-    async fn handle_entry<Req, H>(
-        &self,
-        conn: &mut ConnectionManager,
-        stream: &str,
-        group: &str,
-        entry: StreamId,
-        handler: &H,
-    ) where
+    async fn handle_entry<Req, H>(&self, conn: &mut ConnectionManager, stream: &str, group: &str, entry: StreamId, handler: &H)
+    where
         Req: DeserializeOwned + Send,
         H: RequestHandler<Req>,
     {
@@ -478,8 +467,9 @@ impl Bus {
 
 fn decode_response<T: DeserializeOwned>(resp: ResponseEnvelope) -> Result<T, BusError> {
     match resp.status {
-        Status::Ok => serde_json::from_value(resp.payload.unwrap_or(Value::Null))
-            .map_err(|e| BusError::Decode(format!("{}: {e}", resp.r#type))),
+        Status::Ok => {
+            serde_json::from_value(resp.payload.unwrap_or(Value::Null)).map_err(|e| BusError::Decode(format!("{}: {e}", resp.r#type)))
+        }
         Status::Error => Err(BusError::Remote(resp.error.unwrap_or(ErrorBody {
             code: ErrorCode::InvalidMessage,
             message: "error response without error".into(),
@@ -502,8 +492,7 @@ async fn read_responses(inner: Weak<Inner>, mut conn: ConnectionManager, mut las
                 backoff = MIN_BACKOFF;
                 for entry in entries {
                     last_id = entry.id.clone();
-                    let Some(resp) = entry_data(&entry).and_then(|d| serde_json::from_str::<ResponseEnvelope>(&d).ok())
-                    else {
+                    let Some(resp) = entry_data(&entry).and_then(|d| serde_json::from_str::<ResponseEnvelope>(&d).ok()) else {
                         tracing::error!(entry = %entry.id, "unparseable response entry");
                         continue;
                     };
@@ -556,9 +545,7 @@ impl<E: DeserializeOwned> EventReader<E> {
                     self.last_id = entry.id.clone();
                 }
                 let data = entry_data(&entry).unwrap_or_default();
-                let decoded = serde_json::from_str::<EventEnvelope>(&data)
-                    .ok()
-                    .and_then(|env| env.decode::<E>().ok().map(|ev| (env, ev)));
+                let decoded = serde_json::from_str::<EventEnvelope>(&data).ok().and_then(|env| env.decode::<E>().ok().map(|ev| (env, ev)));
                 match decoded {
                     Some((envelope, event)) => return Ok(Event { entry_id: entry.id, data, envelope, event }),
                     None => {
@@ -659,16 +646,7 @@ async fn blocking_connection(client: &redis::Client) -> Result<ConnectionManager
 
 // doc/interfaces.md#message-format
 pub(crate) async fn xadd(conn: &mut ConnectionManager, stream: &str, maxlen: usize, data: &str) -> Result<String, BusError> {
-    Ok(redis::cmd("XADD")
-        .arg(stream)
-        .arg("MAXLEN")
-        .arg("~")
-        .arg(maxlen)
-        .arg("*")
-        .arg("data")
-        .arg(data)
-        .query_async(conn)
-        .await?)
+    Ok(redis::cmd("XADD").arg(stream).arg("MAXLEN").arg("~").arg(maxlen).arg("*").arg("data").arg(data).query_async(conn).await?)
 }
 
 async fn newest_id(conn: &mut ConnectionManager, stream: &str) -> Result<String, BusError> {
@@ -745,7 +723,9 @@ async fn claim_all(conn: &mut ConnectionManager, stream: &str, group: &str, cons
             .query_async(conn)
             .await?;
         let next = match &v {
-            RedisValue::Array(items) => items.first().cloned().map(String::from_redis_value).transpose().map_err(redis::RedisError::from)?,
+            RedisValue::Array(items) => {
+                items.first().cloned().map(String::from_redis_value).transpose().map_err(redis::RedisError::from)?
+            }
             _ => None,
         };
         match next {

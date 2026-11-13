@@ -2,11 +2,10 @@
 #pragma once
 
 #include <functional>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
-
-#include <nlohmann/json.hpp>
 
 #include "targetscope/messages.hpp"
 
@@ -18,7 +17,7 @@ struct BusError : std::runtime_error {
 };
 
 class Bus {
-public:
+   public:
     Bus(const std::string& redis_url, std::string program);
     ~Bus();
 
@@ -36,7 +35,7 @@ public:
 
     void stop();
 
-private:
+   private:
     nlohmann::json request_raw(const char* stream, const char* type, const nlohmann::json& payload,
                                std::chrono::seconds timeout);
 };
@@ -47,4 +46,4 @@ typename Req::Response Bus::request(const Req& req) {
     return request_raw(Req::STREAM, Req::TYPE, payload, Req::TIMEOUT).template get<typename Req::Response>();
 }
 
-}  // namespace targetscope
+}

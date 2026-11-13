@@ -10,9 +10,7 @@ use serde_json::json;
 use targetscope_testkit::{ProgramUnderTest, RedisTestServer, TempDataDir};
 
 fn names(c: &rusqlite::Connection, kind: &str) -> Vec<String> {
-    let mut stmt = c
-        .prepare("SELECT name FROM sqlite_master WHERE type = ?1 AND name NOT LIKE 'sqlite_%' ORDER BY name")
-        .unwrap();
+    let mut stmt = c.prepare("SELECT name FROM sqlite_master WHERE type = ?1 AND name NOT LIKE 'sqlite_%' ORDER BY name").unwrap();
     stmt.query_map([kind], |r| r.get(0)).unwrap().map(Result::unwrap).collect()
 }
 

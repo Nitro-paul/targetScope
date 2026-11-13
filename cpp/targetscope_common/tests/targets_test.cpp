@@ -1,11 +1,11 @@
 // doc/testing/shared_libraries.md#ring-generation-and-target-type-validation-unit
+#include "targetscope/targets.hpp"
+
 #include <gtest/gtest.h>
 
 #include <cmath>
 #include <filesystem>
 #include <fstream>
-
-#include "targetscope/targets.hpp"
 
 using namespace targetscope;
 
@@ -39,8 +39,9 @@ static void expect_rings(const std::vector<model::Ring>& rings, const std::vecto
 
 // LIB-TGT-01
 TEST(Targets, LIB_TGT_01_RingsOfTtRef) {
-    expect_rings(targets::generate_rings(tt_ref()),
-                 {{12, 5}, {11, 10}, {10, 15}, {9, 20}, {8, 25}, {7, 30}, {6, 40}, {5, 50}, {4, 60}, {3, 70}, {2, 80}, {1, 90}});
+    expect_rings(
+        targets::generate_rings(tt_ref()),
+        {{12, 5}, {11, 10}, {10, 15}, {9, 20}, {8, 25}, {7, 30}, {6, 40}, {5, 50}, {4, 60}, {3, 70}, {2, 80}, {1, 90}});
 }
 
 // LIB-TGT-02
@@ -75,7 +76,8 @@ TEST(Targets, LIB_TGT_03_NeighboringAnchorScores) {
 TEST(Targets, LIB_TGT_04_OutermostScoreAbove1) {
     auto t = tt_ref();
     t.outer_score = 3;
-    expect_rings(targets::generate_rings(t), {{12, 5}, {11, 10}, {10, 15}, {9, 20}, {8, 25}, {7, 30}, {6, 45}, {5, 60}, {4, 75}, {3, 90}});
+    expect_rings(targets::generate_rings(t),
+                 {{12, 5}, {11, 10}, {10, 15}, {9, 20}, {8, 25}, {7, 30}, {6, 45}, {5, 60}, {4, 75}, {3, 90}});
 }
 
 // LIB-TGT-05
@@ -117,7 +119,8 @@ TEST(Targets, LIB_TGT_07_InvalidTargetTypes) {
 // LIB-TGT-08
 TEST(Targets, LIB_TGT_08_AllExampleTargetsAllLanguages) {
     int count = 0;
-    for (const auto& entry : std::filesystem::directory_iterator(std::filesystem::path(TARGETSCOPE_TESTDATA_DIR) / "target_types")) {
+    for (const auto& entry :
+         std::filesystem::directory_iterator(std::filesystem::path(TARGETSCOPE_TESTDATA_DIR) / "target_types")) {
         if (entry.path().extension() != ".json") continue;
         std::ifstream in(entry.path());
         auto v = nlohmann::json::parse(in);

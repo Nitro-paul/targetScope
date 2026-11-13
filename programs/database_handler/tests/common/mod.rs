@@ -98,9 +98,7 @@ impl Handler {
     }
 
     pub async fn setting(&self, name: &str) -> Value {
-        let r = self
-            .ok("read_settings", json!({ "filter": { "conditions": [{ "field": "name", "op": "eq", "value": name }] } }))
-            .await;
+        let r = self.ok("read_settings", json!({ "filter": { "conditions": [{ "field": "name", "op": "eq", "value": name }] } })).await;
         r["settings"][0].clone()
     }
 
@@ -149,9 +147,8 @@ pub fn without(mut v: Value, field: &str) -> Value {
 }
 
 pub fn files_in(dir: &Path) -> Vec<String> {
-    let mut v: Vec<String> = std::fs::read_dir(dir)
-        .map(|r| r.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect())
-        .unwrap_or_default();
+    let mut v: Vec<String> =
+        std::fs::read_dir(dir).map(|r| r.flatten().map(|e| e.file_name().to_string_lossy().into_owned()).collect()).unwrap_or_default();
     v.sort();
     v
 }

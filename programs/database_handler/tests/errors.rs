@@ -21,10 +21,7 @@ async fn reload_events(h: &Handler) -> usize {
     let mut c = h.redis.connection().await;
     let r: redis::streams::StreamRangeReply =
         redis::cmd("XRANGE").arg("database_handler:events").arg("-").arg("+").query_async(&mut c).await.unwrap();
-    r.ids
-        .iter()
-        .filter(|e| redis::from_redis_value::<String>(e.map["data"].clone()).unwrap().contains("\"reload\""))
-        .count()
+    r.ids.iter().filter(|e| redis::from_redis_value::<String>(e.map["data"].clone()).unwrap().contains("\"reload\"")).count()
 }
 
 // DB-ERR-01

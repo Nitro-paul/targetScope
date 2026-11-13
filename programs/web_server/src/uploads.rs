@@ -70,7 +70,9 @@ pub async fn receive(mut mp: Multipart, kind: UploadKind, staging_dir: &Path) ->
             let id = Uuid::new_v4();
             let part = staging_dir.join(format!(".upload_{id}.part"));
             staged = Some((String::new(), part.clone()));
-            let mut file = tokio::fs::File::create(&part).await.map_err(|e| ApiError::from(targetscope_common::messages::ServiceError::io(e.to_string())))?;
+            let mut file = tokio::fs::File::create(&part)
+                .await
+                .map_err(|e| ApiError::from(targetscope_common::messages::ServiceError::io(e.to_string())))?;
             let mut size: u64 = 0;
             let mut limit: Option<(&str, u64)> = None;
             let mut head: Vec<u8> = Vec::new();
@@ -93,7 +95,9 @@ pub async fn receive(mut mp: Multipart, kind: UploadKind, staging_dir: &Path) ->
             };
             file.flush().await.ok();
             let name = format!("upload_{id}.{ext}");
-            tokio::fs::rename(&part, staging_dir.join(&name)).await.map_err(|e| ApiError::from(targetscope_common::messages::ServiceError::io(e.to_string())))?;
+            tokio::fs::rename(&part, staging_dir.join(&name))
+                .await
+                .map_err(|e| ApiError::from(targetscope_common::messages::ServiceError::io(e.to_string())))?;
             staged = Some((name, staging_dir.join(format!("upload_{id}.{ext}"))));
         }
         Ok(())

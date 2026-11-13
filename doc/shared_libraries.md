@@ -76,6 +76,8 @@ pub enum ImageProcessorEvent {
     ShotDetected(ShotDetected),
 }
 ```
+A request or event enum is decoded once per message and then taken apart, never stored, so a large variant next to small ones costs nothing; the enums carry `#[allow(clippy::large_enum_variant)]` instead of boxing their payloads.
+
 Every request is a struct (its payload) that implements `Request`, which links it to its type name, the receiver's stream, its response type and its timeout:
 ```rust
 pub trait Request: Serialize {
@@ -131,7 +133,7 @@ impl Bus {
         -> Result<ResponseEnvelope, BusError>;
 
     /// Sends an event to <program>:events.
-    pub async fn publish<E: Serialize>(&self, event: &E) -> Result<EventEnvelope, BusError>;
+    pub async fn publish<E: Serialize + Sync>(&self, event: &E) -> Result<EventEnvelope, BusError>;
     /// Id of the newest entry of <source>:events ("0-0" if empty), noted before loading state.
     pub async fn newest_event_id(&self, source: &str) -> Result<String, BusError>;
     /// Reads <source>:events, with a consumer group named after this program (no event lost)
@@ -144,19 +146,40 @@ impl Bus {
     where Req: DeserializeOwned, H: RequestHandler<Req>;
     /// Same, but handles up to `limit` requests at the same time, for stateless programs.
     pub async fn serve_concurrent<Req, H>(&self, handler: Arc<H>, limit: usize) -> Result<(), BusError>;
+
+    /// Ends `serve` and `serve_concurrent` after the requests being handled are answered (SIGTERM).
+    pub fn stop(&self);
+    pub fn is_stopping(&self) -> bool;
+    /// Changes every time the request loop had to reconnect to Redis.
+    pub fn reconnects(&self) -> tokio::sync::watch::Receiver<u64>;
+    /// Name of this program, its clock, and a clone of the command connection (for commands of its own).
+    pub fn program(&self) -> &str;
+    pub fn clock(&self) -> Arc<dyn Clock>;
+    pub fn connection(&self) -> redis::aio::ConnectionManager;
 }
 
 pub enum ReadMode { ConsumerGroup, After(String) }
 
-/// EventReader::next() returns the next event; ack(entry_id) acknowledges it in group mode.
-pub struct Event<E> { pub entry_id: String, pub envelope: EventEnvelope, pub event: E }
+impl<E> EventReader<E> {
+    /// The next event of the stream; entries that aren't events of type E (or have another version) are skipped.
+    pub async fn next(&mut self) -> Result<Event<E>, BusError>;
+    /// Acknowledges an entry in group mode.
+    pub async fn ack(&mut self, entry_id: &str) -> Result<(), BusError>;
+}
+
+/// `data` is the entry as it was read (the envelope as JSON), for forwarding without encoding it again.
+pub struct Event<E> { pub entry_id: String, pub data: String, pub envelope: EventEnvelope, pub event: E }
 
 #[async_trait]
-pub trait RequestHandler<Req> {
+pub trait RequestHandler<Req>: Send + Sync {
     async fn handle(&self, request_id: Uuid, req: Req) -> Result<serde_json::Value, ServiceError>;
 }
 
 pub enum BusError { Redis(redis::RedisError), Timeout, Remote(ErrorBody), Decode(String) }
+impl BusError {
+    /// `Remote` keeps its error code; `Timeout` becomes `timeout`; the others `unavailable` or `invalid_message`.
+    pub fn to_service_error(&self) -> ServiceError;
+}
 ```
 - Every stream entry has one field `data` with the envelope as JSON. Writes use `XADD … MAXLEN ~ n` with the caps of [interfaces.md](interfaces.md#streams-and-keys).
 - Responses are read by the background task with `XREAD BLOCK` on `<program>:responses`, matched by `request_id`, and delivered through a `oneshot` channel; unknown request ids (e.g. late responses after a timeout) are dropped and logged.

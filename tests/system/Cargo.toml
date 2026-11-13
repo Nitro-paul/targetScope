@@ -5,8 +5,7 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
-# Needs the built programs, redis-server, v4l2loopback, ffmpeg and mediamtx:
-#   cargo test -p system_tests -- --include-ignored
+# doc/testing/system.md#setup
 
 [dependencies]
 targetscope_testkit.workspace = true

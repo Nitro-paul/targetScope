@@ -1,7 +1,4 @@
+// doc/testing/overview.md#test-kit
 #include "targetscope/testkit/event_probe.hpp"
 
-namespace targetscope::testkit {
-
-// TODO: implementation
-
-}  // namespace targetscope::testkit
+namespace targetscope::testkit {}
