@@ -1,9 +1,7 @@
-//! Test cameras: a v4l2loopback device fed by ffmpeg with videos from testdata/videos/,
-//! or mediamtx streaming a video over RTSP.
+// doc/testing/system.md#setup
 
 pub struct LoopbackCamera {
     pub device: String,
-    // TODO: ffmpeg child
 }
 
 impl LoopbackCamera {
@@ -12,7 +10,6 @@ impl LoopbackCamera {
         todo!()
     }
 
-    /// Stops feeding frames (camera gone) until resume().
     pub fn pause(&mut self) {
         todo!()
     }
@@ -24,7 +21,6 @@ impl LoopbackCamera {
 
 pub struct RtspCamera {
     pub url: String,
-    // TODO: mediamtx and ffmpeg children
 }
 
 impl RtspCamera {
