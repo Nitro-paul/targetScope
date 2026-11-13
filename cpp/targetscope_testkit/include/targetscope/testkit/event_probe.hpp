@@ -1,20 +1,17 @@
-// Reads <program>:events and waits for expected events, with a timeout.
+// doc/testing/overview.md#test-kit
 #pragma once
 
 #include <chrono>
-#include <string>
-
 #include <nlohmann/json.hpp>
+#include <string>
 
 namespace targetscope::testkit {
 
 class EventProbe {
-public:
+   public:
     EventProbe(const std::string& redis_url, const std::string& program);
-    // Payload of the next event of this type; throws after the timeout.
     nlohmann::json expect(const std::string& type, std::chrono::milliseconds timeout);
-    // Throws if any event arrives within the duration.
     void expect_none(std::chrono::milliseconds within);
 };
 
-}  // namespace targetscope::testkit
+}

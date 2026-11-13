@@ -1,7 +1,4 @@
+// doc/testing/overview.md#test-kit
 #include "targetscope/testkit/redis_test_server.hpp"
 
-namespace targetscope::testkit {
-
-// TODO: implementation
-
-}  // namespace targetscope::testkit
+namespace targetscope::testkit {}

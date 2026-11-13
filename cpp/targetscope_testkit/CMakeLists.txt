@@ -1,4 +1,4 @@
-# Test tools for the C++ programs (doc/testing/overview.md#test-kit).
+# doc/testing/overview.md#test-kit
 add_library(targetscope_testkit_cpp STATIC
     src/redis_test_server.cpp
     src/test_bus.cpp

@@ -96,8 +96,7 @@ pub async fn load_filter_set(bus: &crate::TestBus) -> std::collections::HashMap<
     }
     for s in records("sessions") {
         let n = s["shot_count"].as_i64().unwrap();
-        let shots: Vec<Value> =
-            (0..n).map(|i| json!({ "angle_turns": i as f64 / n as f64, "radius_mm": 1.5, "paper_no": 1 })).collect();
+        let shots: Vec<Value> = (0..n).map(|i| json!({ "angle_turns": i as f64 / n as f64, "radius_mm": 1.5, "paper_no": 1 })).collect();
         let named = |field: &str| s[field].as_str().map(|name| ids[name]);
         let payload = json!({
             "uuid": s["uuid"], "saved_at": s["saved_at"], "score": s["score"], "grouping_score": s["score"],
