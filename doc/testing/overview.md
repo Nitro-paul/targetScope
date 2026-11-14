@@ -89,7 +89,7 @@ Test builds contain named failpoints (Rust: `fail` crate; C++: `TS_FAILPOINT` ma
 Test data is in `testdata/` at the root of the repository:
 ```
 testdata/
-├── target_types/   # target types as JSON, with their expected rings and validity (also schema examples)
+├── target_types/   # target types as JSON, with their expected rings and validity (also checked against the target_type schema, LIB-CON-02)
 ├── sessions/       # session sets for database, exporter and statistics tests, with expected results
 ├── images/         # small files for staging tests: paper.jpg, device.png, not_an_image.jpg, large_20mb.jpg
 ├── photos/         # photos of shot targets, with ground truth
@@ -156,12 +156,15 @@ Accuracy measures for image processing:
 | `ctest --test-dir build -LE "performance\|accuracy"` | C++ unit, contract and integration tests |
 | `node --test programs/web_server/static/tests/` | frontend unit tests |
 | `cargo test -p system_tests -- --include-ignored` | system tests (`tests/system/`); needs the built programs, `v4l2loopback`, `ffmpeg` and `mediamtx` |
-| `cargo test --release --workspace -- --ignored perf_` and `ctest --test-dir build -L performance` | performance tests (release build) |
+| `cargo test --release --workspace --exclude system_tests -- --ignored perf_` and `ctest --test-dir build -L performance` | performance tests (release build) |
+| `cargo test --release -p system_tests -- --ignored perf_` | system performance tests (long run); need what the system tests need |
 | `ctest --test-dir build -L accuracy` | image processing accuracy report over `testdata/photos` and `testdata/videos` |
 
 Integration tests need `redis-server` in `PATH`. They start their own Redis on a free port and never touch a running TargetScope.
 
 ### When tests run
+No CI service is configured in the repository yet; until there is one, these runs are started by hand.
+
 - **Every commit (CI):** unit, contract, integration and frontend unit tests.
 - **Nightly (CI):** system tests, performance tests, accuracy report.
 - **Before a release:** everything above, plus the hardware tests ([camera_reader](camera_reader.md#hardware-tests-manual), [image_processor](image_processor.md#hardware-tests-manual)), the accuracy acceptance ([image_processor](image_processor.md#accuracy-acceptance-test-set)) and the manual UI checklist ([web_server](web_server.md#manual-ui-checklist)).

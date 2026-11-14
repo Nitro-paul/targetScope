@@ -238,7 +238,7 @@ pub fn generate_rings(t: &TargetType) -> Vec<Ring>;
 /// All TargetType rules: radii increasing, scores decreasing, outermost ring on the paper.
 pub fn validate_target_type(t: &TargetType) -> Result<(), String>;
 ```
-The same two functions exist in `targetscope_common_cpp`; both are tested with the same examples (`schemas/examples/target_types/*.json` with their expected rings).
+The same two functions exist in `targetscope_common_cpp`; both are tested with the same examples (`testdata/target_types/*.json` with their expected rings).
 
 ## Contract tests
 `tests/contract.rs` runs, for every schema in `schemas/`: validate its examples (`jsonschema` crate), deserialize them into the Rust type, serialize back and compare as JSON values, and validate the serialized output; every invalid example in `schemas/examples/invalid/` must be rejected. A message type without a schema, or a schema without a Rust type, fails the test. All cases: [testing/shared_libraries.md](testing/shared_libraries.md).
