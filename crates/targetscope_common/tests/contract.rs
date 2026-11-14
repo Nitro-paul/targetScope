@@ -325,7 +325,7 @@ fn examples() -> BTreeMap<String, Value> {
         .into_iter()
         .filter_map(|p| {
             let r = rel(&p, &dir);
-            if r.starts_with("invalid/") || r.starts_with("target_types/") {
+            if r.starts_with("invalid/") {
                 return None;
             }
             Some((r.strip_suffix(".json").unwrap().to_string(), read_json(&p)))
@@ -475,7 +475,9 @@ fn lib_con_02_valid_examples_are_valid() {
         failures.extend(errors(&name, &example).into_iter().map(|e| format!("{name}: {e}")));
     }
     // doc/shared_libraries.md#target-types
-    for p in json_files(&examples_dir().join("target_types")) {
+    let target_type_files = json_files(&schemas_dir().join("../testdata/target_types"));
+    assert!(!target_type_files.is_empty(), "no files in testdata/target_types");
+    for p in target_type_files {
         let v = read_json(&p);
         if v["valid"] == true {
             failures.extend(errors("common/target_type", &v["target_type"]).into_iter().map(|e| format!("{}: {e}", p.display())));

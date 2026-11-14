@@ -12,7 +12,7 @@ What is tested: every message and shared type has a schema, the examples are rig
 | ID | Case | Steps / input | Expected outcome |
 |---|---|---|---|
 | LIB-CON-01 | Every schema has an example | List the schemas in `schemas/` and the files in `schemas/examples/` | Every schema (requests, responses, events, shared types, `export/v1`) has at least one valid example |
-| LIB-CON-02 | Valid examples are valid | Validate every file in `schemas/examples/` (JSON Schema draft 2020-12) | All pass |
+| LIB-CON-02 | Valid examples are valid | Validate every file in `schemas/examples/` (JSON Schema draft 2020-12), and the `target_type` of every valid file in `testdata/target_types/` against `common/target_type` | All pass |
 | LIB-CON-03 | Invalid examples are invalid | Validate the `message` of every file in `schemas/examples/invalid/`; each file names its expected error in `expected_error`, starting with the field (`"<field>: <reason>"`) | Every file fails, with an error about the named field (e.g. missing `request_id`, `angle_turns: 1.0`, `status: "maybe"`, `paper_no: 0`) |
 | LIB-CON-04 | Round trip | Deserialize every valid example into its type, serialize again | Equal JSON value (field order ignored) |
 | LIB-CON-05 | Produced messages are valid | Build every message type in code, with every enum variant and every optional field once set and once unset; serialize | Valid against its schema |
