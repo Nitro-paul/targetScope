@@ -3,14 +3,23 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/dist"
+unfinished=(camera_reader image_processor)
 without=""
+without_given=no
+all=no
 while [ $# -gt 0 ]; do
     case "$1" in
-        --without) without="$2"; shift 2 ;;
+        --without) without="$2"; without_given=yes; shift 2 ;;
+        --all) all=yes; shift ;;
         --out) out="$(mkdir -p "$2" && cd "$2" && pwd)"; shift 2 ;;
-        *) echo "usage: $0 [--without <program>,<program>] [--out <folder>]" >&2; exit 2 ;;
+        *) echo "usage: $0 [--without <program>,<program> | --all] [--out <folder>]" >&2; exit 2 ;;
     esac
 done
+[ "$all$without_given" != yesyes ] || { echo "--all and --without can't be used together" >&2; exit 2; }
+# doc/releases.md#building-a-release
+if [ "$all" = no ] && [ "$without_given" = no ]; then
+    without="$(IFS=,; echo "${unfinished[*]}")"
+fi
 
 rust_programs=(database_handler session_manager analyzer statistics exporter importer web_server)
 cpp_programs=(camera_reader image_processor)
