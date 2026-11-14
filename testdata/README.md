@@ -4,7 +4,7 @@ Reference data for all tests (doc/testing/overview.md#reference-data).
 
 ```
 testdata/
-├── target_types/   # target types as JSON, with their expected rings and validity (also schema examples)
+├── target_types/   # target types as JSON, with their expected rings and validity (also checked against the target_type schema, LIB-CON-02)
 ├── sessions/       # session sets for database, exporter and statistics tests, with expected results
 ├── images/         # small files for staging tests: paper.jpg, device.png, not_an_image.jpg, large_20mb.jpg
 ├── photos/         # photos of shot targets, with ground truth
