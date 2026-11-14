@@ -15,5 +15,6 @@ tracing.workspace = true
 time.workspace = true
 
 [dev-dependencies]
+rusqlite.workspace = true
 targetscope_testkit.workspace = true
 tokio.workspace = true
