@@ -18,6 +18,15 @@ How to install everything needed to build, run and test TargetScope on a Linux P
 
 SQLite is built into `database_handler` (`rusqlite` with the `bundled` feature); no system package is needed.
 
+## Checking and installing the dependencies
+The build scripts do this themselves, on any PC, so nothing has to be installed or exported by hand first:
+```
+tools/ensure_deps.sh [--no-cpp] [--run]
+```
+`release/build.sh` calls it (with `--no-cpp` when no C++ program is built) and `release/build_and_run.sh` calls it with `--run`. It sources `tools/env.sh` (below), then:
+1. Checks the tools and libraries that only the system can provide: `cargo` and `rustc`, a C compiler, `pkg-config` with libjpeg-turbo; for the C++ programs also `git`, `make`, a C++ compiler, Ninja, CMake ≥ 3.24, OpenCV 4 or 5 (found by CMake), nlohmann/json and spdlog. If something is missing it stops and prints what is missing and the install command for Arch, Debian/Ubuntu or Fedora.
+2. Builds into `TARGETSCOPE_DEPS` what needs no root and has no package: redis-plus-plus and iceoryx2 (with hiredis) when CMake doesn't find them, and with `--run` Valkey when there is no `redis-server`. This is `tools/install_deps.sh [valkey] [cpp]` and takes a few minutes the first time; it needs `git`, network access and `cargo`.
+
 ## Install with the package manager (needs root)
 ```sh
 sudo pacman -S --needed base-devel git rust cmake ninja nodejs \
@@ -63,14 +72,11 @@ cmake --build iceoryx2/build && cmake --install iceoryx2/build
 The build calls `cargo` to compile the Rust core of iceoryx2.
 
 ## Environment
-With a prefix in the home folder, make the tools and libraries visible (e.g. in `~/.profile`):
+`tools/env.sh` is sourced by the build scripts and does this: `TARGETSCOPE_DEPS` defaults to `~/.local/opt/targetscope-deps`; when that folder exists, its `bin` is put in front of `PATH` (`redis-server`), and the folder is added to `CMAKE_PREFIX_PATH`, its `lib` to `LD_LIBRARY_PATH` and `lib/pkgconfig` to `PKG_CONFIG_PATH`. For your own shell (running tests by hand, e.g. in `~/.profile`):
 ```sh
-export TARGETSCOPE_DEPS=$HOME/.local/opt/targetscope-deps
-export PATH="$TARGETSCOPE_DEPS/bin:$PATH"                       # redis-server for tests and the launcher
-export CMAKE_PREFIX_PATH="$TARGETSCOPE_DEPS${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
-export LD_LIBRARY_PATH="$TARGETSCOPE_DEPS/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+. <repository>/tools/env.sh
 ```
-The top-level `CMakeLists.txt` adds `$TARGETSCOPE_DEPS` to the CMake search path (and as run path of the binaries); when the variable isn't set, it uses `~/.local/opt/targetscope-deps` if that folder exists, the place `tools/install_deps.sh` installs to. `release/package/run.sh` does the same for the `PATH` (`redis-server`). So building and running work without the exports above; they are only needed for the tests and for other tools. If redis-plus-plus or the iceoryx2 bindings aren't found anywhere, CMake stops with a message that says so.
+The top-level `CMakeLists.txt` also finds that folder without the script (and uses it as run path of the C++ binaries): `$TARGETSCOPE_DEPS`, or `~/.local/opt/targetscope-deps` if it exists. `release/package/run.sh` does the same for the `PATH`. If redis-plus-plus or the iceoryx2 bindings aren't found anywhere, CMake stops with a message that says so.
 
 ## Build and test
 See [README.md](../README.md#building) and [testing/overview.md](testing/overview.md#running-the-tests). Integration tests start their own `redis-server` from `PATH` on a free port; they never touch a running TargetScope.

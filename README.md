@@ -21,7 +21,7 @@ The full design is in [doc/software_description.md](doc/software_description.md)
 | `tests/system/` | system tests (all programs together) |
 | `testdata/` | reference data, photos, videos, golden files |
 | `config/launcher.toml` | default launcher configuration |
-| `tools/` | `install_deps.sh` (dependencies without root), `check_docs.py` (links and comments) |
+| `tools/` | `ensure_deps.sh`, `install_deps.sh`, `env.sh` (check and install the dependencies, no root needed), `check_docs.py` (links and comments) |
 | `release/`, `VERSION` | building, installing and running a release ([doc/releases.md](doc/releases.md)) |
 | `doc/` | design and test documentation |
 

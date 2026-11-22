@@ -119,7 +119,7 @@ targetscope/
 ├── testdata/               # reference data, photos, videos, golden files
 ├── config/
 │   └── launcher.toml
-├── tools/                  # install_deps.sh (dependencies without root), check_docs.py (links and comments)
+├── tools/                  # ensure_deps.sh, install_deps.sh, env.sh (check and install the dependencies), check_docs.py (links and comments)
 ├── release/                # release tools: build.sh, bump.sh, install/run scripts of the bundle (branch releases)
 ├── VERSION                 # version number <release>.<majorfix>.<minorfix> (see releases.md)
 └── doc/
