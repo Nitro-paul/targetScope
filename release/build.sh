@@ -43,6 +43,14 @@ for p in ${without//,/ }; do
     [[ " ${rust_programs[*]} ${cpp_programs[*]} " == *" $p "* ]] || { echo "unknown program $p" >&2; exit 1; }
 done
 
+cpp_wanted=()
+for p in "${cpp_programs[@]}"; do
+    left_out "$p" || cpp_wanted+=("$p")
+done
+# doc/development.md#checking-and-installing-the-dependencies
+"$root/tools/ensure_deps.sh" $([ ${#cpp_wanted[@]} -gt 0 ] || echo --no-cpp)
+. "$root/tools/env.sh"
+
 name="targetscope-$version-linux-$(uname -m)"
 bundle="$out/$name"
 rm -rf "$bundle" "$out/$name.tar.gz" "$out/$name.tar.gz.sha256"
@@ -61,10 +69,6 @@ for p in "${rust_programs[@]}"; do
 done
 cp -r "$root/programs/web_server/static" "$bundle/lib/targetscope/static"
 
-cpp_wanted=()
-for p in "${cpp_programs[@]}"; do
-    left_out "$p" || cpp_wanted+=("$p")
-done
 if [ ${#cpp_wanted[@]} -gt 0 ]; then
     build="$root/build-release"
     cmake -S "$root" -B "$build" -DCMAKE_BUILD_TYPE=Release -DTARGETSCOPE_BUILD_TESTS=OFF -DTARGETSCOPE_FAILPOINTS=OFF
