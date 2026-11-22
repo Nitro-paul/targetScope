@@ -10,8 +10,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # doc/development.md#environment
 if(DEFINED ENV{TARGETSCOPE_DEPS})
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{TARGETSCOPE_DEPS}")
-    set(CMAKE_BUILD_RPATH "$ENV{TARGETSCOPE_DEPS}/lib")
+    set(TARGETSCOPE_DEPS_DIR "$ENV{TARGETSCOPE_DEPS}")
+elseif(EXISTS "$ENV{HOME}/.local/opt/targetscope-deps")
+    set(TARGETSCOPE_DEPS_DIR "$ENV{HOME}/.local/opt/targetscope-deps")
+endif()
+if(DEFINED TARGETSCOPE_DEPS_DIR)
+    message(STATUS "Dependencies in ${TARGETSCOPE_DEPS_DIR}")
+    list(APPEND CMAKE_PREFIX_PATH "${TARGETSCOPE_DEPS_DIR}")
+    set(CMAKE_BUILD_RPATH "${TARGETSCOPE_DEPS_DIR}/lib")
 endif()
 
 option(TARGETSCOPE_BUILD_TESTS "Build the C++ tests" ON)
