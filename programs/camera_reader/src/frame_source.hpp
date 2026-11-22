@@ -2,6 +2,7 @@
 #pragma once
 
 #include <opencv2/core.hpp>
+#include <string>
 
 namespace camera_reader {
 
@@ -18,6 +19,8 @@ class FrameSource {
     virtual void read(cv::Mat& bgr) = 0;
     virtual void close() = 0;
     virtual bool has_controls() const = 0;
+    virtual std::string device() const { return {}; }
+    virtual std::string camera_key() const { return {}; }
 };
 
 }

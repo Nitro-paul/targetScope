@@ -23,11 +23,13 @@ class V4l2Source final : public FrameSource {
     void read(cv::Mat& bgr) override;
     void close() override;
     bool has_controls() const override { return true; }
-    const std::string& device() const { return device_; }
+    std::string device() const override { return device_; }
+    std::string camera_key() const override { return bus_info_; }
 
    private:
     V4l2Settings settings_;
     std::string device_;
+    std::string bus_info_;
     cv::VideoCapture capture_;
 };
 
