@@ -9,6 +9,7 @@ add_library(targetscope_testkit_cpp STATIC
     src/frame_feeder.cpp
     src/failpoints.cpp
     src/fixtures.cpp
+    src/process.cpp
 )
 target_include_directories(targetscope_testkit_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(targetscope_testkit_cpp PUBLIC targetscope_common_cpp)
