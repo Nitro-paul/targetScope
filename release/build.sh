@@ -3,7 +3,7 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 out="$root/dist"
-unfinished=(camera_reader image_processor)
+unfinished=()
 without=""
 without_given=no
 all=no
