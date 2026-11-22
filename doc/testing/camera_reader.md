@@ -8,6 +8,7 @@ Design: [camera_reader.md](../programs/camera_reader.md), [interfaces.md](../int
 - **Unit tests** (GoogleTest) use `FakeSource`: generated frames with a known pattern, scripted read failures and stalls.
 - **Integration tests** run `camera_reader` as a process with `RedisTestServer`, a `FakeProgram` as `database_handler` (settings) and a Rust frame subscriber. Camera sources: `v4l2loopback` devices fed by `ffmpeg`, the `vivid` driver for controls, `mediamtx` for RTSP.
 - Frames are checked with a test subscriber on `targetscope/frames/raw`.
+- Cases that need a camera use the first camera of the PC when it has one (the tests never change a control value) and are skipped otherwise; the cases that need `v4l2loopback`, `vivid` or `mediamtx` are skipped where these aren't installed.
 
 ## Source selection (integration)
 What is tested: which camera is opened, depending on the settings.

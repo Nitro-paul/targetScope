@@ -51,6 +51,7 @@ The level of each group of test cases is given in its heading.
 | `TestBus` | a `Bus` for the test itself: sends requests to the program under test, with a chosen `request_id` if needed |
 | `FakeProgram` | serves `<program>:requests` with scripted answers per request type (response, error code, delay, no answer, or an answer computed from the request payload, e.g. a page of `read_sessions`) and records every request it gets |
 | `ProgramUnderTest`, `program_binary` | runs a program as a process with the `TARGETSCOPE_*` variables of a `TempDataDir` and waits until it answers `ping`. `program_binary(name)` builds another program of the workspace once per test process (`cargo build -p <name>` with the same target folder and profile) and returns its path, for tests that need a real `database_handler` or `analyzer` |
+| `ProgramProcess` (C++) | runs a program binary as a process with a given environment, sends `SIGTERM` and waits for the exit |
 | `EventProbe` | reads a `<program>:events` stream and waits for expected events, with a timeout; can also check that no event came |
 | `TempDataDir` | temporary data, image, staging and export folders; optionally a small `tmpfs` ("disk full") and a second mount ("other file system") |
 | `FakeClock` | controllable time; all time-dependent code reads time through the shared `Clock` ([shared_libraries.md](../shared_libraries.md#clock-and-failpoints)) |

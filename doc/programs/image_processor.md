@@ -106,7 +106,7 @@ The camera is often at an angle to the target, so this step relies only on the p
 ### Start and calibration
 On `live_start`, the target type and bullet diameter are stored (a running live mode is replaced, and all its holes are forgotten; `live_paper = 1`). The paper is searched about once per second until it's found; without frames, the status message is `no camera frames`. After `live_calibrate`, the clicked corners are used instead. They're in raw camera pixels (the raw feed isn't lens-corrected), so with an applied lens calibration they're converted with `undistortPoints` first; `CalibrationStatus.corners` is always reported in raw camera pixels. On success: `calibration_changed` (`calibrated`), then the **initial hole scan**.
 
-**Supervision:** every 30th frame, the paper is searched again near the known corners. If a corner moved more than 2 mm (paper scale), the calibration is updated (auto) or set to `lost` (manual), and `calibration_changed` is sent. After an update, the reference image is created again from the current frame; the known holes keep their paper positions, so nothing is counted twice. While `lost`, no holes are detected.
+**Supervision:** every 30th frame (also when the frame is skipped as occluded, because a paper that moved looks occluded), the paper is searched again near the known corners. If a corner moved more than 2 mm (paper scale), the calibration is updated (auto) or set to `lost` (manual), and `calibration_changed` is sent. If the paper isn't found twice in a row, an automatic calibration is set to `lost` (the paper was taken away); a manual calibration stays as it is, because a hand in front of the paper must not undo it. After an update, the reference image is created again from the current frame; the known holes keep their paper positions, so nothing is counted twice. While `lost`, no holes are detected. A manual calibration that is `lost` stays so until the user calibrates again; an automatic one is searched again about once per second.
 
 ### Initial hole scan
 All holes that are already in the target are found with the single-image method (see [photo detection](#holes-in-a-single-image)) on the first transformed frame. They're stored as not counted and drawn gray. This frame becomes the reference.
@@ -116,7 +116,7 @@ For each new frame:
 1. Transform and convert to grayscale.
 2. **Occlusion check:** if more than 5 % of the paper's pixels differ strongly from the reference (person, hand, shadow), skip the frame.
 3. `absdiff` with the reference, threshold, morphological opening to remove noise.
-4. Find blobs (connected components). Keep blobs with a diameter between 0.6× and 2× the bullet diameter, and a roundness above 0.6.
+4. Close gaps of the mask smaller than 0.4 bullet diameters (a printed line that crosses the hole has the level of the hole and leaves a gap in the difference). Find blobs (connected components). Keep blobs with a diameter between 0.6× and 2× the bullet diameter, a roundness (area against the perimeter of the convex hull) above 0.6 and a narrow side of at least half a bullet diameter (a short piece of a thin curved line is not a hole).
 5. Match blobs to candidates (within half a bullet diameter). A candidate seen in `detection_confirm_frames` consecutive frames (default 5) becomes a hole:
    - while counting is on: counted, highlighted, and sent as `shot_detected` with its `hole_id` (confidence from size and roundness),
    - while counting is off: not counted, drawn gray.
@@ -128,13 +128,13 @@ For each new frame:
 ### Paper change
 A new paper starts in one of two ways:
 - **By request** (`live_new_paper`, the user pressed "new paper"): only if `from_live_paper` equals the current `live_paper` (otherwise the paper was already changed automatically, and nothing happens again). The last good frame of the old paper is warped at `capture_long_side_px` and saved as `target_<uuid>.jpg`.
-- **Automatically:** after the calibration was `lost` (the paper was taken away) and the paper is found again, all known holes of the old paper (counted or not) are looked for at their paper positions. If at most 20 % of them are visible, it's a new paper: the same image is saved and `paper_replaced` is sent. Otherwise it's the same paper again and nothing changes. If the old paper had no holes at all, nothing changes either (a blank paper replaced by a blank paper makes no difference).
+- **Automatically:** after the calibration was `lost` (the paper was taken away) and the paper is found again, all known holes of the old paper (counted or not) are looked for at their paper positions: a hole is visible when the new picture looks like the old reference image (which shows the hole) in a disc of 0.4 bullet diameters around it (fewer than 35 % of its pixels differ by more than 40 gray levels). If at most 20 % of the holes are visible, it's a new paper: the same image is saved and `paper_replaced` is sent. Otherwise it's the same paper again and nothing changes. If the old paper had no holes at all, nothing changes either (a blank paper replaced by a blank paper makes no difference).
 
 Then `live_paper` increases, all holes are forgotten, the initial hole scan runs on the new paper (holes found are shown gray, not counted), and the live view numbering starts again at 1. Counting keeps its state. Every `shot_detected` carries the `live_paper` of its hole, so session_manager assigns it to the right paper even if it arrives after the change.
 
 **Uncounting:** `live_uncount_hole` sets `counted = false` for the hole; it's drawn gray, and the remaining counted holes are numbered again.
 
-**Overlapping holes:** if a confirmed blob grows to more than 1.6× the area of a single hole, it's treated as two holes; the second center is placed at the far end of the blob from the first. Such holes get a confidence below 0.5, so the UI highlights them for checking in Review.
+**Overlapping holes:** the difference only shows the new part of a hole that overlaps a known one. If such a difference touches a known hole, it is joined with the footprint of that hole; if the joined blob has more than 1.6× the area of a single hole (and less than 2.4×), it's treated as two holes: the known one and a new one, placed at the far end of the blob from the known one. The new hole gets a confidence below 0.5, so the UI highlights it for checking in Review.
 
 ### Live frame
 After each processed frame, the transformed color image is drawn as described in [frame_transport.md](../frame_transport.md#live-frames) and published. Without calibration, nothing is published on `targetscope/frames/live` (the web server shows the raw feed instead).
@@ -149,9 +149,9 @@ Writes `newest_raw` (not transformed; lens-corrected first if a calibration appl
 
 ### Holes in a single image
 Used for photos and the initial hole scan; there is no reference image:
-1. Inside the black area (`black_radius_mm` around the ring center), holes are lighter than their surroundings; outside, darker. Adaptive threshold separately for both areas, with the polarity of each.
-2. Ring lines are thin and long: blobs are filtered as in step 4 of [new holes](#new-holes) (size and roundness), which removes line fragments.
-3. Blobs rejected only because of their size are reported as warnings.
+1. The image is scaled so that a bullet hole is about 12 px wide. Inside the black area (between `inner_white_radius_mm` and `black_radius_mm` around the ring center), holes are lighter than their surroundings: they are found with a morphological top-hat; everywhere else (the paper and the white center) they are darker: bottom-hat. The structuring element is an ellipse of 4 bullet diameters, so spots up to that size show up, while the printed black area and the white paper between two ring lines don't. Deviations above 25 gray levels count; an opening with 0.3 bullet diameters removes the thin ring lines; a margin of 2 mm at the paper edge is ignored.
+2. Blobs are filtered as in step 4 of [new holes](#new-holes) (size, roundness, narrow side). The white center of the print (a blob in the middle that is more than 2.2× the area of a hole) is not a hole.
+3. Blobs rejected only because of their size (2× to 8× the bullet diameter) are reported as warnings. A blob of 1.6× to 2.5× the area of a hole is treated as two overlapping holes (see [new holes](#new-holes)).
 
 ### detect_shots_in_photo
 1. Load the photo from the staging folder.
@@ -174,7 +174,7 @@ Cheap webcams bend straight lines (barrel distortion). The homography from the p
 **Collecting** (camera settings menu of the web UI, live mode not active):
 1. `lens_calibration_start`. The user holds a printed checkerboard (9 × 6 inner corners; PDF in the web UI; the square size doesn't matter for the distortion) in front of the camera.
 2. For each view, `lens_calibration_capture`: `findChessboardCornersSB` on the newest raw frame (not corrected); if found, the corners are kept. The UI asks for at least 10 views, at different positions, distances and angles, covering the image corners too.
-3. `lens_calibration_finish`: `calibrateCamera` with all views → camera matrix and distortion coefficients (k1, k2, p1, p2, k3) and the RMS reprojection error. Stored in the setting `lens_calibrations` under the camera's `camera_key`, together with the resolution (`save_setting` through `database_handler`). The UI shows the RMS error; below 0.5 px is good, above 1 px suggests repeating.
+3. `lens_calibration_finish`: `calibrateCamera` with all views (starting from a camera matrix with the focal length of the image width; k3 and the tangential coefficients p1, p2 stay 0, because a few views can't tell them apart from k1 and k2 and a wrong estimate bends the image worse than none) → camera matrix and distortion coefficients (k1, k2, p1, p2, k3) and the RMS reprojection error. Stored in the setting `lens_calibrations` under the camera's `camera_key`, together with the resolution (`save_setting` through `database_handler`). The UI shows the RMS error; below 0.5 px is good, above 1 px suggests repeating.
 
 **Camera changes:** if the camera or its resolution changes while views are being collected, the views are discarded (`lens_calibration_status.collecting_views` drops to 0) and the UI asks to start again.
 
@@ -185,6 +185,8 @@ Cheap webcams bend straight lines (barrel distortion). The homography from the p
 A calibration for another resolution isn't applied (`lens_calibration_status.applied = false`); the UI suggests calibrating again. Photos (from other cameras, e.g. a phone) are never lens-corrected.
 
 ## Error handling
+The live view is published by a publisher that is created with the first live frame and kept until the program ends; between live frames it simply publishes nothing.
+
 | Situation | Behavior |
 |---|---|
 | No raw frames for 2 s | Calibration state `not_calibrated` with message `no camera frames`; `capture_raw_image` and `live_set_counting(true)` return `unavailable` (`capture_target_image` still works from the last good frame); live frames stop; the web server shows its fallback |

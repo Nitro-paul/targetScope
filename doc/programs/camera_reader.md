@@ -67,7 +67,7 @@ class RtspSource : public FrameSource {
 ```
 
 ## Camera identity
-Every camera has a `camera_key` under which per-camera data is stored (`camera_controls` here, `lens_calibrations` in image_processor): the V4L2 `bus_info` for USB cameras (stays the same when the device number `/dev/videoN` changes, as long as the camera is plugged into the same port), the RTSP URL for network cameras. It's part of `camera_status` and of every `camera_state_changed` event, together with the actual resolution.
+Every camera has a `camera_key` under which per-camera data is stored (`camera_controls` here, `lens_calibrations` in image_processor): the V4L2 `bus_info` for USB cameras (stays the same when the device number `/dev/videoN` changes, as long as the camera is plugged into the same port), the RTSP URL for network cameras. For a USB camera it is the `bus_info` of the camera that was opened, also when the setting `camera_device` is empty (first camera found). It's part of `camera_status` and of every `camera_state_changed` event, together with the actual resolution.
 
 ## Camera controls
 - **List** (`camera_list_controls`): enumerate with `VIDIOC_QUERY_EXT_CTRL` and the flag `V4L2_CTRL_FLAG_NEXT_CTRL`; skip control classes and disabled controls; for menus, read the entries with `VIDIOC_QUERYMENU`; read current values with `VIDIOC_G_EXT_CTRLS`. `inactive` comes from `V4L2_CTRL_FLAG_INACTIVE`.
@@ -81,7 +81,7 @@ Every camera has a `camera_key` under which per-camera data is stored (`camera_c
 2. `open()`. On failure: state `disconnected`, retry every 2 seconds.
 3. On success: apply stored controls; state `connected`; create the frame publisher with `initial_max_slice_len = width × height × 3`.
 4. For each frame: `read()`, set `seq`, `source_seq = seq`, `timestamp_ns` (CLOCK_MONOTONIC at the time of `read`), `width`, `height`, `stride`, `format = BGR8`, `px_per_mm = 0`, copy the pixels into a loaned slice, publish and notify.
-5. If `read()` fails 10 times in a row or no frame arrives for 2 seconds: `close()`, state `disconnected`, back to step 2.
+5. If `read()` fails 10 times in a row or no frame arrives for 2 seconds: `close()`, state `disconnected`, back to step 2. A watchdog thread reports `disconnected` as soon as the 2 seconds have passed, even while `read()` still blocks.
 6. If one of the reopen settings above changes: `close()` and back to step 1.
 
 Every state change is sent as `camera_state_changed` and logged.

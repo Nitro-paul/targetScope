@@ -9,6 +9,7 @@ Design: [image_processor.md](../programs/image_processor.md), [interfaces.md](..
 - **Integration tests** run `image_processor` as a process with `RedisTestServer`, a `FakeProgram` as `database_handler` (settings) and as `camera_reader` (`camera_status`, `camera_state_changed`), `FrameFeeder` for raw frames, a test subscriber on `targetscope/frames/live`, and `EventProbe` on `image_processor:events`.
 - **Synthetic renders** (`testdata/synthetic/`) draw `TT-REF` on a dark background with holes at known positions, with a chosen camera position (frontal, 30°, 45°), light, noise, hand occlusion and lens distortion. Renders and videos have ground truth ([overview](overview.md#ground-truth-for-photos-videos-and-renders)).
 - Live tests use `TT-REF` and `DEV-REF` (bullet 4.0 mm) unless a case says otherwise.
+- Until real photos and videos exist (`testdata/photos/`, `testdata/videos/`), the unit and integration tests render their images with the synthetic renderer of the test code (`programs/image_processor/tests/synthetic.hpp`: `TT-REF` with holes of the backing's gray level, a pinhole camera with a chosen pose, hand and shadow, barrel distortion, checkerboard views). Most live cases run the live pipeline directly with rendered frames (`Rig`); the cases of [Process tests](#process-tests-integration) run the program.
 
 ## Coordinates (unit)
 What is tested: homography and conversion from paper to shot coordinates ([image_processor.md](../programs/image_processor.md#coordinate-systems)).
@@ -158,6 +159,20 @@ What is tested: missing frames, unreadable files, shutdown.
 | IP-ERR-01 | Frames stop | Live mode calibrated; frames stop for 3 s | Status `not_calibrated`, message `no camera frames`; `capture_raw_image` and `live_set_counting(true)` answer `unavailable`; `capture_target_image` still works (last good frame); live frames stop |
 | IP-ERR-02 | Frames come back | Frames resume | Calibrated again; holes made meanwhile not counted |
 | IP-ERR-03 | Shutdown | `SIGTERM` during live mode | Exits within 2 s; publisher removed |
+
+## Process tests (integration)
+What is tested: the program as a process with the real feeds: `RedisTestServer`, a fake `database_handler` (settings) and a fake `camera_reader` (`camera_status`), `FrameFeeder` on `targetscope/frames/raw` at 30 fps with rendered frames, a subscriber on `targetscope/frames/live`.
+
+| ID | Case | Steps / input | Expected outcome |
+|---|---|---|---|
+| IP-PRC-01 | Calibration and live frames | `live_start`; frontal frames | `calibration_changed` `calibrated` (auto); every live frame is 1200 × 1200 with stride 3600, format 1, `px_per_mm` 6; its `timestamp_ns` equals that of the raw frame `source_seq` names |
+| IP-PRC-02 | New shot | Counting on; a new hole appears in the feed | One `shot_detected` (`live_paper` 1, `confidence` > 0.5), no second one |
+| IP-PRC-03 | Stop | `live_stop` | No more live frames; status `not_calibrated`, message `live mode not active` |
+| IP-PRC-04 | Captures | `capture_target_image`; `capture_raw_image` | `target_*.jpg` 2400 × 2400; `raw_*.jpg` of the camera size, `lens_corrected` false |
+| IP-PRC-05 | Photos during live mode | Two `detect_shots_in_photo` jobs on a 12-megapixel photo while live mode runs | Live frames per second stay within 10 % of those before the jobs |
+| IP-PRC-06 | Lens calibration requests | `lens_calibration_start` during live mode and outside it; capture without a board; cancel; finish with too few views | `invalid_state`; `views` 0 and status `collecting_views` 0; `found` false; after the cancel `collecting_views` is `null` and nothing is stored; `validation_failed` |
+
+IP-LIV-01 (without frames), IP-ERR-01 and IP-ERR-02 (frames stop and come back) and IP-ERR-03 (shutdown) are run as process tests too.
 
 ## Performance (performance)
 What is tested: processing speed on the development PC. *(goals set here)*

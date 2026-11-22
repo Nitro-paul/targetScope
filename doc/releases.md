@@ -42,7 +42,7 @@ release/build.sh [--without <program>,<program> | --all] [--out <folder>]
 3. Builds the C++ programs with CMake (`Release`, tests and failpoints off, folder `build-release/`) and copies them into the bundle. If `TARGETSCOPE_DEPS` is set ([development.md](development.md#environment)), its `lib` folder is the run path of the C++ binaries, so they find redis-plus-plus, hiredis and iceoryx2 there.
 4. Assembles the bundle (below) in `<folder>` (default `dist/`), packs it as `targetscope-<version>-linux-<arch>.tar.gz` and writes its SHA-256 sum next to it (`.sha256`).
 
-Programs that are not implemented yet are left out by default: currently `camera_reader` and `image_processor` (their `main` only prints that and exits with code 1; the list is `unfinished` in `build.sh`). The launcher starts a program only when the programs it depends on are running ([launcher.md](programs/launcher.md#startup-sequence)), so one that exits at once would keep `session_manager` and the web UI from starting. `--all` includes every program, `--without` leaves out exactly the programs given instead (e.g. for a PC without camera). The bundled `launcher.toml` has `enabled = false` for the programs left out; the launcher ignores dependencies on disabled programs. The launcher itself, `database_handler` and `web_server` can't be left out. Remove a program from `unfinished` when it is implemented.
+Programs that are not implemented yet are left out by default (the list `unfinished` in `build.sh`; it is empty now, every program is built). The launcher starts a program only when the programs it depends on are running ([launcher.md](programs/launcher.md#startup-sequence)), so a program that exits at once would keep `session_manager` and the web UI from starting. `--all` includes every program, `--without` leaves out exactly the programs given instead (e.g. for a PC without camera). The bundled `launcher.toml` has `enabled = false` for the programs left out; the launcher ignores dependencies on disabled programs. The launcher itself, `database_handler` and `web_server` can't be left out. Put a program into `unfinished` while it is not implemented, and remove it when it is.
 
 ### Bundle
 ```
@@ -94,7 +94,7 @@ For trying out the current state on the development PC:
 ```
 release/build_and_run.sh [build options] [-- launcher options]
 ```
-Runs `release/build.sh` with the build options (so the programs that aren't implemented yet are left out unless `--all` is given), then starts the new bundle with its `run.sh`, passing the launcher options. Ctrl+C stops TargetScope. It uses the same data folder as an installed TargetScope.
+Runs `release/build.sh` with the build options (so the programs in `unfinished` are left out unless `--all` is given), then starts the new bundle with its `run.sh`, passing the launcher options. Ctrl+C stops TargetScope. It uses the same data folder as an installed TargetScope.
 
 ## Uninstalling
 ```
