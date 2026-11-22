@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -41,27 +42,51 @@ static_assert(offsetof(TargetScopeFrameHeader, stride) == 32);
 static_assert(offsetof(TargetScopeFrameHeader, format) == 36);
 static_assert(offsetof(TargetScopeFrameHeader, px_per_mm) == 40);
 
-struct Frame {
-    TargetScopeFrameHeader header;
-    std::span<const std::uint8_t> data;
+// doc/frame_transport.md#subscriber-rules
+class Frame {
+   public:
+    const TargetScopeFrameHeader& header() const;
+    std::span<const std::uint8_t> data() const;
+
+   private:
+    friend class FrameSubscriber;
+    struct Impl;
+    std::shared_ptr<Impl> impl_;
 };
 
+// doc/frame_transport.md#iceoryx2-services
 class FramePublisher {
    public:
     FramePublisher(const std::string& service, std::size_t initial_max_len);
+    ~FramePublisher();
+    FramePublisher(const FramePublisher&) = delete;
+    FramePublisher& operator=(const FramePublisher&) = delete;
+
     void publish(const TargetScopeFrameHeader& header, const std::function<void(std::span<std::uint8_t>)>& fill);
 
+    std::size_t initial_max_len() const;
+
    private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
+// doc/frame_transport.md#subscriber-rules
 class FrameSubscriber {
    public:
     explicit FrameSubscriber(const std::string& service);
+    ~FrameSubscriber();
+    FrameSubscriber(const FrameSubscriber&) = delete;
+    FrameSubscriber& operator=(const FrameSubscriber&) = delete;
+
     std::optional<Frame> wait(std::chrono::milliseconds timeout);
 
    private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
+// doc/frame_transport.md#stale-shared-memory
 void cleanup_dead_nodes();
 
 }

@@ -32,6 +32,8 @@ if(TARGETSCOPE_BUILD_TESTS)
     )
     target_include_directories(camera_reader_tests PRIVATE tests)
     target_link_libraries(camera_reader_tests PRIVATE camera_reader_core targetscope_testkit_cpp GTest::gtest_main)
+    target_compile_definitions(camera_reader_tests PRIVATE CAMERA_READER_BIN="$<TARGET_FILE:camera_reader>")
+    add_dependencies(camera_reader_tests camera_reader)
     gtest_discover_tests(camera_reader_tests)
     # doc/testing/camera_reader.md#hardware-tests-manual
 endif()

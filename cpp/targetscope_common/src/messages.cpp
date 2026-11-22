@@ -108,6 +108,8 @@ namespace messages {
 using model::get_optional;
 using model::optional_json;
 
+void from_json(const json& j, ReadSettings::Response& v) { j.at("settings").get_to(v.settings); }
+
 void to_json(json& j, const CameraStatusResponse& v) {
     j = json{{"state", v.state},
              {"camera_source", v.camera_source},

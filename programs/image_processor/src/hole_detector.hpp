@@ -14,6 +14,10 @@ struct Blob {
     double diameter_mm = 0;
     double roundness = 0;
     double area_mm2 = 0;
+    double major_mm = 0;
+    double minor_mm = 0;
+    double orientation_rad = 0;
+    bool merged = false;
 };
 
 struct DetectionResult {
@@ -24,7 +28,7 @@ struct DetectionResult {
 bool is_occluded(const cv::Mat& gray, const cv::Mat& reference);
 
 std::vector<Blob> find_new_blobs(const cv::Mat& gray, const cv::Mat& reference, double px_per_mm,
-                                 double bullet_diameter_mm);
+                                 double bullet_diameter_mm, const std::vector<cv::Point2d>& known_holes_mm = {});
 
 std::vector<Blob> update_candidates(std::vector<Candidate>& candidates, const std::vector<Blob>& blobs,
                                     double bullet_diameter_mm, int confirm_frames);

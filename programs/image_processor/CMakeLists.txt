@@ -7,7 +7,7 @@ endif()
 if(OpenCV_VERSION VERSION_LESS 5)
     set(TARGETSCOPE_OPENCV_CALIB calib3d)
 else()
-    set(TARGETSCOPE_OPENCV_CALIB calib geometry)
+    set(TARGETSCOPE_OPENCV_CALIB calib geometry objdetect)
 endif()
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs ${TARGETSCOPE_OPENCV_CALIB})
 
@@ -43,19 +43,25 @@ if(TARGETSCOPE_BUILD_TESTS)
         tests/capture_test.cpp
         tests/photos_test.cpp
         tests/lens_calibration_test.cpp
+        tests/process_test.cpp
         tests/errors_test.cpp
     )
+    target_include_directories(image_processor_tests PRIVATE tests)
+    target_compile_definitions(image_processor_tests PRIVATE IMAGE_PROCESSOR_BIN="$<TARGET_FILE:image_processor>")
+    add_dependencies(image_processor_tests image_processor)
     target_link_libraries(image_processor_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
     gtest_discover_tests(image_processor_tests)
 
     # doc/testing/overview.md#running-the-tests
     add_executable(image_processor_performance_tests tests/performance_test.cpp)
     target_link_libraries(image_processor_performance_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
+    target_include_directories(image_processor_performance_tests PRIVATE tests)
     gtest_discover_tests(image_processor_performance_tests PROPERTIES LABELS performance)
 
     # doc/testing/overview.md#running-the-tests
     add_executable(image_processor_accuracy_tests tests/accuracy_test.cpp)
     target_link_libraries(image_processor_accuracy_tests PRIVATE image_processor_core targetscope_testkit_cpp GTest::gtest_main)
+    target_include_directories(image_processor_accuracy_tests PRIVATE tests)
     gtest_discover_tests(image_processor_accuracy_tests PROPERTIES LABELS accuracy)
     # doc/testing/image_processor.md#hardware-tests-manual
 endif()

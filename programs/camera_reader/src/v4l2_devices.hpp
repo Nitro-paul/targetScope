@@ -21,6 +21,12 @@ struct CaptureDevice {
 };
 
 std::vector<CaptureDevice> list_capture_devices();
+struct ResolvedDevice {
+    std::string path;
+    std::string bus_info;
+};
+
+std::optional<ResolvedDevice> resolve_camera(const std::string& bus_info);
 std::optional<std::string> resolve_device(const std::string& bus_info);
 
 }

@@ -327,6 +327,7 @@ cpp/targetscope_common/
 │   ├── geometry.hpp     # Polar, Point, conversions
 │   ├── targets.hpp      # generate_rings, validate_target_type
 │   ├── settings.hpp     # SettingsCache
+│   ├── program.hpp      # program startup: logging, bus connection, SIGTERM/SIGINT
 │   ├── config.hpp       # BootstrapConfig (same environment variables)
 │   ├── clock.hpp        # Clock, SystemClock (same as in Rust)
 │   └── logging.hpp      # spdlog setup: stderr + daily file
@@ -338,9 +339,10 @@ cpp/targetscope_common/
 ```cpp
 class Bus {
 public:
-    Bus(const std::string& redis_url, std::string program);
+    Bus(const std::string& redis_url, std::string program, std::shared_ptr<const Clock> clock = nullptr);
 
-    /// Sends a request and waits for the response (timeout per request type).
+    /// Sends a request and waits for the response (timeout per request type); throws BusError
+    /// (with the error code of the response, or `timeout`, or `unavailable` when Redis can't be reached).
     template <class Req> typename Req::Response request(const Req& req);
 
     /// Request loop on <program>:requests in its own thread: reads pending, then new requests,
@@ -348,9 +350,26 @@ public:
     void serve(std::function<nlohmann::json(const std::string& type, const nlohmann::json& payload)> handler);
 
     void publish(const std::string& type, const nlohmann::json& payload);
+
+    /// Id of the newest entry of <source>:events ("0-0" if empty), noted before loading state.
+    std::string newest_event_id(const std::string& source);
+    /// Plain read of <source>:events after a given id, in the calling thread, until `stop()` or `*cancel`.
+    void read_events(const std::string& source, std::string after_id, EventHandler handler, const std::atomic<bool>* cancel = nullptr);
+
+    void stop();                       // ends serve and read_events (SIGTERM)
+    std::uint64_t reconnects() const;  // changes every time the request loop had to reconnect to Redis
 };
 ```
-Handlers report errors by throwing `ServiceError{ErrorCode, message}`; the serve loop turns them into error responses. Responses to the program's own requests are read by a background thread from `<program>:responses` and matched by `request_id`.
+Handlers report errors by throwing `ServiceError{ErrorCode, message}`; the serve loop turns them into error responses (any other exception becomes `processing_failed`). A handler that throws `NoResponse` sends no response (the test kit uses it to simulate a program that doesn't answer); the request is acknowledged. Responses to the program's own requests are read by a background thread from `<program>:responses` and matched by `request_id`. The wire behavior (streams, consumer group, `XAUTOCLAIM` of pending entries, caps, reconnects with backoff) is that of the [Rust bus](#redis-bus); `serve` handles one request at a time. `ping` answers `language` = `cpp`.
+
+## Settings cache
+`SettingsCache(Bus&)` does what the [Rust cache](#settings-cache) does: it notes the newest id of `database_handler:events`, reads all settings, then follows `data_changed` events in its own thread. `get`, `get_path` (expands `~`) and `get_parsed<T>` (integers and `double`; `nullopt` for an unset or unparsable setting) are thread-safe; `watch(names, callback)` calls the callback from the follower thread when one of the settings changes its effective value.
+
+## Frames (C++)
+`FramePublisher(service, initial_max_len)` and `FrameSubscriber(service)` create the services of [frame_transport.md](frame_transport.md#iceoryx2-services) with the default `iox2::Config` (never a configuration file), together with the event service `<service>/notify`. `FramePublisher::publish(header, fill)` loans a slice of `stride × height` bytes, lets `fill` write the pixels in place, sends it and notifies. `FrameSubscriber::wait(timeout)` returns the newest frame (older queued ones are released at once) or nothing after the timeout; a `Frame` keeps its sample, so its `data()` stays valid until it is destroyed. `cleanup_dead_nodes()` removes the resources of dead nodes.
+
+## Program startup (C++)
+`program::start(name)` installs the handlers for `SIGTERM` and `SIGINT`, reads the `BootstrapConfig`, sets up logging, removes the iceoryx2 resources of dead nodes and connects the bus, retrying with backoff (100 ms up to 5 s) until Redis answers. `program::wait_for_shutdown(timeout)` returns `true` as soon as a signal arrived; the program then stops its threads and exits with code 0.
 
 ## Libraries
 | Purpose | Library |
