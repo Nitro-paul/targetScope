@@ -70,7 +70,7 @@ export PATH="$TARGETSCOPE_DEPS/bin:$PATH"                       # redis-server f
 export CMAKE_PREFIX_PATH="$TARGETSCOPE_DEPS${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
 export LD_LIBRARY_PATH="$TARGETSCOPE_DEPS/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 ```
-The top-level `CMakeLists.txt` also adds `$TARGETSCOPE_DEPS` to the CMake search path when the variable is set.
+The top-level `CMakeLists.txt` adds `$TARGETSCOPE_DEPS` to the CMake search path (and as run path of the binaries); when the variable isn't set, it uses `~/.local/opt/targetscope-deps` if that folder exists, the place `tools/install_deps.sh` installs to. `release/package/run.sh` does the same for the `PATH` (`redis-server`). So building and running work without the exports above; they are only needed for the tests and for other tools. If redis-plus-plus or the iceoryx2 bindings aren't found anywhere, CMake stops with a message that says so.
 
 ## Build and test
 See [README.md](../README.md#building) and [testing/overview.md](testing/overview.md#running-the-tests). Integration tests start their own `redis-server` from `PATH` on a free port; they never touch a running TargetScope.

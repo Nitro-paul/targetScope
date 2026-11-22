@@ -17,8 +17,12 @@ endif()
 
 
 # doc/shared_libraries.md#libraries
-find_package(redis++ REQUIRED)
-find_package(iceoryx2-cxx REQUIRED)
+find_package(redis++ QUIET)
+find_package(iceoryx2-cxx QUIET)
+if(NOT redis++_FOUND OR NOT iceoryx2-cxx_FOUND)
+    message(FATAL_ERROR "redis-plus-plus and the iceoryx2 C++ bindings are needed (found: redis++ ${redis++_FOUND}, iceoryx2-cxx ${iceoryx2-cxx_FOUND}). "
+        "Install them with tools/install_deps.sh (into ~/.local/opt/targetscope-deps) or set TARGETSCOPE_DEPS / CMAKE_PREFIX_PATH to their prefix; see doc/development.md.")
+endif()
 
 add_library(targetscope_common_cpp STATIC
     src/bus.cpp
