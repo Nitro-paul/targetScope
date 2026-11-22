@@ -1,5 +1,6 @@
 # doc/shared_libraries.md#c-library-targetscope_common_cpp
 include(FetchContent)
+find_package(Threads REQUIRED)
 
 # doc/shared_libraries.md#libraries
 find_package(nlohmann_json 3.11 QUIET)
@@ -15,21 +16,31 @@ if(NOT spdlog_FOUND)
 endif()
 
 
+# doc/shared_libraries.md#libraries
+find_package(redis++ REQUIRED)
+find_package(iceoryx2-cxx REQUIRED)
+
 add_library(targetscope_common_cpp STATIC
+    src/bus.cpp
     src/clock.cpp
     src/config.cpp
     src/failpoint.cpp
+    src/frames.cpp
     src/geometry.cpp
     src/logging.cpp
     src/messages.cpp
     src/model.cpp
+    src/program.cpp
+    src/settings.cpp
     src/targets.cpp
 )
 target_include_directories(targetscope_common_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/schemas/frames
 )
-target_link_libraries(targetscope_common_cpp PUBLIC nlohmann_json::nlohmann_json spdlog::spdlog)
+target_link_libraries(targetscope_common_cpp PUBLIC nlohmann_json::nlohmann_json spdlog::spdlog
+    redis++::redis++ iceoryx2-cxx::static-lib-cxx Threads::Threads)
+target_compile_definitions(targetscope_common_cpp PUBLIC TARGETSCOPE_VERSION="${PROJECT_VERSION}")
 if(TARGETSCOPE_FAILPOINTS)
     target_compile_definitions(targetscope_common_cpp PUBLIC TARGETSCOPE_FAILPOINTS=1)
 endif()
@@ -47,8 +58,11 @@ if(TARGETSCOPE_BUILD_TESTS)
         tests/targets_test.cpp
         tests/config_test.cpp
         tests/clock_test.cpp
+        tests/bus_test.cpp
+        tests/settings_test.cpp
+        tests/frame_header_test.cpp
     )
-    target_link_libraries(targetscope_common_cpp_tests PRIVATE targetscope_common_cpp GTest::gtest_main)
+    target_link_libraries(targetscope_common_cpp_tests PRIVATE targetscope_common_cpp targetscope_testkit_cpp GTest::gtest_main)
     target_compile_definitions(targetscope_common_cpp_tests PRIVATE
         TARGETSCOPE_SCHEMAS_DIR="${PROJECT_SOURCE_DIR}/schemas"
         TARGETSCOPE_TESTDATA_DIR="${PROJECT_SOURCE_DIR}/testdata")

@@ -100,6 +100,7 @@ struct SaveSetting {
     static constexpr const char* TYPE = "save_setting";
     static constexpr const char* STREAM = DATABASE_HANDLER_STREAM;
     static constexpr std::chrono::seconds TIMEOUT = 5s;
+    using Response = json;
     model::Setting setting;
     json payload() const { return setting; }
 };
@@ -109,15 +110,22 @@ struct ReadSettings {
     static constexpr const char* TYPE = "read_settings";
     static constexpr const char* STREAM = DATABASE_HANDLER_STREAM;
     static constexpr std::chrono::seconds TIMEOUT = 5s;
+    struct Response {
+        std::vector<model::Setting> settings;
+    };
     model::Filter filter;
     json payload() const { return json{{"filter", filter}}; }
 };
 
+void from_json(const json& j, ReadSettings::Response& v);
+
 // doc/interfaces.md#camera_status
+struct CameraStatusResponse;
 struct CameraStatus {
     static constexpr const char* TYPE = "camera_status";
     static constexpr const char* STREAM = CAMERA_READER_STREAM;
     static constexpr std::chrono::seconds TIMEOUT = 5s;
+    using Response = CameraStatusResponse;
     json payload() const { return json::object(); }
 };
 
