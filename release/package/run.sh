@@ -7,5 +7,6 @@ if [ ! -e "$config" ]; then
     mkdir -p "$bundle/etc"
     sed "s|^bin_dir *= *\"[^\"]*\"|bin_dir  = \"$bundle/lib/targetscope\"|" "$bundle/share/targetscope/launcher.toml" > "$config"
 fi
-[ -z "${TARGETSCOPE_DEPS:-}" ] || export PATH="$TARGETSCOPE_DEPS/bin:$PATH"
+deps="${TARGETSCOPE_DEPS:-$HOME/.local/opt/targetscope-deps}"
+[ ! -d "$deps/bin" ] || export PATH="$deps/bin:$PATH"
 exec "$bundle/bin/targetscope" --config "$config" "$@"
