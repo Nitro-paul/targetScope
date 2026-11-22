@@ -37,7 +37,7 @@ release/bump.sh minorfix       # e.g. 1.1.0 → 1.1.1
 ```
 release/build.sh [--without <program>,<program> | --all] [--out <folder>]
 ```
-1. Checks that `VERSION`, `Cargo.toml` and `CMakeLists.txt` have the same number, and runs `tools/check_docs.py` ([development.md](development.md#checks)); if either fails, it stops.
+1. Checks that `VERSION`, `Cargo.toml` and `CMakeLists.txt` have the same number, and runs `tools/check_docs.py` ([development.md](development.md#checks)); if either fails, it stops. Then it checks the dependencies and builds the ones that can be built without root (`tools/ensure_deps.sh`, [development.md](development.md#checking-and-installing-the-dependencies)), so it works on a PC where nothing is set up yet; if the system lacks something, it stops and says what to install.
 2. Builds the Rust programs with `cargo build --release` (without the feature `failpoints`, so no failpoint and no test clock is compiled in, see [testing/overview.md](testing/overview.md#failpoints)).
 3. Builds the C++ programs with CMake (`Release`, tests and failpoints off, folder `build-release/`) and copies them into the bundle. If `TARGETSCOPE_DEPS` is set or the default folder `~/.local/opt/targetscope-deps` exists ([development.md](development.md#environment)), its `lib` folder is the run path of the C++ binaries, so they find redis-plus-plus, hiredis and iceoryx2 there.
 4. Assembles the bundle (below) in `<folder>` (default `dist/`), packs it as `targetscope-<version>-linux-<arch>.tar.gz` and writes its SHA-256 sum next to it (`.sha256`).
@@ -94,7 +94,7 @@ For trying out the current state on the development PC:
 ```
 release/build_and_run.sh [build options] [-- launcher options]
 ```
-Runs `release/build.sh` with the build options (so the programs in `unfinished` are left out unless `--all` is given), then starts the new bundle with its `run.sh`, passing the launcher options. Ctrl+C stops TargetScope. It uses the same data folder as an installed TargetScope.
+Checks that `redis-server` exists (and builds Valkey into the dependency folder if not), then runs `release/build.sh` with the build options (so the programs in `unfinished` are left out unless `--all` is given), then starts the new bundle with its `run.sh`, passing the launcher options. Ctrl+C stops TargetScope. It uses the same data folder as an installed TargetScope.
 
 ## Uninstalling
 ```
